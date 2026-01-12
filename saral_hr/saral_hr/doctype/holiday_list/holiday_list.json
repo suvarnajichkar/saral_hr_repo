@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-01-09 12:58:02.679279",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "holiday_list_name",
+  "from_date",
+  "to_date",
+  "column_break_nvdo",
+  "total_holidays",
+  "add_weekly_holidays_section",
+  "weekly_off",
+  "get_weekly_off_dates",
+  "subdivision"
+ ],
+ "fields": [
+  {
+   "fieldname": "holiday_list_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Holiday List Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "To Date"
+  },
+  {
+   "fieldname": "column_break_nvdo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_holidays",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Holidays",
+   "read_only": 1
+  },
+  {
+   "fieldname": "add_weekly_holidays_section",
+   "fieldtype": "Section Break",
+   "label": "Add Weekly Holidays"
+  },
+  {
+   "fieldname": "weekly_off",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Weekly Off",
+   "no_copy": 1,
+   "options": "\nSunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday",
+   "print_hide": 1,
+   "report_hide": 1
+  },
+  {
+   "fieldname": "get_weekly_off_dates",
+   "fieldtype": "Button",
+   "label": "Add to Holidays",
+   "options": "get_local_holidays"
+  },
+  {
+   "depends_on": "country",
+   "fieldname": "subdivision",
+   "fieldtype": "Autocomplete",
+   "label": "Subdivision"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-09 16:11:53.768470",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Holiday List",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

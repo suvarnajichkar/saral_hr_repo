@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-01-10 15:32:57.003432",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "is_active",
+  "currency",
+  "earnings_and_deductions_section",
+  "earnings",
+  "deductions",
+  "section_break_wyoz",
+  "total_earnings",
+  "total_deduction",
+  "net_pay"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Yes",
+   "fieldname": "is_active",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Active",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "earnings",
+   "fieldtype": "Table",
+   "label": "Earnings",
+   "options": "Salary Details"
+  },
+  {
+   "fieldname": "deductions",
+   "fieldtype": "Table",
+   "label": "Deductions",
+   "options": "Salary Details"
+  },
+  {
+   "fieldname": "section_break_wyoz",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Total Earnings",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_deduction",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Total Deduction",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "net_pay",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Net Pay",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "earnings_and_deductions_section",
+   "fieldtype": "Section Break",
+   "label": "Earnings and Deductions"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-10 16:09:24.066594",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Salary Structure",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

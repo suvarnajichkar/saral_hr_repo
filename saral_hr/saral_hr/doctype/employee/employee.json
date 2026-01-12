@@ -1,0 +1,269 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-01-07 16:10:37.140558",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "naming_series",
+  "first_name",
+  "middle_name",
+  "last_name",
+  "column_break_ymag",
+  "gender",
+  "date_of_birth",
+  "salutation",
+  "pan_number",
+  "aadhar_number",
+  "column_break_ngyj",
+  "employee_pf_account",
+  "bank_account_details",
+  "status",
+  "image",
+  "contact_details",
+  "cell_number",
+  "column_break_kwfk",
+  "personal_email",
+  "company_email",
+  "address_section",
+  "current_address",
+  "current_accommodation_type",
+  "column_break_jpvt",
+  "permanent_address",
+  "permanent_address_is",
+  "tab_3_tab",
+  "attendance_and_leaves_section",
+  "attendance_device_id",
+  "holiday_list"
+ ],
+ "fields": [
+  {
+   "fieldname": "gender",
+   "fieldtype": "Link",
+   "label": "Gender",
+   "options": "Gender",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ymag",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "salutation",
+   "fieldtype": "Link",
+   "label": "Salutation",
+   "options": "Salutation"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "middle_name",
+   "fieldtype": "Data",
+   "label": "Middle Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nInactive\nSuspended\nLeft",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "no_copy": 1,
+   "options": "HR-EMP-",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "contact_details",
+   "fieldtype": "Tab Break",
+   "label": "Address and Contacts"
+  },
+  {
+   "fieldname": "cell_number",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "column_break_kwfk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "personal_email",
+   "fieldtype": "Data",
+   "label": "Personal Email"
+  },
+  {
+   "description": "Provide Email Address registered in company",
+   "fieldname": "company_email",
+   "fieldtype": "Data",
+   "label": "Company Email",
+   "options": "Emails"
+  },
+  {
+   "fieldname": "address_section",
+   "fieldtype": "Section Break",
+   "label": "Address"
+  },
+  {
+   "fieldname": "current_address",
+   "fieldtype": "Small Text",
+   "label": "Current Address"
+  },
+  {
+   "fieldname": "current_accommodation_type",
+   "fieldtype": "Select",
+   "label": "current_accommodation_type",
+   "options": "\nRented\nOwned"
+  },
+  {
+   "fieldname": "column_break_jpvt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "permanent_address",
+   "fieldtype": "Small Text",
+   "label": "Permanent Address"
+  },
+  {
+   "fieldname": "permanent_address_is",
+   "fieldtype": "Select",
+   "label": "Permanent Address Is",
+   "options": "\nRented\nOwned"
+  },
+  {
+   "fieldname": "tab_3_tab",
+   "fieldtype": "Tab Break",
+   "label": "Attendance and Leaves"
+  },
+  {
+   "fieldname": "attendance_and_leaves_section",
+   "fieldtype": "Section Break",
+   "label": "Attendance and Leaves"
+  },
+  {
+   "fieldname": "attendance_device_id",
+   "fieldtype": "Data",
+   "label": "Attendance Device ID (Biometric/RF tag ID)",
+   "no_copy": 1,
+   "unique": 1
+  },
+  {
+   "description": "Applicable Holiday List",
+   "fieldname": "holiday_list",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Holiday List",
+   "options": "Holiday List"
+  },
+  {
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": "PAN Number"
+  },
+  {
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Aadhar Number "
+  },
+  {
+   "fieldname": "column_break_ngyj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_pf_account",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee PF Account"
+  },
+  {
+   "fieldname": "bank_account_details",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Bank Account Details"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-12 11:03:22.122048",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Employee",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Group Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "employee"
+}

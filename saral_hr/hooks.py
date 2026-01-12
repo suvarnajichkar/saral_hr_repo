@@ -64,6 +64,12 @@ app_license = "mit"
 # 	"Role": "home_page"
 # }
 
+# permission_query_conditions = {
+#     "Employee": "saral_hr.permission.employee_permission_query",
+#     "Attendance": "saral_hr.permission.attendance_permission_query"
+# }
+
+
 # Generators
 # ----------
 
