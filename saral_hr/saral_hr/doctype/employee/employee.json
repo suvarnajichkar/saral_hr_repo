@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "naming_series:",
  "creation": "2026-01-07 16:10:37.140558",
  "doctype": "DocType",
@@ -218,7 +219,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 11:03:22.122048",
+ "modified": "2026-01-12 14:31:48.209821",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",

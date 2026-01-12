@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:company",
  "creation": "2026-01-07 16:09:53.267409",
@@ -181,7 +182,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 11:14:12.873826",
+ "modified": "2026-01-12 14:22:57.948625",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",
