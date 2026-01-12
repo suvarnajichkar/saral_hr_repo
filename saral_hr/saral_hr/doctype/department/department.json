@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:department",
  "creation": "2026-01-09 12:07:30.598493",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,15 +12,17 @@
   {
    "fieldname": "department",
    "fieldtype": "Data",
-   "label": "Department"
+   "label": "Department",
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 12:08:07.997708",
+ "modified": "2026-01-12 15:35:35.209385",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Department",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

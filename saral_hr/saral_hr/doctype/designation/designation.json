@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:designation",
  "creation": "2026-01-09 12:07:02.085206",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -11,15 +12,17 @@
   {
    "fieldname": "designation",
    "fieldtype": "Data",
-   "label": "Designation"
+   "label": "Designation",
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 12:07:16.192835",
+ "modified": "2026-01-12 15:36:15.933609",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Designation",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

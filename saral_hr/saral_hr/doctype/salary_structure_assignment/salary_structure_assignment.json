@@ -1,20 +1,36 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
+ "autoname": "HR-SSA-.YY.-.MM.-.#####",
  "creation": "2026-01-10 16:15:29.104418",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "employee",
   "employee_name",
-  "department",
-  "designation",
-  "branch",
+  "currency",
   "column_break_ngyh",
   "salary_structure",
   "from_date",
   "to_date",
-  "company"
+  "details_section",
+  "department",
+  "company",
+  "column_break_mhdz",
+  "designation",
+  "branch",
+  "earnings_and_deductions_section",
+  "earnings",
+  "column_break_oeow",
+  "deductions",
+  "calculations_section",
+  "column_break_wwjg",
+  "total_earnings",
+  "gross_pay",
+  "net_in_hand",
+  "column_break_lrth",
+  "total_deductions"
  ],
  "fields": [
   {
@@ -23,34 +39,23 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Employee",
-   "options": "Employee",
+   "options": "Company Link",
    "reqd": 1,
    "search_index": 1
   },
   {
-   "fetch_from": "employee.employee",
+   "fetch_from": "employee.full_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "label": "Employee Name"
   },
   {
-   "fieldname": "department",
-   "fieldtype": "Link",
-   "label": "Department",
-   "options": "Department"
-  },
-  {
-   "fetch_from": "employee.designation",
-   "fieldname": "designation",
-   "fieldtype": "Link",
-   "label": "Designation",
-   "options": "Designation"
-  },
-  {
+   "fetch_from": "employee.branch",
    "fieldname": "branch",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Branch",
-   "options": "Branch"
+   "options": "Branch",
+   "read_only": 1
   },
   {
    "fieldname": "salary_structure",
@@ -76,19 +81,109 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "employee.company",
    "fieldname": "company",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Company",
-   "options": "Company",
+   "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "column_break_mhdz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "earnings",
+   "fieldtype": "Table",
+   "label": "Earnings",
+   "options": "Salary Details"
+  },
+  {
+   "fieldname": "deductions",
+   "fieldtype": "Table",
+   "label": "Deductions",
+   "options": "Salary Details"
+  },
+  {
+   "fieldname": "earnings_and_deductions_section",
+   "fieldtype": "Section Break",
+   "label": "Earnings and Deductions"
+  },
+  {
+   "fieldname": "column_break_oeow",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "calculations_section",
+   "fieldtype": "Section Break",
+   "label": "Calculations"
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Currency",
+   "label": "Total Earnings"
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Deductions",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "gross_pay",
+   "fieldtype": "Currency",
+   "label": "Gross Pay",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "net_in_hand",
+   "fieldtype": "Currency",
+   "label": "Net In Hand",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_lrth",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wwjg",
+   "fieldtype": "Column Break",
+   "options": "Currency"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-10 16:29:22.332459",
+ "modified": "2026-01-12 16:58:06.797115",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

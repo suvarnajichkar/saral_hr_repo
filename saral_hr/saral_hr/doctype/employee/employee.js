@@ -1,27 +1,19 @@
-// Copyright (c) 2026, sj and contributors
-// For license information, please see license.txt
-
 frappe.ui.form.on("Employee", {
-	refresh(frm) {
+    refresh(frm) {
         set_employee_name(frm);
-	},
+    },
+    first_name(frm) { set_employee_name(frm); },
+    middle_name(frm) { set_employee_name(frm); },
+    last_name(frm) { set_employee_name(frm); }
 });
 
-
-frappe.ui.form.on("Employee", {
-    first_name: set_employee,
-    middle_name: set_employee,
-    last_name: set_employee
-});
-
-function set_employee(frm) {
+function set_employee_name(frm) {
     let first = frm.doc.first_name || "";
     let middle = frm.doc.middle_name || "";
     let last = frm.doc.last_name || "";
 
-    let name_parts = [first, middle, last].filter(Boolean);
-    let full_name = name_parts.join(" ");
-
+    let full_name = [first, middle, last].filter(Boolean).join(" ");
+    
+    // Use your actual fieldname: "employee"
     frm.set_value("employee", full_name);
 }
-

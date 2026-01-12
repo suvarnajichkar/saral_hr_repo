@@ -9,6 +9,9 @@
   "company",
   "employee",
   "full_name",
+  "department",
+  "designation",
+  "branch",
   "column_break_hopr",
   "date_of_joining",
   "left_date"
@@ -47,11 +50,29 @@
    "fieldname": "full_name",
    "fieldtype": "Data",
    "label": "Full Name"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 12:04:57.588757",
+ "modified": "2026-01-12 15:37:43.159125",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
