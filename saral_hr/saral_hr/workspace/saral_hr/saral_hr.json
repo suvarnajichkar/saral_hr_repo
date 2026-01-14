@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Saral Hr\",\"col\":4}}]",
+ "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Saral Hr\",\"col\":4}},{\"id\":\"nFjI5W_knO\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}}]",
  "creation": "2026-01-09 18:32:47.100898",
  "custom_blocks": [],
  "docstatus": 0,
@@ -17,7 +17,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Saral Hr",
-   "link_count": 11,
+   "link_count": 8,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -95,6 +95,25 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Shift Type",
+   "link_count": 0,
+   "link_to": "Shift Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Salary Component",
    "link_count": 0,
    "link_to": "Salary Component",
@@ -121,19 +140,9 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Shift Type",
-   "link_count": 0,
-   "link_to": "Shift Type",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
   }
  ],
- "modified": "2026-01-13 12:07:28.380340",
+ "modified": "2026-01-14 14:01:39.583238",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",
