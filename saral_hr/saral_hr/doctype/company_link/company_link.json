@@ -1,32 +1,98 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:employee",
+ "autoname": "naming_series:",
  "creation": "2026-01-10 16:47:22.388127",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
+  "is_active",
+  "section_break_employee",
   "company",
   "employee",
   "full_name",
+  "weekly_off",
   "column_break_hopr",
+  "department",
+  "designation",
+  "branch",
+  "section_break_dates",
   "date_of_joining",
+  "column_break_leftdate",
   "left_date"
  ],
  "fields": [
   {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "CL-.YYYY.-"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "section_break_employee",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
    "fieldname": "company",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Company",
-   "options": "Company"
+   "options": "Company",
+   "reqd": 1
   },
   {
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee",
    "options": "Employee",
-   "unique": 1
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee",
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hopr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "section_break_dates",
+   "fieldtype": "Section Break",
+   "label": "Dates"
   },
   {
    "fieldname": "date_of_joining",
@@ -34,28 +100,28 @@
    "label": "Date of Joining"
   },
   {
+   "fieldname": "column_break_leftdate",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "left_date",
    "fieldtype": "Date",
    "label": "Left Date"
   },
   {
-   "fieldname": "column_break_hopr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "employee.employee",
-   "fieldname": "full_name",
-   "fieldtype": "Data",
-   "label": "Full Name"
+   "fieldname": "weekly_off",
+   "fieldtype": "Select",
+   "label": "Weekly Off",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 12:04:57.588757",
+ "modified": "2026-01-14 12:43:00.446014",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
- "naming_rule": "By fieldname",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

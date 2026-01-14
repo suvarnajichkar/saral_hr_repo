@@ -1,10 +1,12 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:salary_structure_name",
  "creation": "2026-01-10 15:32:57.003432",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "salary_structure_name",
   "company",
   "is_active",
   "currency",
@@ -37,6 +39,7 @@
    "reqd": 1
   },
   {
+   "default": "INR",
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
@@ -89,14 +92,25 @@
    "fieldname": "earnings_and_deductions_section",
    "fieldtype": "Section Break",
    "label": "Earnings and Deductions"
+  },
+  {
+   "bold": 1,
+   "fieldname": "salary_structure_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Name",
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-10 16:09:24.066594",
+ "modified": "2026-01-12 16:56:26.461063",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:company",
  "creation": "2026-01-07 16:09:53.267409",
@@ -26,10 +27,8 @@
   "fax",
   "website",
   "section_break_knlr",
-  "registration_details",
-  "lft",
-  "rgt",
-  "old_parent"
+  "pan_number",
+  "gst_number"
  ],
  "fields": [
   {
@@ -121,37 +120,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "description": "Company registration numbers for your reference. Tax numbers etc.",
-   "fieldname": "registration_details",
-   "fieldtype": "Code",
-   "label": "Registration Details"
-  },
-  {
-   "fieldname": "lft",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Lft",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "rgt",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Rgt",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "old_parent",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "old_parent",
-   "print_hide": 1,
-   "read_only": 1
-  },
-  {
    "bold": 1,
    "default": "0",
    "fieldname": "is_group",
@@ -177,11 +145,21 @@
    "fieldname": "attched",
    "fieldtype": "Attach",
    "label": "Attched"
+  },
+  {
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": "PAN Number"
+  },
+  {
+   "fieldname": "gst_number",
+   "fieldtype": "Data",
+   "label": "GST Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 11:14:12.873826",
+ "modified": "2026-01-13 12:31:21.769555",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",
