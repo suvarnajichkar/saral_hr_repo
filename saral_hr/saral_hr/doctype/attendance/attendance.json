@@ -46,17 +46,14 @@
    "fetch_from": "employee.full_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Employee Name"
+   "label": "Employee Name",
+   "read_only": 1
   },
   {
    "fieldname": "working_hours",
    "fieldtype": "Float",
    "label": "Working Hours",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_gchh",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "status",
@@ -75,22 +72,27 @@
    "reqd": 1
   },
   {
-   "fetch_from": "employee.company",
-   "fieldname": "company",
-   "fieldtype": "Data",
-   "label": "Company",
-   "options": "Company Link"
+   "fieldname": "shift",
+   "fieldtype": "Link",
+   "label": "Shift",
+   "options": "Shift Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "late_entry",
+   "fieldtype": "Check",
+   "label": "Late Entry"
+  },
+  {
+   "default": "0",
+   "fieldname": "early_exit",
+   "fieldtype": "Check",
+   "label": "Early Exit"
   },
   {
    "fieldname": "details_section",
    "fieldtype": "Section Break",
    "label": "Details"
-  },
-  {
-   "fieldname": "shift",
-   "fieldtype": "Link",
-   "label": "Shift",
-   "options": "Shift Type"
   },
   {
    "depends_on": "shift",
@@ -106,21 +108,22 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "late_entry",
-   "fieldtype": "Check",
-   "label": "Late Entry"
+   "fieldname": "column_break_gchh",
+   "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "early_exit",
-   "fieldtype": "Check",
-   "label": "Early Exit"
+   "bold": 1,
+   "fetch_from": "employee.company",
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company",
+   "options": "Company Link",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-13 17:01:13.493265",
+ "modified": "2026-01-15 17:45:49.235956",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",
