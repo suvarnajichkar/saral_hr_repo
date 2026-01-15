@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:salary_component",
  "creation": "2026-01-10 14:31:43.076920",
@@ -54,7 +53,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 15:08:38.503070",
+ "modified": "2026-01-10 14:38:48.407253",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Component",

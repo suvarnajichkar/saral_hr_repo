@@ -13,3 +13,18 @@ class Employee(Document):
         # Populate Full Name into the actual field "employee"
         name_parts = [self.first_name, self.middle_name, self.last_name]
         self.employee = " ".join(filter(None, name_parts))
+        
+        # Update current company
+        self.update_current_company()
+    
+    def update_current_company(self):
+        """Fetch the current active company for this employee"""
+        active_company = frappe.db.get_value(
+            "Company Link",
+            filters={
+                "employee": self.name,
+                "is_active": 1
+            },
+            fieldname="company"
+        )
+        self.current_company = active_company or None
