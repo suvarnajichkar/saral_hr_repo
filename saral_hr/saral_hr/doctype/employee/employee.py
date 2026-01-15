@@ -13,6 +13,7 @@ class Employee(Document):
         # Populate Full Name into the actual field "employee"
         name_parts = [self.first_name, self.middle_name, self.last_name]
         self.employee = " ".join(filter(None, name_parts))
+<<<<<<< HEAD
         
         # Update current company
         self.update_current_company()
@@ -28,3 +29,5 @@ class Employee(Document):
             fieldname="company"
         )
         self.current_company = active_company or None
+=======
+>>>>>>> origin/main

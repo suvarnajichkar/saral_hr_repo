@@ -1,32 +1,81 @@
-# import frappe
+import frappe
 
-# def employee_permission_query(user):
-#     roles = frappe.get_roles(user)
-#     if "Group Manager" in roles:
-#         return ""
-#     if "HR Manager" in roles:
-#         company = frappe.db.get_value("Company", {"hr_user": user}, "name")
-#         if not company:
-#             return "1=0"
-#         company_escaped = frappe.db.escape(company, percent=False)
-#         return f"`tabEmployee`.company = {company_escaped}"
-#     return "1=0"
+def company_link_permission_query(user):
+    # System Manager sees everything
+    if "System Manager" in frappe.get_roles(user):
+        return ""
 
-# def attendance_permission_query(user):
-#     roles = frappe.get_roles(user)
-#     if "Group Manager" in roles:
-#         return ""
-#     if "HR Manager" in roles:
-#         company = frappe.db.get_value("Company", {"hr_user": user}, "name")
-#         if not company:
-#             return "1=0"
-#         company_escaped = frappe.db.escape(company, percent=False)
-#         return f"""
-#             `tabAttendance`.employee IN (
-#                 SELECT name
-#                 FROM `tabEmployee`
-#                 WHERE company = {company_escaped}
-#             )
-#         """
-#     return "1=1"
+    # get allowed companies for user
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
 
+    if not companies:
+        return "1=0"
+
+    companies_escaped = ", ".join(
+        frappe.db.escape(c) for c in companies
+    )
+
+    return f"""
+        `tabCompany Link`.company IN ({companies_escaped})
+    """
+def employee_permission_query(user):
+    if "System Manager" in frappe.get_roles(user):
+        return ""
+
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+
+    if not companies:
+        return "1=0"
+
+    companies_escaped = ", ".join(
+        frappe.db.escape(c) for c in companies
+    )
+
+    return f"""
+        `tabEmployee`.name IN (
+            SELECT cl.employee
+            FROM `tabCompany Link` cl
+            WHERE cl.company IN ({companies_escaped})
+        )
+    """
+def attendance_permission_query(user):
+    if "System Manager" in frappe.get_roles(user):
+        return ""
+
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+
+    if not companies:
+        return "1=0"
+
+    companies_escaped = ", ".join(
+        frappe.db.escape(c) for c in companies
+    )
+
+    return f"""
+        `tabAttendance`.employee IN (
+            SELECT cl.name
+            FROM `tabCompany Link` cl
+            WHERE cl.company IN ({companies_escaped})
+        )
+    """

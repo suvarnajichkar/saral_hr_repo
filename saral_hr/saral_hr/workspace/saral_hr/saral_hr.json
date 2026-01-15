@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Saral Hr\",\"col\":4}}]",
+ "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Saral Hr\",\"col\":4}},{\"id\":\"nFjI5W_knO\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}}]",
  "creation": "2026-01-09 18:32:47.100898",
  "custom_blocks": [],
  "docstatus": 0,
@@ -17,7 +17,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Saral Hr",
-   "link_count": 3,
+   "link_count": 8,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -45,15 +45,104 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Company Link",
+   "link_count": 0,
+   "link_to": "Company Link",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Attendance",
    "link_count": 0,
    "link_to": "Attendance",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Designation",
+   "link_count": 0,
+   "link_to": "Designation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Department",
+   "link_count": 0,
+   "link_to": "Department",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Grade",
+   "link_count": 0,
+   "link_to": "Grade",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Shift Type",
+   "link_count": 0,
+   "link_to": "Shift Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Component",
+   "link_count": 0,
+   "link_to": "Salary Component",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Structure",
+   "link_count": 0,
+   "link_to": "Salary Structure",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Structure Assignment",
+   "link_count": 0,
+   "link_to": "Salary Structure Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-01-09 18:37:08.591775",
+ "modified": "2026-01-14 14:01:39.583238",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",

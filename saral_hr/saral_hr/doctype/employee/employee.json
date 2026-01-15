@@ -21,7 +21,7 @@
   "employee_pf_account",
   "bank_account_details",
   "status",
-  "image",
+  "employee_image",
   "contact_details",
   "cell_number",
   "column_break_kwfk",
@@ -61,11 +61,6 @@
    "fieldtype": "Link",
    "label": "Salutation",
    "options": "Salutation"
-  },
-  {
-   "fieldname": "image",
-   "fieldtype": "Attach Image",
-   "label": "Image"
   },
   {
    "fieldname": "first_name",
@@ -215,11 +210,19 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Bank Account Details"
+  },
+  {
+   "description": "Get your globally recognized avatar from Gravatar.com",
+   "fieldname": "employee_image",
+   "fieldtype": "Attach Image",
+   "label": "Employee Image",
+   "no_copy": 1,
+   "print_hide": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-13 17:41:10.216969",
+ "modified": "2026-01-14 12:40:19.743082",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",
@@ -246,19 +249,7 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Group Manager",
+   "role": "HR User",
    "share": 1,
    "write": 1
   }
