@@ -1,9 +1,71 @@
 # Copyright (c) 2026, sj and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
+from frappe import _
 
 
 class SalaryStructure(Document):
-	pass
+    def validate(self):
+        self.validate_salary_components()
+        self.calculate_totals()
+    
+    def validate_salary_components(self):
+        """Validate that earnings have Earning type and deductions have Deduction type"""
+        
+        # Check earnings
+        for earning in self.get('earnings', []):
+            if earning.salary_component:
+                component_type = frappe.db.get_value(
+                    'Salary Component',
+                    earning.salary_component,
+                    'type'
+                )
+                if component_type != 'Earning':
+                    frappe.throw(
+                        _('Row #{0}: Component {1} is not an Earning type component. Please select an Earning component.').format(
+                            earning.idx,
+                            frappe.bold(earning.salary_component)
+                        )
+                    )
+        
+        # Check deductions
+        for deduction in self.get('deductions', []):
+            if deduction.salary_component:
+                component_type = frappe.db.get_value(
+                    'Salary Component',
+                    deduction.salary_component,
+                    'type'
+                )
+                if component_type != 'Deduction':
+                    frappe.throw(
+                        _('Row #{0}: Component {1} is not a Deduction type component. Please select a Deduction component.').format(
+                            deduction.idx,
+                            frappe.bold(deduction.salary_component)
+                        )
+                    )
+        
+        # Check for duplicate components in earnings
+        earnings_components = [d.salary_component for d in self.get('earnings', []) if d.salary_component]
+        if len(earnings_components) != len(set(earnings_components)):
+            frappe.throw(_('Duplicate salary components found in Earnings table. Each component can only be added once.'))
+        
+        # Check for duplicate components in deductions
+        deductions_components = [d.salary_component for d in self.get('deductions', []) if d.salary_component]
+        if len(deductions_components) != len(set(deductions_components)):
+            frappe.throw(_('Duplicate salary components found in Deductions table. Each component can only be added once.'))
+    
+    def calculate_totals(self):
+        """Calculate total earnings, deductions and net pay"""
+        self.total_earnings = sum([flt(d.amount) for d in self.get('earnings', [])])
+        self.total_deduction = sum([flt(d.amount) for d in self.get('deductions', [])])
+        self.net_pay = self.total_earnings - self.total_deduction
+
+
+def flt(value, decimals=2):
+    """Convert to float with proper handling"""
+    try:
+        return float(value or 0)
+    except (ValueError, TypeError):
+        return 0.0

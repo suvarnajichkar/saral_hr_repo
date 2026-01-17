@@ -27,8 +27,10 @@
   "fax",
   "website",
   "section_break_knlr",
-  "pan_number",
-  "gst_number"
+  "registration_details",
+  "lft",
+  "rgt",
+  "old_parent"
  ],
  "fields": [
   {
@@ -147,19 +149,40 @@
    "label": "Attched"
   },
   {
-   "fieldname": "pan_number",
-   "fieldtype": "Data",
-   "label": "PAN Number"
+   "description": "Company registration numbers for your reference. Tax numbers etc.",
+   "fieldname": "registration_details",
+   "fieldtype": "Code",
+   "label": "Registration Details"
   },
   {
-   "fieldname": "gst_number",
+   "fieldname": "lft",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Lft",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "rgt",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Rgt",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "old_parent",
    "fieldtype": "Data",
-   "label": "GST Number"
+   "hidden": 1,
+   "label": "old_parent",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 14:22:57.948625",
+ "modified": "2026-01-16 12:20:57.617475",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",
@@ -175,6 +198,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
    "share": 1,
    "write": 1
   }

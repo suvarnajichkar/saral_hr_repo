@@ -8,17 +8,31 @@
  "field_order": [
   "salary_structure_name",
   "company",
+  "column_break_basic",
   "is_active",
   "currency",
   "earnings_and_deductions_section",
   "earnings",
+  "column_break_tables",
   "deductions",
   "section_break_wyoz",
   "total_earnings",
+  "column_break_totals",
   "total_deduction",
+  "column_break_netpay",
   "net_pay"
  ],
  "fields": [
+  {
+   "bold": 1,
+   "fieldname": "salary_structure_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Name",
+   "reqd": 1,
+   "unique": 1
+  },
   {
    "fieldname": "company",
    "fieldtype": "Link",
@@ -27,6 +41,10 @@
    "options": "Company",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "column_break_basic",
+   "fieldtype": "Column Break"
   },
   {
    "default": "Yes",
@@ -48,10 +66,19 @@
    "search_index": 1
   },
   {
+   "fieldname": "earnings_and_deductions_section",
+   "fieldtype": "Section Break",
+   "label": "Earnings and Deductions"
+  },
+  {
    "fieldname": "earnings",
    "fieldtype": "Table",
    "label": "Earnings",
    "options": "Salary Details"
+  },
+  {
+   "fieldname": "column_break_tables",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "deductions",
@@ -65,48 +92,41 @@
    "label": "Totals"
   },
   {
+   "bold": 1,
    "fieldname": "total_earnings",
    "fieldtype": "Currency",
-   "hidden": 1,
    "label": "Total Earnings",
    "options": "currency",
    "read_only": 1
   },
   {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
    "fieldname": "total_deduction",
    "fieldtype": "Currency",
-   "hidden": 1,
    "label": "Total Deduction",
    "options": "currency",
    "read_only": 1
   },
   {
-   "fieldname": "net_pay",
-   "fieldtype": "Currency",
-   "hidden": 1,
-   "label": "Net Pay",
-   "options": "currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "earnings_and_deductions_section",
-   "fieldtype": "Section Break",
-   "label": "Earnings and Deductions"
+   "fieldname": "column_break_netpay",
+   "fieldtype": "Column Break"
   },
   {
    "bold": 1,
-   "fieldname": "salary_structure_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Name",
-   "reqd": 1,
-   "unique": 1
+   "fieldname": "net_pay",
+   "fieldtype": "Currency",
+   "label": "Net Pay",
+   "options": "currency",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 16:56:26.461063",
+ "modified": "2026-01-15 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure",

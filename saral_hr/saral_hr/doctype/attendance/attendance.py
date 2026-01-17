@@ -123,139 +123,139 @@ class Attendance(Document):
 			)
 
 
-# ======================================================================
-# BULK ATTENDANCE
-# ======================================================================
-@frappe.whitelist()
-def mark_bulk_attendance(employee, dates, status):
-	"""
-	Mark attendance for multiple dates for one employee
-	"""
+# # ======================================================================
+# # BULK ATTENDANCE
+# # ======================================================================
+# @frappe.whitelist()
+# def mark_bulk_attendance(employee, dates, status):
+# 	"""
+# 	Mark attendance for multiple dates for one employee
+# 	"""
 
-	import json
+# 	import json
 
-	if isinstance(dates, str):
-		dates = json.loads(dates)
+# 	if isinstance(dates, str):
+# 		dates = json.loads(dates)
 
-	if not dates:
-		frappe.throw(_("Please select at least one date"))
+# 	if not dates:
+# 		frappe.throw(_("Please select at least one date"))
 
-	created = 0
-	skipped = 0
-	errors = []
+# 	created = 0
+# 	skipped = 0
+# 	errors = []
 
-	for date in dates:
-		try:
-			exists = frappe.db.exists(
-				"Attendance",
-				{
-					"employee": employee,
-					"attendance_date": date,
-					"docstatus": ["<", 2],
-				},
-			)
+# 	for date in dates:
+# 		try:
+# 			exists = frappe.db.exists(
+# 				"Attendance",
+# 				{
+# 					"employee": employee,
+# 					"attendance_date": date,
+# 					"docstatus": ["<", 2],
+# 				},
+# 			)
 
-			if exists:
-				skipped += 1
-				continue
+# 			if exists:
+# 				skipped += 1
+# 				continue
 
-			attendance = frappe.new_doc("Attendance")
-			attendance.employee = employee
-			attendance.attendance_date = date
-			attendance.status = status
-			attendance.insert()
-			attendance.submit()
+# 			attendance = frappe.new_doc("Attendance")
+# 			attendance.employee = employee
+# 			attendance.attendance_date = date
+# 			attendance.status = status
+# 			attendance.insert()
+# 			attendance.submit()
 
-			created += 1
+# 			created += 1
 
-		except Exception as e:
-			error_msg = f"{date}: {str(e)}"
-			errors.append(error_msg)
-			frappe.log_error(error_msg, "Bulk Attendance Error")
+# 		except Exception as e:
+# 			error_msg = f"{date}: {str(e)}"
+# 			errors.append(error_msg)
+# 			frappe.log_error(error_msg, "Bulk Attendance Error")
 
-	frappe.db.commit()
+# 	frappe.db.commit()
 
-	return {
-		"created": created,
-		"skipped": skipped,
-		"total": len(dates),
-		"errors": errors or None,
-	}
-
-
-# ======================================================================
-# UNMARKED DAYS
-# ======================================================================
-@frappe.whitelist()
-def get_unmarked_days(employee, from_date, to_date, exclude_holidays=0):
-	"""
-	Return list of days without attendance
-	"""
-
-	from_date = getdate(from_date)
-	to_date = getdate(to_date)
-
-	records = frappe.get_all(
-		"Attendance",
-		fields=["attendance_date"],
-		filters={
-			"employee": employee,
-			"attendance_date": ["between", [from_date, to_date]],
-			"docstatus": ["!=", 2],
-		},
-	)
-
-	marked_days = {getdate(d.attendance_date) for d in records}
-	unmarked_days = []
-
-	current = from_date
-	while current <= to_date:
-		if current not in marked_days:
-			if cint(exclude_holidays):
-				if current.weekday() not in [5, 6]:
-					unmarked_days.append(current)
-			else:
-				unmarked_days.append(current)
-		current = add_days(current, 1)
-
-	return unmarked_days
+# 	return {
+# 		"created": created,
+# 		"skipped": skipped,
+# 		"total": len(dates),
+# 		"errors": errors or None,
+# 	}
 
 
-# ======================================================================
-# CALENDAR EVENTS
-# ======================================================================
-@frappe.whitelist()
-def get_events(start, end, filters=None):
-	"""
-	Calendar events for Attendance
-	"""
+# # ======================================================================
+# # UNMARKED DAYS
+# # ======================================================================
+# @frappe.whitelist()
+# def get_unmarked_days(employee, from_date, to_date, exclude_holidays=0):
+# 	"""
+# 	Return list of days without attendance
+# 	"""
 
-	from frappe.desk.reportview import get_filters_cond
+# 	from_date = getdate(from_date)
+# 	to_date = getdate(to_date)
 
-	conditions = get_filters_cond("Attendance", filters, [])
+# 	records = frappe.get_all(
+# 		"Attendance",
+# 		fields=["attendance_date"],
+# 		filters={
+# 			"employee": employee,
+# 			"attendance_date": ["between", [from_date, to_date]],
+# 			"docstatus": ["!=", 2],
+# 		},
+# 	)
 
-	query = f"""
-		SELECT
-			name,
-			attendance_date,
-			status,
-			employee_name
-		FROM `tabAttendance`
-		WHERE attendance_date BETWEEN %(start)s AND %(end)s
-		AND docstatus < 2
-		{conditions or ""}
-	"""
+# 	marked_days = {getdate(d.attendance_date) for d in records}
+# 	unmarked_days = []
 
-	events = []
+# 	current = from_date
+# 	while current <= to_date:
+# 		if current not in marked_days:
+# 			if cint(exclude_holidays):
+# 				if current.weekday() not in [5, 6]:
+# 					unmarked_days.append(current)
+# 			else:
+# 				unmarked_days.append(current)
+# 		current = add_days(current, 1)
 
-	for d in frappe.db.sql(query, {"start": start, "end": end}, as_dict=True):
-		events.append({
-			"name": d.name,
-			"doctype": "Attendance",
-			"start": d.attendance_date,
-			"end": d.attendance_date,
-			"title": f"{d.employee_name or d.name}: {d.status}",
-			"allDay": 1,
-		})
+# 	return unmarked_days
 
-	return events
+
+# # ======================================================================
+# # CALENDAR EVENTS
+# # ======================================================================
+# @frappe.whitelist()
+# def get_events(start, end, filters=None):
+# 	"""
+# 	Calendar events for Attendance
+# 	"""
+
+# 	from frappe.desk.reportview import get_filters_cond
+
+# 	conditions = get_filters_cond("Attendance", filters, [])
+
+# 	query = f"""
+# 		SELECT
+# 			name,
+# 			attendance_date,
+# 			status,
+# 			employee_name
+# 		FROM `tabAttendance`
+# 		WHERE attendance_date BETWEEN %(start)s AND %(end)s
+# 		AND docstatus < 2
+# 		{conditions or ""}
+# 	"""
+
+# 	events = []
+
+# 	for d in frappe.db.sql(query, {"start": start, "end": end}, as_dict=True):
+# 		events.append({
+# 			"name": d.name,
+# 			"doctype": "Attendance",
+# 			"start": d.attendance_date,
+# 			"end": d.attendance_date,
+# 			"title": f"{d.employee_name or d.name}: {d.status}",
+# 			"allDay": 1,
+# 		})
+
+# 	return events
