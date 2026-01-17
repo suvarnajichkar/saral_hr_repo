@@ -2,7 +2,7 @@ frappe.ready(function () {
 
     // --------- EMPLOYEE + COMPANY ---------
     frappe.call({
-        method: "saral_hr.www.attendance_marking.index.get_active_employees",
+        method: "saral_hr.www.mark_attendance.index.get_active_employees",
         callback: function (r) {
             if (r.message) {
                 let employeeSelect = document.getElementById("employee");
@@ -60,7 +60,7 @@ frappe.ready(function () {
 
         // 🔹 Fetch existing attendance
         frappe.call({
-            method: "saral_hr.www.attendance_marking.index.get_attendance_between_dates",
+            method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
             args: { employee: clId, start_date: startDate, end_date: endDate },
             callback: function (res) {
                 let attendanceMap = res.message || {};
@@ -131,7 +131,7 @@ frappe.ready(function () {
             let status = window.attendanceTableData[date];
             if (status) {
                 frappe.call({
-                    method: "saral_hr.www.attendance_marking.index.save_attendance",
+                    method: "saral_hr.www.mark_attendance.index.save_attendance",
                     args: { employee: clId, attendance_date: date, status: status }
                 });
             }
