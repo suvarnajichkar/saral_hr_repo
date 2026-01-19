@@ -1,6 +1,3 @@
-# Copyright (c) 2026, sj and contributors
-# For license information, please see license.txt
-
 import frappe
 from frappe.model.document import Document
 from frappe import _
@@ -16,8 +13,6 @@ class CompanyLink(Document):
         """
         An employee can be active in ONLY ONE company at a time
         """
-
-        # Required fields
         if not self.employee or not self.is_active:
             return
 
@@ -25,8 +20,8 @@ class CompanyLink(Document):
             SELECT name, company
             FROM `tabCompany Link`
             WHERE employee = %(employee)s
-            AND is_active = 1
-            AND name != %(name)s
+              AND is_active = 1
+              AND name != %(name)s
             LIMIT 1
         """, {
             "employee": self.employee,
@@ -56,35 +51,3 @@ class CompanyLink(Document):
                 indicator="orange"
             )
             self.is_active = 0
-    
-    def on_update(self):
-        """Update employee's current company field when Company Link changes"""
-        self.update_employee_current_company()
-    
-    def on_trash(self):
-        """Update employee's current company field when Company Link is deleted"""
-        self.update_employee_current_company()
-    
-    def update_employee_current_company(self):
-        """Update the current_company field in Employee doctype"""
-        if not self.employee:
-            return
-        
-        # Find the active company for this employee
-        active_company = frappe.db.get_value(
-            "Company Link",
-            filters={
-                "employee": self.employee,
-                "is_active": 1
-            },
-            fieldname="company"
-        )
-        
-        # Update the Employee record
-        frappe.db.set_value(
-            "Employee",
-            self.employee,
-            "current_company",
-            active_company or None,
-            update_modified=False
-        )
