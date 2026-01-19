@@ -1,82 +1,70 @@
 frappe.ui.form.on("Salary Slip", {
-    refresh: function(frm) {
+    refresh(frm) {
         if (!frm.doc.currency) {
             frm.set_value("currency", "INR");
         }
+
         if (frm.doc.employee && frm.doc.start_date) {
             fetch_attendance_summary(frm);
         }
     },
 
-    employee: function(frm) {
+    employee(frm) {
         if (!frm.doc.employee) return;
 
         frm.set_value("currency", "INR");
         frm.set_value("salary_structure", null);
+
         frm.clear_table("earnings");
         frm.clear_table("deductions");
-        frm.refresh_fields(["earnings", "deductions"]);
+
+        frm.set_value("total_earnings", 0);
+        frm.set_value("total_deductions", 0);
+
+        frm.refresh_fields();
 
         fetch_salary_and_attendance(frm);
     },
 
-    currency: function(frm) {
-        ["earnings", "deductions"].forEach(table => {
-            (frm.doc[table] || []).forEach(row => {
-                row.currency = frm.doc.currency;
-            });
-        });
-        frm.refresh_fields(["earnings", "deductions"]);
-    },
+    start_date(frm) {
+        if (!frm.doc.start_date) return;
 
-    start_date: function(frm) {
-        if (frm.doc.start_date) {
-            const date = frappe.datetime.str_to_obj(frm.doc.start_date);
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const last_day = new Date(year, month + 1, 0);
-            const last_day_str = frappe.datetime.obj_to_str(last_day);
-            frm.set_value('end_date', last_day_str);
+        const d = frappe.datetime.str_to_obj(frm.doc.start_date);
+        const last_day = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        frm.set_value("end_date", frappe.datetime.obj_to_str(last_day));
 
-            if (frm.doc.employee) {
-                setTimeout(() => {
-                    fetch_attendance_summary(frm);
-                }, 500);
-            }
+        if (frm.doc.employee) {
+            fetch_attendance_summary(frm);
         }
     }
 });
 
-function fetch_salary_and_attendance(frm) {
-    if (!frm.doc.employee) return;
 
+// ===============================
+// FETCH SALARY STRUCTURE
+// ===============================
+function fetch_salary_and_attendance(frm) {
     frappe.call({
         method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_salary_structure_for_employee",
         args: { employee: frm.doc.employee },
-        callback: function (r) {
+        callback(r) {
             if (!r.message) {
-                frappe.msgprint("No Salary Structure Assignment found for this employee");
+                frappe.msgprint("No Salary Structure Assignment found");
                 return;
             }
 
             const data = r.message;
-            frm.set_query("salary_structure", () => {
-                return { filters: { name: data.salary_structure } };
-            });
+
             frm.set_value("salary_structure", data.salary_structure);
 
             frm.clear_table("earnings");
             frm.clear_table("deductions");
-
-            let total_earnings = 0;
-            let total_deductions = 0;
 
             data.earnings.forEach(row => {
                 let e = frm.add_child("earnings");
                 e.salary_component = row.salary_component;
                 e.amount = row.amount;
                 e.currency = frm.doc.currency;
-                total_earnings += row.amount || 0;
             });
 
             data.deductions.forEach(row => {
@@ -84,23 +72,64 @@ function fetch_salary_and_attendance(frm) {
                 d.salary_component = row.salary_component;
                 d.amount = row.amount;
                 d.currency = frm.doc.currency;
-                total_deductions += row.amount || 0;
             });
 
-            frm.set_value("total_earnings", total_earnings);
-            frm.set_value("total_deductions", total_deductions);
-
-            frm.refresh_fields(["earnings", "deductions", "total_earnings", "total_deductions"]);
+            calculate_totals(frm);
+            frm.refresh_fields();
         }
     });
 
     if (frm.doc.start_date) {
-        setTimeout(() => {
-            fetch_attendance_summary(frm);
-        }, 500);
+        fetch_attendance_summary(frm);
     }
 }
 
+
+// ===============================
+// CALCULATE TOTALS (REUSABLE)
+// ===============================
+function calculate_totals(frm) {
+    let total_earnings = 0;
+    let total_deductions = 0;
+
+    (frm.doc.earnings || []).forEach(row => {
+        total_earnings += row.amount || 0;
+    });
+
+    (frm.doc.deductions || []).forEach(row => {
+        total_deductions += row.amount || 0;
+    });
+
+    frm.set_value("total_earnings", total_earnings);
+    frm.set_value("total_deductions", total_deductions);
+}
+
+
+// ===============================
+// CHILD TABLE EVENTS
+// ===============================
+frappe.ui.form.on("Salary Slip Earnings", {
+    amount(frm) {
+        calculate_totals(frm);
+    },
+    earnings_remove(frm) {
+        calculate_totals(frm);
+    }
+});
+
+frappe.ui.form.on("Salary Slip Deductions", {
+    amount(frm) {
+        calculate_totals(frm);
+    },
+    deductions_remove(frm) {
+        calculate_totals(frm);
+    }
+});
+
+
+// ===============================
+// ATTENDANCE SUMMARY
+// ===============================
 function fetch_attendance_summary(frm) {
     if (!frm.doc.employee || !frm.doc.start_date) return;
 
@@ -110,16 +139,10 @@ function fetch_attendance_summary(frm) {
             employee: frm.doc.employee,
             start_date: frm.doc.start_date
         },
-        callback: function (r) {
+        callback(r) {
             if (r.message) {
-                const data = r.message;
-                frm.set_value("total_working_days", data.present_days || 0);
-                frm.set_value("absent_days", data.absent_days || 0);
-                frappe.show_alert({
-                    message: __('Attendance updated: {0} working days, {1} absent days',
-                        [data.present_days || 0, data.absent_days || 0]),
-                    indicator: 'green'
-                }, 3);
+                frm.set_value("total_working_days", r.message.present_days || 0);
+                frm.set_value("absent_days", r.message.absent_days || 0);
             }
         }
     });

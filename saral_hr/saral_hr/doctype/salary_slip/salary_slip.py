@@ -5,8 +5,8 @@ from frappe.utils import getdate, get_last_day
 class SalarySlip(Document):
     def validate(self):
         if self.start_date:
-            start = getdate(self.start_date)
-            self.end_date = get_last_day(start)
+            self.end_date = get_last_day(getdate(self.start_date))
+
 
 @frappe.whitelist()
 def get_salary_structure_for_employee(employee):
@@ -26,13 +26,17 @@ def get_salary_structure_for_employee(employee):
     earnings = []
     deductions = []
 
-    if ssa_doc.earnings:
-        for row in ssa_doc.earnings:
-            earnings.append({"salary_component": row.salary_component, "amount": row.amount})
+    for row in ssa_doc.earnings or []:
+        earnings.append({
+            "salary_component": row.salary_component,
+            "amount": row.amount
+        })
 
-    if ssa_doc.deductions:
-        for row in ssa_doc.deductions:
-            deductions.append({"salary_component": row.salary_component, "amount": row.amount})
+    for row in ssa_doc.deductions or []:
+        deductions.append({
+            "salary_component": row.salary_component,
+            "amount": row.amount
+        })
 
     if not earnings and not deductions:
         ss_doc = frappe.get_doc("Salary Structure", ssa_doc.salary_structure)
@@ -41,7 +45,13 @@ def get_salary_structure_for_employee(employee):
         for row in ss_doc.deductions:
             deductions.append({"salary_component": row.salary_component, "amount": row.amount})
 
-    return {"salary_structure": ssa_doc.salary_structure, "currency": "INR", "earnings": earnings, "deductions": deductions}
+    return {
+        "salary_structure": ssa_doc.salary_structure,
+        "currency": "INR",
+        "earnings": earnings,
+        "deductions": deductions
+    }
+
 
 @frappe.whitelist()
 def get_attendance_summary(employee, start_date):
@@ -50,7 +60,7 @@ def get_attendance_summary(employee, start_date):
 
     present_days = frappe.db.count(
         "Attendance",
-        filters={
+        {
             "employee": employee,
             "attendance_date": ["between", [start_date, end_date]],
             "status": ["in", ["Present", "Work From Home", "On Leave"]],
@@ -60,7 +70,7 @@ def get_attendance_summary(employee, start_date):
 
     absent_days = frappe.db.count(
         "Attendance",
-        filters={
+        {
             "employee": employee,
             "attendance_date": ["between", [start_date, end_date]],
             "status": "Absent",
@@ -68,4 +78,7 @@ def get_attendance_summary(employee, start_date):
         }
     )
 
-    return {"present_days": present_days, "absent_days": absent_days}
+    return {
+        "present_days": present_days,
+        "absent_days": absent_days
+    }
