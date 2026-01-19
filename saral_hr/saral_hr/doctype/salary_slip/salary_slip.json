@@ -18,8 +18,10 @@
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
+  "total_earnings",
   "column_break_jvyc",
-  "deductions"
+  "deductions",
+  "total_deductions"
  ],
  "fields": [
   {
@@ -104,11 +106,21 @@
    "in_list_view": 1,
    "label": "Start Date",
    "reqd": 1
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Data",
+   "label": "Total Earnings"
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Data",
+   "label": "Total Deductions"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-19 13:29:43.645270",
+ "modified": "2026-01-19 13:37:32.330421",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
