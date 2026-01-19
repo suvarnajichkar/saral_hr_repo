@@ -1,26 +1,25 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate, today, get_first_day, get_last_day
+from frappe.utils import getdate, get_last_day
 
 
 class SalarySlip(Document):
-    pass
+    def validate(self):
+        # Automatically set end_date to last day of start_date's month
+        if self.start_date:
+            start = getdate(self.start_date)
+            self.end_date = get_last_day(start)
 
 
 @frappe.whitelist()
-def get_salary_structure_for_employee(employee, posting_date=None):
-    if not posting_date:
-        posting_date = today()
-
-    posting_date = getdate(posting_date)
-
+def get_salary_structure_for_employee(employee):
+    """
+    Fetch the latest Salary Structure Assignment and return earnings/deductions
+    """
     # Get active Salary Structure Assignment
     ssa = frappe.db.get_all(
         "Salary Structure Assignment",
-        filters={
-            "employee": employee,
-            "from_date": ("<=", posting_date)
-        },
+        filters={"employee": employee},
         fields=["name", "salary_structure"],
         order_by="from_date desc",
         limit=1
@@ -74,28 +73,22 @@ def get_salary_structure_for_employee(employee, posting_date=None):
 
 
 @frappe.whitelist()
-def get_attendance_summary(employee, posting_date=None):
+def get_attendance_summary(employee, start_date):
     """
-    Fetch attendance summary for the employee for the month of posting_date
-    Returns present_days and absent_days counts
+    Fetch attendance summary for the employee between start_date and end_date
+    Returns present_days and absent_days counts only
     """
-    if not posting_date:
-        posting_date = today()
+    start_date = getdate(start_date)
+    end_date = get_last_day(start_date)
 
-    posting_date = getdate(posting_date)
-    
-    # Get first and last day of the month
-    start_date = get_first_day(posting_date)
-    end_date = get_last_day(posting_date)
-
-    # Count Present days
+    # Count Present days (including Work From Home and On Leave as working days)
     present_days = frappe.db.count(
         "Attendance",
         filters={
             "employee": employee,
             "attendance_date": ["between", [start_date, end_date]],
-            "status": "Present",
-            "docstatus": ["!=", 2]  # Exclude cancelled records
+            "status": ["in", ["Present", "Work From Home", "On Leave"]],
+            "docstatus": ["!=", 2]
         }
     )
 
@@ -106,7 +99,7 @@ def get_attendance_summary(employee, posting_date=None):
             "employee": employee,
             "attendance_date": ["between", [start_date, end_date]],
             "status": "Absent",
-            "docstatus": ["!=", 2]  # Exclude cancelled records
+            "docstatus": ["!=", 2]
         }
     )
 

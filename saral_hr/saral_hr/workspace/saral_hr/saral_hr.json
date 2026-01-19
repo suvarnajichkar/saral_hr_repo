@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Saral Hr\",\"col\":4}},{\"id\":\"nFjI5W_knO\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}}]",
+ "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"PPFPGWh4nt\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}},{\"id\":\"u-VN2Ky00U\",\"type\":\"card\",\"data\":{\"card_name\":\"Transaction\",\"col\":4}},{\"id\":\"ue5-2Wg6I7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Report</b></span>\",\"col\":12}}]",
  "creation": "2026-01-09 18:32:47.100898",
  "custom_blocks": [],
  "docstatus": 0,
@@ -16,7 +16,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Saral Hr",
+   "label": "Master",
    "link_count": 8,
    "link_type": "DocType",
    "onboard": 0,
@@ -140,9 +140,28 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transaction",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Slip",
+   "link_count": 0,
+   "link_to": "Salary Slip",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-01-14 14:01:39.583238",
+ "modified": "2026-01-19 12:04:45.212752",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",

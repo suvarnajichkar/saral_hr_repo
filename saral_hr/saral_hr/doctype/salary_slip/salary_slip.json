@@ -7,19 +7,18 @@
  "field_order": [
   "employee",
   "employee_name",
-  "posting_date",
+  "start_date",
+  "end_date",
   "salary_structure",
   "currency",
   "payment_days_tab",
   "total_working_days",
-  "unmarked_days",
-  "leave_without_pay",
   "column_break_puyt",
   "absent_days",
-  "payment_days",
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
+  "column_break_jvyc",
   "deductions"
  ],
  "fields": [
@@ -27,14 +26,13 @@
    "fetch_from": "employee.full_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Employee Name"
   },
   {
-   "fieldname": "posting_date",
+   "fieldname": "end_date",
    "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Posting Date",
-   "reqd": 1
+   "label": "End Date"
   },
   {
    "fieldname": "salary_structure",
@@ -53,16 +51,6 @@
    "label": "Working Days"
   },
   {
-   "fieldname": "unmarked_days",
-   "fieldtype": "Float",
-   "label": "Unmarked Days"
-  },
-  {
-   "fieldname": "leave_without_pay",
-   "fieldtype": "Float",
-   "label": "Leave Without Pay"
-  },
-  {
    "fieldname": "column_break_puyt",
    "fieldtype": "Column Break"
   },
@@ -70,11 +58,6 @@
    "fieldname": "absent_days",
    "fieldtype": "Float",
    "label": "Absent Days"
-  },
-  {
-   "fieldname": "payment_days",
-   "fieldtype": "Float",
-   "label": "Payment Days"
   },
   {
    "fieldname": "earnings_and_deductions_tab",
@@ -110,11 +93,22 @@
    "fieldtype": "Link",
    "label": "Currency",
    "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_jvyc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-17 12:30:25.707151",
+ "modified": "2026-01-19 13:29:43.645270",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
