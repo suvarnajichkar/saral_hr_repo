@@ -20,11 +20,13 @@
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
-  "gross_salary",
-  "total_earnings",
-  "ctc",
   "column_break_zrdn",
   "deductions",
+  "totals_section",
+  "total_earnings",
+  "gross_salary",
+  "ctc",
+  "column_break_orch",
   "total_deductions",
   "total_employer_contribution",
   "net_salary"
@@ -161,11 +163,20 @@
   {
    "fieldname": "column_break_jxct",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "column_break_orch",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-20 15:48:21.923856",
+ "modified": "2026-01-20 17:22:55.499005",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
