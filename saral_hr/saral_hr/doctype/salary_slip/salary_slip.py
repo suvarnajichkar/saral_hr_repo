@@ -2,39 +2,21 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, get_last_day
 
+
 class SalarySlip(Document):
     def validate(self):
-        # Automatically set end_date to last day of start_date's month
         if self.start_date:
             self.end_date = get_last_day(getdate(self.start_date))
 
 
-# ===============================
-# HELPER: GET ABBREVIATION SAFELY
-# ===============================
 def get_salary_component_abbr(salary_component):
-    """Fetch abbreviation from Salary Component, checking multiple possible field names"""
-    if not salary_component:
-        return ""
-    
-    # Try different possible field names for abbreviation
-    possible_fields = ['abbr', 'abbreviation', 'component_abbr', 'short_name', 'salary_component_abbr']
-    
-    for field in possible_fields:
-        try:
-            value = frappe.db.get_value("Salary Component", salary_component, field)
-            if value:
-                return value
-        except:
-            continue
-    
-    # If no abbreviation field found, return empty string
-    return ""
+    return frappe.db.get_value(
+        "Salary Component",
+        salary_component,
+        "salary_component_abbr"
+    ) or ""
 
 
-# ===============================
-# FETCH SALARY STRUCTURE FOR EMPLOYEE
-# ===============================
 @frappe.whitelist()
 def get_salary_structure_for_employee(employee):
     ssa = frappe.db.get_all(
@@ -54,38 +36,25 @@ def get_salary_structure_for_employee(employee):
     deductions = []
 
     for row in ssa_doc.earnings or []:
-        abbr = get_salary_component_abbr(row.salary_component)
         earnings.append({
             "salary_component": row.salary_component,
-            "abbr": abbr,
+            "abbr": get_salary_component_abbr(row.salary_component),
             "amount": row.amount
         })
 
     for row in ssa_doc.deductions or []:
-        abbr = get_salary_component_abbr(row.salary_component)
+        employer_contribution = frappe.db.get_value(
+            "Salary Component",
+            row.salary_component,
+            "employer_contribution"
+        ) or 0
+
         deductions.append({
             "salary_component": row.salary_component,
-            "abbr": abbr,
-            "amount": row.amount
+            "abbr": get_salary_component_abbr(row.salary_component),
+            "amount": row.amount,
+            "employer_contribution": employer_contribution
         })
-
-    # If both earnings and deductions are empty, fetch from Salary Structure
-    if not earnings and not deductions:
-        ss_doc = frappe.get_doc("Salary Structure", ssa_doc.salary_structure)
-        for row in ss_doc.earnings:
-            abbr = get_salary_component_abbr(row.salary_component)
-            earnings.append({
-                "salary_component": row.salary_component,
-                "abbr": abbr,
-                "amount": row.amount
-            })
-        for row in ss_doc.deductions:
-            abbr = get_salary_component_abbr(row.salary_component)
-            deductions.append({
-                "salary_component": row.salary_component,
-                "abbr": abbr,
-                "amount": row.amount
-            })
 
     return {
         "salary_structure": ssa_doc.salary_structure,
@@ -95,9 +64,6 @@ def get_salary_structure_for_employee(employee):
     }
 
 
-# ===============================
-# FETCH ATTENDANCE SUMMARY
-# ===============================
 @frappe.whitelist()
 def get_attendance_summary(employee, start_date):
     start_date = getdate(start_date)
