@@ -3,10 +3,14 @@
 {% block page_content %}
 <div class="container mt-5">
 
-    <div class="sticky-top bg-white py-3 shadow-sm" style="z-index: 1000;">
-        <h3>Attendance Marking</h3>
-
-        <!-- Employee, Company, Weekly Off -->
+    <div class="sticky-top bg-white py-3 " style="z-index: 1000;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="mb-0">Mark Attendance</h3>
+            <button id="goto_attendance" class="btn btn-outline-primary">
+                <i class="fa fa-calendar-check"></i> Go to Attendance
+            </button>
+        </div>
+        
         <div class="row mt-3 g-3">
             <div class="col-md-4">
                 <label class="form-label">Employee</label>
@@ -24,7 +28,6 @@
             </div>
         </div>
 
-        <!-- Date Range -->
         <div class="row mt-3 g-3">
             <div class="col-md-3">
                 <label class="form-label">Start Date</label>
@@ -36,7 +39,6 @@
             </div>
         </div>
 
-        <!-- Bulk Buttons -->
         <div class="d-flex align-items-center mt-4 attendance-buttons">
             <span class="me-3">Mark remaining days as:</span>
 
@@ -45,25 +47,32 @@
             <button id="mark_halfday" class="btn btn-outline-warning btn-sm">Half Day</button>
 
             <div class="ms-auto">
-                <button id="save_attendance" class="btn btn-primary btn-sm">Save</button>
+                <button id="save_attendance" class="btn btn-outline-primary btn-sm">Save</button>
             </div>
         </div>
     </div>
 
-    <!-- Attendance Table -->
     <div class="mt-3 table-responsive" style="max-height: 500px; overflow-y: auto;">
         <table class="table table-bordered table-striped table-hover" id="attendance_table" style="display:none;">
             <thead class="table-light sticky-header">
                 <tr>
                     <th>Day</th>
                     <th>Date</th>
-                    <th class="text-center">Present</th>
-                    <th class="text-center">Absent</th>
-                    <th class="text-center">Half Day</th>
+                    <th class="text-center">
+                        Present
+                        <div class="count-badge" id="present_count">0</div>
+                    </th>
+                    <th class="text-center">
+                        Absent
+                        <div class="count-badge" id="absent_count">0</div>
+                    </th>
+                    <th class="text-center">
+                        Half Day
+                        <div class="count-badge" id="halfday_count">0</div>
+                    </th>
                 </tr>
             </thead>
             <tbody id="attendance_table_body">
-                <!-- Rows will be dynamically generated -->
             </tbody>
         </table>
     </div>
@@ -73,11 +82,58 @@
 <style>
     .attendance-buttons button {
         margin-right: 10px;
+        border: 1px solid;
     }
     .attendance-buttons button:hover {
         transform: scale(1.05);
         transition: transform 0.2s;
     }
+    
+    /* Lighter shade colors for buttons */
+    .btn-outline-success {
+        color: #4caf50;
+        border-color: #4caf50;
+        background-color: #e8f5e9;
+    }
+    .btn-outline-success:hover {
+        background-color: #c8e6c9;
+        border-color: #4caf50;
+    }
+    
+    .btn-outline-danger {
+        color: #f44336;
+        border-color: #f44336;
+        background-color: #ffebee;
+    }
+    .btn-outline-danger:hover {
+        background-color: #ffcdd2;
+        border-color: #f44336;
+    }
+    
+    .btn-outline-warning {
+        color: #ff9800;
+        border-color: #ff9800;
+        background-color: #fff3e0;
+    }
+    .btn-outline-warning:hover {
+        background-color: #ffe0b2;
+        border-color: #ff9800;
+    }
+    
+    .btn-outline-primary {
+        color: #fafafa;
+        border-color: #2196f3;
+        background-color: #1b1a1a;
+    }
+    .btn-outline-primary:hover {
+        background-color: #242323;
+        border-color: #030303;
+    }
+    
+    #goto_attendance {
+        border: 1px solid #000000;
+    }
+    
     .sticky-header th {
         position: sticky;
         top: 0;
@@ -87,10 +143,41 @@
     .table-warning {
         background-color: #fff3cd !important;
     }
+    .count-badge {
+        display: inline-block;
+        background-color: #007bff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+    #present_count {
+        background-color: #4caf50;
+    }
+    #absent_count {
+        background-color: #f44336;
+    }
+    #halfday_count {
+        background-color: #ff9800;
+    }
     @media (min-width: 576px) {
         h3 {
             margin-top: -1.5rem;
         }
     }
+    .web-footer {
+    display: none !important;
+}
+
 </style>
+
+<script>
+    // Add click handler for the Go to Attendance button
+    document.getElementById('goto_attendance').addEventListener('click', function() {
+        // Navigate to Attendance DocType list
+        window.location.href = '/app/attendance';
+    });
+</script>
 {% endblock %}

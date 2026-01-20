@@ -116,25 +116,29 @@
    "fieldname": "total_earnings",
    "fieldtype": "Float",
    "label": "Total Earnings",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "total_deductions",
    "fieldtype": "Float",
    "label": "Total Deductions",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "gross_salary",
    "fieldtype": "Float",
    "label": "Gross Salary",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "ctc",
    "fieldtype": "Float",
    "label": "CTC",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_zrdn",
@@ -144,13 +148,15 @@
    "fieldname": "total_employer_contribution",
    "fieldtype": "Float",
    "label": "Total Employer Contribution",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "net_salary",
    "fieldtype": "Float",
    "label": "Net Salary",
-   "precision": "2"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_jxct",
@@ -159,7 +165,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-20 15:19:50.144263",
+ "modified": "2026-01-20 15:48:21.923856",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

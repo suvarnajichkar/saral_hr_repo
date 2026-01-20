@@ -1,6 +1,5 @@
 frappe.ready(function () {
 
-    // --------- EMPLOYEE + COMPANY + WEEKLY OFF ---------
     frappe.call({
         method: "saral_hr.www.mark_attendance.index.get_active_employees",
         callback: function (r) {
@@ -10,7 +9,7 @@ frappe.ready(function () {
 
                 window.employeeCompanyMap = {};
                 window.employeeCLMap = {};
-                window.employeeWeeklyOffMap = {}; // weekly offs
+                window.employeeWeeklyOffMap = {};
 
                 r.message.forEach(row => {
                     let opt = document.createElement("option");
@@ -21,24 +20,18 @@ frappe.ready(function () {
                     window.employeeCompanyMap[row.employee] = row.company;
                     window.employeeCLMap[row.employee] = row.name;
 
-                    // Normalize weekly offs to lowercase array
                     window.employeeWeeklyOffMap[row.employee] = row.weekly_off
                         ? row.weekly_off.split(",").map(d => d.trim().toLowerCase())
                         : [];
-
-                    // Debug
-                    console.log("Weekly Off for", row.full_name, window.employeeWeeklyOffMap[row.employee]);
                 });
             }
         }
     });
 
-    // --------- Employee Change Event ---------
     document.getElementById("employee").addEventListener("change", function () {
         let emp = this.value;
         document.getElementById("company").value = window.employeeCompanyMap[emp] || "";
 
-        // Populate weekly off field
         document.getElementById("weekly_off").value = window.employeeWeeklyOffMap[emp]
             ? window.employeeWeeklyOffMap[emp].map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")
             : "";
@@ -46,17 +39,44 @@ frappe.ready(function () {
         generateTable();
     });
 
-    document.getElementById("start_date").addEventListener("change", generateTable);
+    document.getElementById("start_date").addEventListener("change", function() {
+        let startDate = this.value;
+        if (startDate) {
+            let date = new Date(startDate);
+            let lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            let year = lastDay.getFullYear();
+            let month = String(lastDay.getMonth() + 1).padStart(2, '0');
+            let day = String(lastDay.getDate()).padStart(2, '0');
+            document.getElementById("end_date").value = `${year}-${month}-${day}`;
+        }
+        generateTable();
+    });
+
     document.getElementById("end_date").addEventListener("change", generateTable);
 
-    // --------- GLOBAL ATTENDANCE MAP ---------
     window.attendanceTableData = {};
+
+    function updateCounts() {
+        let presentCount = 0;
+        let absentCount = 0;
+        let halfdayCount = 0;
+
+        Object.values(window.attendanceTableData).forEach(status => {
+            if (status === "Present") presentCount++;
+            else if (status === "Absent") absentCount++;
+            else if (status === "Half Day") halfdayCount++;
+        });
+
+        document.getElementById("present_count").textContent = presentCount;
+        document.getElementById("absent_count").textContent = absentCount;
+        document.getElementById("halfday_count").textContent = halfdayCount;
+    }
 
     function generateTable() {
         let employee = document.getElementById("employee").value;
         if (!employee) return;
 
-        let weeklyOffDays = window.employeeWeeklyOffMap[employee]; // array of weekly offs
+        let weeklyOffDays = window.employeeWeeklyOffMap[employee];
         let clId = window.employeeCLMap[employee];
         let startDate = document.getElementById("start_date").value;
         let endDate = document.getElementById("end_date").value;
@@ -80,43 +100,39 @@ frappe.ready(function () {
                 let current = new Date(start);
                 while (current <= end) {
                     let dayName = current.toLocaleDateString("en-US", { weekday: "long" });
-                    // Format date as "01 November 2025" with zero-padded day
                     let day = String(current.getDate()).padStart(2, '0');
                     let month = current.toLocaleDateString("en-US", { month: "long" });
                     let year = current.getFullYear();
                     let formattedDate = `${day} ${month} ${year}`;
                     let dateKey = current.toISOString().split("T")[0];
 
-                    // Check if this day is a weekly off (normalize to lowercase)
                     let isWeeklyOff = weeklyOffDays.includes(dayName.toLowerCase());
 
-                    // Save attendance
                     let savedStatus = attendanceMap[dateKey] || "";
                     window.attendanceTableData[dateKey] = savedStatus;
 
-                    // Create row
                     let row = document.createElement("tr");
                     if (isWeeklyOff) row.classList.add("table-warning");
 
                     row.innerHTML = `
-    <td>${dayName}</td>
-    <td>${formattedDate}</td>
-    <td class="text-center">
-        <input type="radio" name="status_${dateKey}" value="Present" ${savedStatus === "Present" ? "checked" : ""} ${isWeeklyOff ? "disabled" : ""}>
-    </td>
-    <td class="text-center">
-        <input type="radio" name="status_${dateKey}" value="Absent" ${savedStatus === "Absent" ? "checked" : ""} ${isWeeklyOff ? "disabled" : ""}>
-    </td>
-    <td class="text-center">
-        <input type="radio" name="status_${dateKey}" value="Half Day" ${savedStatus === "Half Day" ? "checked" : ""} ${isWeeklyOff ? "disabled" : ""}>
-    </td>
-`;
+                        <td>${dayName}</td>
+                        <td>${formattedDate}</td>
+                        <td class="text-center">
+                            <input type="radio" name="status_${dateKey}" value="Present" ${savedStatus === "Present" ? "checked" : ""} ${isWeeklyOff ? "disabled" : ""}>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" name="status_${dateKey}" value="Absent" ${savedStatus === "Absent" ? "checked" : ""} ${isWeeklyOff ? "disabled" : ""}>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" name="status_${dateKey}" value="Half Day" ${savedStatus === "Half Day" ? "checked" : ""} ${isWeeklyOff ? "disabled" : ""}>
+                        </td>
+                    `;
 
-                    // Only attach change listener if not weekly off
                     if (!isWeeklyOff) {
                         row.querySelectorAll("input[type=radio]").forEach(input => {
                             input.addEventListener("change", function () {
                                 window.attendanceTableData[dateKey] = this.value;
+                                updateCounts();
                             });
                         });
                     }
@@ -124,11 +140,12 @@ frappe.ready(function () {
                     tbody.appendChild(row);
                     current.setDate(current.getDate() + 1);
                 }
+                
+                updateCounts();
             }
         });
     }
 
-    // --------- BULK BUTTONS ---------
     document.getElementById("mark_present").addEventListener("click", () => bulkMark("Present"));
     document.getElementById("mark_absent").addEventListener("click", () => bulkMark("Absent"));
     document.getElementById("mark_halfday").addEventListener("click", () => bulkMark("Half Day"));
@@ -141,9 +158,9 @@ frappe.ready(function () {
                 window.attendanceTableData[date] = status;
             }
         });
+        updateCounts();
     }
 
-    // --------- SAVE BUTTON ---------
     document.getElementById("save_attendance").addEventListener("click", function () {
         let employee = document.getElementById("employee").value;
         if (!employee) return;
