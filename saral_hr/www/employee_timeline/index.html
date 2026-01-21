@@ -1,0 +1,282 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Employee Timeline") }}{% endblock %}
+
+{% block page_content %}
+<div class="employee-timeline-wrapper">
+
+    <h1 class="page-title">Employee Timeline</h1>
+
+    <div class="search-wrapper">
+        <label for="employee-select" class="control-label">
+            {{ _("Select Employee") }}
+        </label>
+        <select class="form-control employee-select" id="employee-select">
+            <option value="">{{ _("-- Select Employee --") }}</option>
+            {% for emp in employees %}
+                <option value="{{ emp.name }}">{{ emp.employee }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="timeline-section" class="timeline-section">
+        <h3 class="section-title">Employment History</h3>
+        <div id="timeline-content" class="timeline-wrapper"></div>
+    </div>
+
+    <div id="no-data" class="no-data-message">
+        <p>{{ _("No employment records found for this employee.") }}</p>
+    </div>
+
+</div>
+
+<style>
+.web-footer {
+    display: none !important;
+}
+
+.page-content {
+    padding: 0 !important;
+}
+
+.employee-timeline-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 20px 0;
+    color: var(--text-color, #2b2b2b);
+}
+
+.search-wrapper {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #d1d8dd);
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 30px;
+}
+
+.timeline-section {
+    display: none;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--heading-color, #1f272e);
+}
+
+.timeline-wrapper {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 25px;
+    padding-bottom: 15px;
+    border-left: 2px solid #e5e7eb;
+}
+
+.timeline-item:last-child {
+    border-left: none;
+    padding-bottom: 0;
+}
+
+.timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -7px;
+    top: 22px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #adb5bd;
+}
+
+.timeline-item.active::before {
+    background: #21ba45;
+}
+
+.timeline-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #d1d8dd);
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.company-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.date-info {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.status-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #d3f9d8;
+    color: #1b5e20;
+}
+
+.status-inactive {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.no-data-message {
+    display: none;
+    background: #f8f9fa;
+    border: 1px dashed #ced4da;
+    padding: 30px;
+    text-align: center;
+    border-radius: 6px;
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    .employee-timeline-wrapper {
+        padding: 0 10px;
+    }
+}
+</style>
+
+<script>
+frappe.ready(function () {
+
+    const employeeSelect = document.getElementById('employee-select');
+    const timelineSection = document.getElementById('timeline-section');
+    const timelineContent = document.getElementById('timeline-content');
+    const noData = document.getElementById('no-data');
+
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('#employee-select').select2({
+            placeholder: "-- Select Employee --",
+            allowClear: true,
+            width: '100%',
+            theme: 'default'
+        });
+
+        $('#employee-select').on('select2:select', function (e) {
+            const employee = e.params.data.id;
+            loadEmployeeTimeline(employee);
+        });
+
+        $('#employee-select').on('select2:clear', function () {
+            timelineSection.style.display = 'none';
+            noData.style.display = 'none';
+            timelineContent.innerHTML = '';
+        });
+
+    } else {
+        employeeSelect.addEventListener('change', function () {
+            const employee = this.value;
+            loadEmployeeTimeline(employee);
+        });
+    }
+
+    function loadEmployeeTimeline(employee) {
+
+        if (!employee) {
+            timelineSection.style.display = 'none';
+            noData.style.display = 'none';
+            timelineContent.innerHTML = '';
+            return;
+        }
+
+        timelineContent.innerHTML = '';
+        timelineSection.style.display = 'none';
+        noData.style.display = 'none';
+
+        frappe.call({
+            method: 'saral_hr.www.employee_timeline.index.get_employee_timeline',
+            args: { employee },
+            freeze: false,
+            callback: function (r) {
+
+                const data = r.message || [];
+
+                if (!data.length) {
+                    timelineSection.style.display = 'none';
+                    noData.style.display = 'block';
+                    return;
+                }
+
+                renderTimeline(data);
+                timelineSection.style.display = 'block';
+                noData.style.display = 'none';
+            },
+            error: function (err) {
+                console.error('Timeline error:', err);
+                timelineSection.style.display = 'none';
+                noData.style.display = 'block';
+            }
+        });
+    }
+
+    function renderTimeline(data) {
+        let html = '';
+
+        data.forEach(function (record) {
+
+            const isActive = !record.end_date;
+            const statusText = isActive ? 'Active' : 'Inactive';
+
+            html += `
+                <div class="timeline-item ${isActive ? 'active' : ''}">
+                    <div class="timeline-card">
+                        <div class="company-name">${escapeHtml(record.company)}</div>
+                        <div class="date-info">
+                            <strong>Start:</strong> ${record.start_date || '-'}
+                        </div>
+                        ${record.end_date ? `
+                            <div class="date-info">
+                                <strong>End:</strong> ${record.end_date}
+                            </div>
+                        ` : ''}
+                        <div class="status-wrapper">
+                            <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        timelineContent.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/[&<>"']/g, function (m) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[m];
+        });
+    }
+
+});
+</script>
+{% endblock %}
