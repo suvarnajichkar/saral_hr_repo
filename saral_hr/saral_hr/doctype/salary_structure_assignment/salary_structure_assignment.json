@@ -27,10 +27,13 @@
   "calculations_section",
   "column_break_wwjg",
   "total_earnings",
-  "gross_pay",
+  "gross_salary",
   "net_in_hand",
+  "net_salary",
   "column_break_lrth",
-  "total_deductions"
+  "total_deductions",
+  "total_employer_contribution",
+  "ctc"
  ],
  "fields": [
   {
@@ -156,12 +159,6 @@
    "options": "Currency"
   },
   {
-   "fieldname": "gross_pay",
-   "fieldtype": "Currency",
-   "label": "Gross Pay",
-   "options": "Currency"
-  },
-  {
    "fieldname": "net_in_hand",
    "fieldtype": "Currency",
    "label": "Net In Hand",
@@ -175,11 +172,31 @@
    "fieldname": "column_break_wwjg",
    "fieldtype": "Column Break",
    "options": "Currency"
+  },
+  {
+   "fieldname": "net_salary",
+   "fieldtype": "Currency",
+   "label": "Net Salary"
+  },
+  {
+   "fieldname": "gross_salary",
+   "fieldtype": "Currency",
+   "label": "Gross Salary"
+  },
+  {
+   "fieldname": "total_employer_contribution",
+   "fieldtype": "Currency",
+   "label": "Total Employer Contribution"
+  },
+  {
+   "fieldname": "ctc",
+   "fieldtype": "Currency",
+   "label": "CTC"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 16:58:06.797115",
+ "modified": "2026-01-21 17:47:03.477688",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
@@ -201,5 +218,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "employee_name"
 }

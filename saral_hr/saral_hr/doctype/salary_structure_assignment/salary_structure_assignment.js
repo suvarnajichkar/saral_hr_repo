@@ -1,31 +1,14 @@
-// Copyright (c) 2026, sj and contributors
-// For license information, please see license.txt
-
 frappe.ui.form.on("Salary Structure Assignment", {
 
     setup(frm) {
-        // 🔒 Show ONLY active employees (Company Link)
-        frm.set_query("employee", function () {
-            return {
-                filters: {
-                    is_active: 1
-                }
-            };
-        });
+        frm.set_query("employee", () => ({
+            filters: { is_active: 1 }
+        }));
     },
 
     salary_structure(frm) {
         if (!frm.doc.salary_structure) {
-            frm.clear_table("earnings");
-            frm.clear_table("deductions");
-            frm.refresh_fields(["earnings", "deductions"]);
-
-            frm.set_value({
-                total_earnings: 0,
-                total_deductions: 0,
-                gross_pay: 0,
-                net_in_hand: 0
-            });
+            clear_salary_tables(frm);
             return;
         }
 
@@ -35,83 +18,123 @@ frappe.ui.form.on("Salary Structure Assignment", {
                 doctype: "Salary Structure",
                 name: frm.doc.salary_structure
             },
-            callback: function (r) {
+            callback(r) {
                 if (!r.message) return;
 
-                // Currency
-                if (r.message.currency) {
-                    frm.set_value("currency", r.message.currency);
-                }
+                clear_salary_tables(frm);
 
-                frm.clear_table("earnings");
-                frm.clear_table("deductions");
-
-                // Earnings
                 (r.message.earnings || []).forEach(row => {
-                    let child = frm.add_child("earnings");
-                    copy_row(child, row);
+                    let e = frm.add_child("earnings");
+                    copy_row(e, row);
                 });
 
-                // Deductions
                 (r.message.deductions || []).forEach(row => {
-                    let child = frm.add_child("deductions");
-                    copy_row(child, row);
+                    let d = frm.add_child("deductions");
+                    copy_row(d, row);
                 });
 
+                frm.set_value("currency", r.message.currency || "INR");
                 frm.refresh_fields(["earnings", "deductions"]);
                 calculate_totals(frm);
-
-                frappe.show_alert({
-                    message: __("Earnings and Deductions populated from Salary Structure"),
-                    indicator: "green"
-                }, 5);
             }
         });
     }
 });
 
-// 🔁 Child table recalculation
+
 frappe.ui.form.on("Salary Details", {
     amount(frm) {
         calculate_totals(frm);
     },
-    earnings_add(frm) {
-        calculate_totals(frm);
-    },
-    earnings_remove(frm) {
-        calculate_totals(frm);
-    },
-    deductions_add(frm) {
-        calculate_totals(frm);
-    },
-    deductions_remove(frm) {
+    salary_details_remove(frm) {
         calculate_totals(frm);
     }
 });
 
-// ---------------- HELPERS ----------------
 
 function calculate_totals(frm) {
+
     let total_earnings = 0;
     let total_deductions = 0;
+    let employer_contribution = 0;
 
     (frm.doc.earnings || []).forEach(r => {
         total_earnings += flt(r.amount);
     });
 
-    (frm.doc.deductions || []).forEach(r => {
-        total_deductions += flt(r.amount);
-    });
+    let deduction_rows = frm.doc.deductions || [];
+    let components = deduction_rows.map(r => r.salary_component);
 
-    let gross_pay = total_earnings - total_deductions;
+    if (!components.length) {
+        set_totals(frm, total_earnings, 0, 0);
+        return;
+    }
 
-    frm.set_value({
-        total_earnings,
-        total_deductions,
-        gross_pay,
-        net_in_hand: gross_pay
+    frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Salary Component",
+            fields: ["name", "employer_contribution"],
+            filters: { name: ["in", components] },
+            limit_page_length: 100
+        },
+        callback(res) {
+
+            let map = {};
+            (res.message || []).forEach(r => {
+                map[r.name] = r.employer_contribution;
+            });
+
+            deduction_rows.forEach(r => {
+                if (map[r.salary_component]) {
+                    employer_contribution += flt(r.amount);
+                } else {
+                    total_deductions += flt(r.amount);
+                }
+            });
+
+            set_totals(frm, total_earnings, total_deductions, employer_contribution);
+        }
     });
 }
+
+
+function set_totals(frm, earnings, deductions, employer) {
+
+    let gross_salary = earnings;
+    let net_salary = earnings - deductions;
+    let ctc = gross_salary + employer;
+
+    frm.set_value({
+        total_earnings: earnings,
+        gross_salary: gross_salary,
+        total_deductions: deductions,
+        total_employer_contribution: employer,
+        net_salary: net_salary,
+        net_in_hand: net_salary,
+        ctc: ctc
+    });
+}
+
+
+function clear_salary_tables(frm) {
+
+    frm.clear_table("earnings");
+    frm.clear_table("deductions");
+
+    frm.set_value({
+        total_earnings: 0,
+        total_deductions: 0,
+        gross_salary: 0,
+        total_employer_contribution: 0,
+        net_salary: 0,
+        net_in_hand: 0,
+        ctc: 0
+    });
+
+    frm.refresh_fields();
+}
+
 
 function copy_row(target, source) {
     Object.keys(source).forEach(key => {
