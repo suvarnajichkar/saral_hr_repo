@@ -32,13 +32,14 @@ def get_attendance_between_dates(employee, start_date, end_date):
 def save_attendance(employee, attendance_date, status):
     attendance_date = getdate(attendance_date)
 
+    # Check if it's a weekly off - if yes, skip saving (don't throw error)
     weekly_off = frappe.db.get_value("Company Link", employee, "weekly_off")
-
     if weekly_off:
         weekly_off_days = [d.strip().lower() for d in weekly_off.split(",")]
         day_name = attendance_date.strftime("%A").lower()
         if day_name in weekly_off_days:
-            frappe.throw(f"Cannot mark attendance on Weekly Off ({day_name.capitalize()}).")
+            # Skip saving for weekly off, but don't throw error
+            return "skipped_weekly_off"
 
     existing_attendance = frappe.db.get_value(
         "Attendance",

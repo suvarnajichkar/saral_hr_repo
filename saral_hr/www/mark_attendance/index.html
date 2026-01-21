@@ -1,17 +1,17 @@
 {% extends "templates/web.html" %}
 
 {% block page_content %}
-<div class="container mt-5">
+<div class="container">
 
-    <div class="sticky-top bg-white py-3 " style="z-index: 1000;">
+    <div class="sticky-top bg-white py-3" style="z-index: 1000;">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3 class="mb-0">Mark Attendance</h3>
-            <button id="goto_attendance" class="btn btn-outline-primary">
-                <i class="fa fa-calendar-check"></i> Go to Attendance
+            <button id="goto_attendance" class="btn btn-frappe btn-frappe-primary">
+                Go to Attendance
             </button>
         </div>
-        
-        <div class="row mt-3 g-3">
+
+        <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">Employee</label>
                 <select id="employee" class="form-control">
@@ -24,7 +24,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Weekly Off</label>
-                <input type="text" id="weekly_off" class="form-control" readonly>
+                <input type="text" id="weekly_off" class="form-control weekly-off-input" readonly>
             </div>
         </div>
 
@@ -41,143 +41,153 @@
 
         <div class="d-flex align-items-center mt-4 attendance-buttons">
             <span class="me-3">Mark remaining days as:</span>
-
-            <button id="mark_present" class="btn btn-outline-success btn-sm">Present</button>
-            <button id="mark_absent" class="btn btn-outline-danger btn-sm">Absent</button>
-            <button id="mark_halfday" class="btn btn-outline-warning btn-sm">Half Day</button>
-
+            <button id="mark_present" class="btn btn-frappe btn-sm">Present</button>
+            <button id="mark_absent" class="btn btn-frappe btn-sm">Absent</button>
+            <button id="mark_halfday" class="btn btn-frappe btn-sm">Half Day</button>
             <div class="ms-auto">
-                <button id="save_attendance" class="btn btn-outline-primary btn-sm">Save</button>
+                <button id="save_attendance" class="btn btn-frappe btn-frappe-primary btn-sm">
+                    Save
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="mt-3 table-responsive" style="max-height: 500px; overflow-y: auto;">
-        <table class="table table-bordered table-striped table-hover" id="attendance_table" style="display:none;">
-            <thead class="table-light sticky-header">
+    <div class="mt-3 table-scroll">
+        <table class="table table-bordered" id="attendance_table" style="display:none;">
+            <thead>
                 <tr>
                     <th>Day</th>
                     <th>Date</th>
                     <th class="text-center">
-                        Present
-                        <div class="count-badge" id="present_count">0</div>
+                        Present <span class="count-badge" id="present_count">0</span>
                     </th>
                     <th class="text-center">
-                        Absent
-                        <div class="count-badge" id="absent_count">0</div>
+                        Absent <span class="count-badge" id="absent_count">0</span>
                     </th>
                     <th class="text-center">
-                        Half Day
-                        <div class="count-badge" id="halfday_count">0</div>
+                        Half Day <span class="count-badge" id="halfday_count">0</span>
                     </th>
                 </tr>
             </thead>
-            <tbody id="attendance_table_body">
-            </tbody>
+            <tbody id="attendance_table_body"></tbody>
         </table>
     </div>
 
 </div>
 
 <style>
+    html, body {
+        overflow: hidden;
+    }
+
+    h3 {
+        margin-top: 0;
+    }
+
+    .btn-frappe {
+        background-color: #e6e6e6;
+        color: #222;
+        border: none;
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-weight: 500;
+    }
+
+    .btn-frappe-primary {
+        background-color: #2d2d2d;
+        color: #ffffff;
+    }
+
+    .btn-frappe-primary:hover {
+        background-color: #1a1a1a;
+    }
+
+    .btn-frappe:focus,
+    .btn-frappe:active {
+        box-shadow: none;
+        outline: none;
+    }
+
     .attendance-buttons button {
-        margin-right: 10px;
-        border: 1px solid;
+        margin-right: 8px;
     }
-    .attendance-buttons button:hover {
-        transform: scale(1.05);
-        transition: transform 0.2s;
+
+    .weekly-off-input {
+        background-color: #ededed;
+        color: #555;
+        font-weight: 500;
     }
-    
-    /* Lighter shade colors for buttons */
-    .btn-outline-success {
-        color: #4caf50;
-        border-color: #4caf50;
-        background-color: #e8f5e9;
+
+    .table-scroll {
+        max-height: 520px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        position: relative;
     }
-    .btn-outline-success:hover {
-        background-color: #c8e6c9;
-        border-color: #4caf50;
+
+    #attendance_table {
+        position: relative;
     }
-    
-    .btn-outline-danger {
-        color: #f44336;
-        border-color: #f44336;
-        background-color: #ffebee;
-    }
-    .btn-outline-danger:hover {
-        background-color: #ffcdd2;
-        border-color: #f44336;
-    }
-    
-    .btn-outline-warning {
-        color: #ff9800;
-        border-color: #ff9800;
-        background-color: #fff3e0;
-    }
-    .btn-outline-warning:hover {
-        background-color: #ffe0b2;
-        border-color: #ff9800;
-    }
-    
-    .btn-outline-primary {
-        color: #fafafa;
-        border-color: #2196f3;
-        background-color: #1b1a1a;
-    }
-    .btn-outline-primary:hover {
-        background-color: #242323;
-        border-color: #030303;
-    }
-    
-    #goto_attendance {
-        border: 1px solid #000000;
-    }
-    
-    .sticky-header th {
+
+    thead th {
         position: sticky;
         top: 0;
-        background-color: #f8f9fa;
+        background-color: #f7f7f7;
         z-index: 500;
+        border-bottom: 1px solid #d1d8dd;
     }
-    .table-warning {
-        background-color: #fff3cd !important;
-    }
-    .count-badge {
-        display: inline-block;
-        background-color: #007bff;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: bold;
-        margin-top: 5px;
-    }
-    #present_count {
-        background-color: #4caf50;
-    }
-    #absent_count {
-        background-color: #f44336;
-    }
-    #halfday_count {
-        background-color: #ff9800;
-    }
-    @media (min-width: 576px) {
-        h3 {
-            margin-top: -1.5rem;
-        }
-    }
-    .web-footer {
-    display: none !important;
-}
 
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #d1d8dd;
+        background-color: #fff;
+    }
+
+    tbody {
+        position: relative;
+        z-index: 1;
+    }
+
+    .weekly-off-row {
+        background-color: #e8e8e8 !important;
+    }
+
+    .weekly-off-row td {
+        background-color: #e8e8e8 !important;
+        color: #666;
+    }
+
+    .future-date-row {
+        opacity: 0.5;
+    }
+
+    .future-date-row td {
+        background-color: #f9f9f9 !important;
+        color: #999;
+    }
+
+    .count-badge {
+        background-color: #111;
+        color: #fff;
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-size: 11px;
+        margin-left: 6px;
+    }
+
+    .form-control:focus {
+        box-shadow: none;
+        border-color: #999;
+    }
+
+    .web-footer {
+        display: none !important;
+    }
 </style>
 
 <script>
-    // Add click handler for the Go to Attendance button
-    document.getElementById('goto_attendance').addEventListener('click', function() {
-        // Navigate to Attendance DocType list
+    document.getElementById('goto_attendance').onclick = function () {
         window.location.href = '/app/attendance';
-    });
+    };
 </script>
 {% endblock %}
