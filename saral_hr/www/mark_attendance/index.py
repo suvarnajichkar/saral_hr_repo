@@ -20,6 +20,7 @@ def get_active_employees():
 
 # ------------------------------------------------
 # 2️⃣ Get attendance between start & end dates
+
 # ------------------------------------------------
 @frappe.whitelist()
 def get_attendance_between_dates(employee, start_date, end_date):
