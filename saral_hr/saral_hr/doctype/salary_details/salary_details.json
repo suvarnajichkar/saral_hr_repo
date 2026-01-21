@@ -10,7 +10,8 @@
   "abbr",
   "column_break_snib",
   "amount",
-  "depends_on_payment_days"
+  "depends_on_payment_days",
+  "employer_contribution"
  ],
  "fields": [
   {
@@ -48,12 +49,19 @@
    "fieldname": "depends_on_payment_days",
    "fieldtype": "Check",
    "label": "Depends on Payment Days"
+  },
+  {
+   "default": "0",
+   "fieldname": "employer_contribution",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Employer Contribution"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-10 16:10:30.393904",
+ "modified": "2026-01-20 15:12:45.383557",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Details",

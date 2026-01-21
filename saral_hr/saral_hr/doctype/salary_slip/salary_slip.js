@@ -20,9 +20,12 @@ frappe.ui.form.on("Salary Slip", {
 
         frm.set_value("total_earnings", 0);
         frm.set_value("total_deductions", 0);
+        frm.set_value("gross_salary", 0);
+        frm.set_value("total_employer_contribution", 0);
+        frm.set_value("ctc", 0);
+        frm.set_value("net_salary", 0);
 
         frm.refresh_fields();
-
         fetch_salary_and_attendance(frm);
     },
 
@@ -39,9 +42,6 @@ frappe.ui.form.on("Salary Slip", {
     }
 });
 
-// ===============================
-// FETCH SALARY STRUCTURE
-// ===============================
 function fetch_salary_and_attendance(frm) {
     frappe.call({
         method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_salary_structure_for_employee",
@@ -55,14 +55,13 @@ function fetch_salary_and_attendance(frm) {
             const data = r.message;
 
             frm.set_value("salary_structure", data.salary_structure);
-
             frm.clear_table("earnings");
             frm.clear_table("deductions");
 
             data.earnings.forEach(row => {
                 let e = frm.add_child("earnings");
                 e.salary_component = row.salary_component;
-                e.abbr = row.abbr;  // ✅ YE LINE ADD KARO
+                e.abbr = row.abbr;
                 e.amount = row.amount;
                 e.currency = frm.doc.currency;
             });
@@ -70,8 +69,9 @@ function fetch_salary_and_attendance(frm) {
             data.deductions.forEach(row => {
                 let d = frm.add_child("deductions");
                 d.salary_component = row.salary_component;
-                d.abbr = row.abbr;  // ✅ YE LINE ADD KARO
+                d.abbr = row.abbr;
                 d.amount = row.amount;
+                d.employer_contribution = row.employer_contribution || 0;
                 d.currency = frm.doc.currency;
             });
 
@@ -85,35 +85,40 @@ function fetch_salary_and_attendance(frm) {
     }
 }
 
-// ===============================
-// CALCULATE TOTALS (REUSABLE)
-// ===============================
 function calculate_totals(frm) {
-    let total_earnings = 0;
-    let total_deductions = 0;
+    let gross_salary = 0;
+    let employee_deductions = 0;
+    let employer_contribution = 0;
 
-    (frm.doc.earnings || []).forEach(row => total_earnings += row.amount || 0);
-    (frm.doc.deductions || []).forEach(row => total_deductions += row.amount || 0);
+    (frm.doc.earnings || []).forEach(row => {
+        gross_salary += row.amount || 0;
+    });
 
-    frm.set_value("total_earnings", total_earnings);
-    frm.set_value("total_deductions", total_deductions);
+    (frm.doc.deductions || []).forEach(row => {
+        if (row.employer_contribution) {
+            employer_contribution += row.amount || 0;
+        } else {
+            employee_deductions += row.amount || 0;
+        }
+    });
+
+    frm.set_value("gross_salary", gross_salary);
+    frm.set_value("total_earnings", gross_salary);
+    frm.set_value("total_deductions", employee_deductions);
+    frm.set_value("total_employer_contribution", employer_contribution);
+    frm.set_value("ctc", gross_salary + employer_contribution);
+    frm.set_value("net_salary", gross_salary - employee_deductions);
 }
 
-// ===============================
-// CHILD TABLE EVENTS
-// ===============================
 frappe.ui.form.on("Salary Details", {
-    amount(frm, cdt, cdn) {
+    amount(frm) {
         calculate_totals(frm);
     },
-    salary_details_remove(frm, cdt, cdn) {
+    salary_details_remove(frm) {
         calculate_totals(frm);
     }
 });
 
-// ===============================
-// ATTENDANCE SUMMARY
-// ===============================
 function fetch_attendance_summary(frm) {
     if (!frm.doc.employee || !frm.doc.start_date) return;
 
