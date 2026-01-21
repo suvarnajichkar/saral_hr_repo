@@ -56,35 +56,3 @@ class CompanyLink(Document):
                 indicator="orange"
             )
             self.is_active = 0
-    
-    def on_update(self):
-        """Update employee's current company field when Company Link changes"""
-        self.update_employee_current_company()
-    
-    def on_trash(self):
-        """Update employee's current company field when Company Link is deleted"""
-        self.update_employee_current_company()
-    
-    def update_employee_current_company(self):
-        """Update the current_company field in Employee doctype"""
-        if not self.employee:
-            return
-        
-        # Find the active company for this employee
-        active_company = frappe.db.get_value(
-            "Company Link",
-            filters={
-                "employee": self.employee,
-                "is_active": 1
-            },
-            fieldname="company"
-        )
-        
-        # Update the Employee record
-        frappe.db.set_value(
-            "Employee",
-            self.employee,
-            "current_company",
-            active_company or None,
-            update_modified=False
-        )
