@@ -161,7 +161,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-01-21 12:59:07.155543",
+ "modified": "2026-01-21 15:32:50.950072",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",
@@ -185,7 +185,7 @@
    "doc_view": "List",
    "label": "Mark Attendance",
    "type": "URL",
-   "url": "/attendance_marking"
+   "url": "/mark_attendance"
   }
  ],
  "title": "Saral Hr"
