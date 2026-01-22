@@ -1,6 +1,3 @@
-# Copyright (c) 2026, sj and contributors
-# For license information, please see license.txt
-
 import frappe
 from frappe.model.document import Document
 from frappe import _
@@ -16,8 +13,6 @@ class CompanyLink(Document):
         """
         An employee can be active in ONLY ONE company at a time
         """
-
-        # Required fields
         if not self.employee or not self.is_active:
             return
 
@@ -25,8 +20,8 @@ class CompanyLink(Document):
             SELECT name, company
             FROM `tabCompany Link`
             WHERE employee = %(employee)s
-            AND is_active = 1
-            AND name != %(name)s
+              AND is_active = 1
+              AND name != %(name)s
             LIMIT 1
         """, {
             "employee": self.employee,
