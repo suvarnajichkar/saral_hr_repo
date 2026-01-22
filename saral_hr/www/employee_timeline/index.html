@@ -8,15 +8,41 @@
     <h1 class="page-title">Employee Timeline</h1>
 
     <div class="search-wrapper">
-        <label for="employee-select" class="control-label">
+        <label for="employee-search-input" class="control-label">
             {{ _("Select Employee") }}
         </label>
-        <select class="form-control employee-select" id="employee-select">
+        
+        <div style="position: relative;">
+            <!-- Custom Search Input Box -->
+            <input 
+                type="text" 
+                class="form-control" 
+                id="employee-search-input" 
+                placeholder="Type employee name to search..."
+                autocomplete="off"
+            />
+            
+            <!-- Clear button -->
+            <button 
+                type="button" 
+                id="clear-search" 
+                class="clear-search-btn"
+                style="display: none;"
+            >
+                ✕
+            </button>
+        </div>
+        
+        <!-- Hidden Select for actual selection -->
+        <select class="form-control employee-select" id="employee-select" style="display: none;">
             <option value="">{{ _("-- Select Employee --") }}</option>
             {% for emp in employees %}
                 <option value="{{ emp.name }}">{{ emp.employee }}</option>
             {% endfor %}
         </select>
+        
+        <!-- Dropdown Results -->
+        <div id="search-results" class="search-results-dropdown"></div>
     </div>
 
     <div id="timeline-section" class="timeline-section">
@@ -58,6 +84,100 @@
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 30px;
+    position: relative;
+}
+
+/* Custom Search Input */
+#employee-search-input {
+    padding: 10px 40px 10px 15px;
+    font-size: 16px;
+    border: 2px solid #2196F3;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#employee-search-input:focus {
+    outline: none;
+    border-color: #1976D2;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+/* Clear button */
+.clear-search-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #999;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clear-search-btn:hover {
+    background: #666;
+}
+
+/* Search Results Dropdown */
+.search-results-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 15px;
+    right: 15px;
+    background: white;
+    border: 2px solid #2196F3;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: -6px;
+}
+
+.search-results-dropdown.show {
+    display: block;
+}
+
+.search-result-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: #e3f2fd;
+}
+
+.search-result-item.highlighted {
+    background: #bbdefb;
+}
+
+.search-result-item.selected {
+    background: #2196F3;
+    color: white;
+}
+
+.no-results {
+    padding: 15px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
 }
 
 .timeline-section {
@@ -158,125 +278,4 @@
 }
 </style>
 
-<script>
-frappe.ready(function () {
-
-    const employeeSelect = document.getElementById('employee-select');
-    const timelineSection = document.getElementById('timeline-section');
-    const timelineContent = document.getElementById('timeline-content');
-    const noData = document.getElementById('no-data');
-
-    if (typeof $ !== 'undefined' && $.fn.select2) {
-        $('#employee-select').select2({
-            placeholder: "-- Select Employee --",
-            allowClear: true,
-            width: '100%',
-            theme: 'default'
-        });
-
-        $('#employee-select').on('select2:select', function (e) {
-            const employee = e.params.data.id;
-            loadEmployeeTimeline(employee);
-        });
-
-        $('#employee-select').on('select2:clear', function () {
-            timelineSection.style.display = 'none';
-            noData.style.display = 'none';
-            timelineContent.innerHTML = '';
-        });
-
-    } else {
-        employeeSelect.addEventListener('change', function () {
-            const employee = this.value;
-            loadEmployeeTimeline(employee);
-        });
-    }
-
-    function loadEmployeeTimeline(employee) {
-
-        if (!employee) {
-            timelineSection.style.display = 'none';
-            noData.style.display = 'none';
-            timelineContent.innerHTML = '';
-            return;
-        }
-
-        timelineContent.innerHTML = '';
-        timelineSection.style.display = 'none';
-        noData.style.display = 'none';
-
-        frappe.call({
-            method: 'saral_hr.www.employee_timeline.index.get_employee_timeline',
-            args: { employee },
-            freeze: false,
-            callback: function (r) {
-
-                const data = r.message || [];
-
-                if (!data.length) {
-                    timelineSection.style.display = 'none';
-                    noData.style.display = 'block';
-                    return;
-                }
-
-                renderTimeline(data);
-                timelineSection.style.display = 'block';
-                noData.style.display = 'none';
-            },
-            error: function (err) {
-                console.error('Timeline error:', err);
-                timelineSection.style.display = 'none';
-                noData.style.display = 'block';
-            }
-        });
-    }
-
-    function renderTimeline(data) {
-        let html = '';
-
-        data.forEach(function (record) {
-
-            const isActive = !record.end_date;
-            const statusText = isActive ? 'Active' : 'Inactive';
-
-            html += `
-                <div class="timeline-item ${isActive ? 'active' : ''}">
-                    <div class="timeline-card">
-                        <div class="company-name">${escapeHtml(record.company)}</div>
-                        <div class="date-info">
-                            <strong>Start:</strong> ${record.start_date || '-'}
-                        </div>
-                        ${record.end_date ? `
-                            <div class="date-info">
-                                <strong>End:</strong> ${record.end_date}
-                            </div>
-                        ` : ''}
-                        <div class="status-wrapper">
-                            <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
-                                ${statusText}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        timelineContent.innerHTML = html;
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        return text.replace(/[&<>"']/g, function (m) {
-            return {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            }[m];
-        });
-    }
-
-});
-</script>
 {% endblock %}
