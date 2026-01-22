@@ -5,7 +5,17 @@
 {% block page_content %}
 <div class="employee-timeline-wrapper">
 
-    <h1 class="page-title">Employee Timeline</h1>
+    <div class="header-section">
+        <h1 class="page-title">Employee Timeline</h1>
+        <div class="button-group">
+            <button id="goto_employee" class="btn btn-frappe btn-frappe-primary">
+                Go to Employee
+            </button>
+            <button id="goto_company_link" class="btn btn-frappe btn-frappe-primary">
+                Go to Company Link
+            </button>
+        </div>
+    </div>
 
     <div class="search-wrapper">
         <label for="employee-select" class="control-label">
@@ -19,7 +29,7 @@
         </select>
     </div>
 
-    <div id="timeline-section" class="timeline-section">
+    <div id="timeline-container" class="timeline-container">
         <h3 class="section-title">Employment History</h3>
         <div id="timeline-content" class="timeline-wrapper"></div>
     </div>
@@ -42,25 +52,78 @@
 .employee-timeline-wrapper {
     max-width: 900px;
     margin: 0 auto;
-    padding: 0;
+    padding: 20px;
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
 }
 
 .page-title {
     font-size: 24px;
     font-weight: 600;
-    margin: 20px 0;
-    color: var(--text-color, #2b2b2b);
+    margin: 0;
+    color: #2b2b2b;
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-frappe {
+    background-color: #e8e8e8;
+    color: #2b2b2b;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-frappe-primary {
+    background-color: #e8e8e8;
+    color: #2b2b2b;
+}
+
+.btn-frappe:focus,
+.btn-frappe:active,
+.btn-frappe:hover {
+    background-color: #e8e8e8;
+    color: #2b2b2b;
+    box-shadow: none;
+    outline: none;
 }
 
 .search-wrapper {
-    background: var(--card-bg, #fff);
-    border: 1px solid var(--border-color, #d1d8dd);
+    background: #fff;
+    border: 1px solid #d1d8dd;
     border-radius: 6px;
     padding: 15px;
     margin-bottom: 30px;
 }
 
-.timeline-section {
+.control-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    color: #2b2b2b;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d8dd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.timeline-container {
     display: none;
 }
 
@@ -68,7 +131,7 @@
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 20px;
-    color: var(--heading-color, #1f272e);
+    color: #1f272e;
 }
 
 .timeline-wrapper {
@@ -104,8 +167,8 @@
 }
 
 .timeline-card {
-    background: var(--card-bg, #fff);
-    border: 1px solid var(--border-color, #d1d8dd);
+    background: #fff;
+    border: 1px solid #d1d8dd;
     border-radius: 6px;
     padding: 15px;
 }
@@ -153,7 +216,21 @@
 
 @media (max-width: 768px) {
     .employee-timeline-wrapper {
-        padding: 0 10px;
+        padding: 10px;
+    }
+    
+    .header-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .button-group {
+        width: 100%;
+    }
+    
+    .btn-frappe {
+        flex: 1;
     }
 }
 </style>
@@ -161,8 +238,16 @@
 <script>
 frappe.ready(function () {
 
+    document.getElementById('goto_employee').onclick = function () {
+        window.location.href = '/app/employee';
+    };
+
+    document.getElementById('goto_company_link').onclick = function () {
+        window.location.href = '/app/company-link';
+    };
+
     const employeeSelect = document.getElementById('employee-select');
-    const timelineSection = document.getElementById('timeline-section');
+    const timelineContainer = document.getElementById('timeline-container');
     const timelineContent = document.getElementById('timeline-content');
     const noData = document.getElementById('no-data');
 
@@ -180,7 +265,7 @@ frappe.ready(function () {
         });
 
         $('#employee-select').on('select2:clear', function () {
-            timelineSection.style.display = 'none';
+            timelineContainer.style.display = 'none';
             noData.style.display = 'none';
             timelineContent.innerHTML = '';
         });
@@ -195,14 +280,14 @@ frappe.ready(function () {
     function loadEmployeeTimeline(employee) {
 
         if (!employee) {
-            timelineSection.style.display = 'none';
+            timelineContainer.style.display = 'none';
             noData.style.display = 'none';
             timelineContent.innerHTML = '';
             return;
         }
 
         timelineContent.innerHTML = '';
-        timelineSection.style.display = 'none';
+        timelineContainer.style.display = 'none';
         noData.style.display = 'none';
 
         frappe.call({
@@ -214,18 +299,18 @@ frappe.ready(function () {
                 const data = r.message || [];
 
                 if (!data.length) {
-                    timelineSection.style.display = 'none';
+                    timelineContainer.style.display = 'none';
                     noData.style.display = 'block';
                     return;
                 }
 
                 renderTimeline(data);
-                timelineSection.style.display = 'block';
+                timelineContainer.style.display = 'block';
                 noData.style.display = 'none';
             },
             error: function (err) {
                 console.error('Timeline error:', err);
-                timelineSection.style.display = 'none';
+                timelineContainer.style.display = 'none';
                 noData.style.display = 'block';
             }
         });
@@ -244,11 +329,11 @@ frappe.ready(function () {
                     <div class="timeline-card">
                         <div class="company-name">${escapeHtml(record.company)}</div>
                         <div class="date-info">
-                            <strong>Start:</strong> ${record.start_date || '-'}
+                            <strong>Start Date:</strong> ${record.start_date || '-'}
                         </div>
                         ${record.end_date ? `
                             <div class="date-info">
-                                <strong>End:</strong> ${record.end_date}
+                                <strong>End Date:</strong> ${record.end_date}
                             </div>
                         ` : ''}
                         <div class="status-wrapper">

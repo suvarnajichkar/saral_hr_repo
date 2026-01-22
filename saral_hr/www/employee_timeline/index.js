@@ -1,3 +1,4 @@
+
 frappe.ready(function () {
 
     const employeeSelect = document.getElementById('employee-select');
@@ -5,6 +6,9 @@ frappe.ready(function () {
     const timelineContent = document.getElementById('timeline-content');
     const noData = document.getElementById('no-data');
 
+    /* -----------------------------
+       Select2 Initialization
+    ------------------------------*/
     if (typeof $ !== 'undefined' && $.fn.select2) {
         $('#employee-select').select2({
             placeholder: "-- Select Employee --",
@@ -25,12 +29,16 @@ frappe.ready(function () {
         });
 
     } else {
+        // Fallback without Select2
         employeeSelect.addEventListener('change', function () {
             const employee = this.value;
             loadEmployeeTimeline(employee);
         });
     }
 
+    /* -----------------------------
+       Load Timeline
+    ------------------------------*/
     function loadEmployeeTimeline(employee) {
 
         if (!employee) {
@@ -40,6 +48,7 @@ frappe.ready(function () {
             return;
         }
 
+        // Reset UI (NO loading text)
         timelineContent.innerHTML = '';
         timelineContainer.style.display = 'none';
         noData.style.display = 'none';
@@ -47,7 +56,7 @@ frappe.ready(function () {
         frappe.call({
             method: 'saral_hr.www.employee_timeline.index.get_employee_timeline',
             args: { employee },
-            freeze: false,
+            freeze: false,   // ✅ PREVENT FRAPPE "Loading..."
             callback: function (r) {
 
                 const data = r.message || [];
@@ -70,6 +79,9 @@ frappe.ready(function () {
         });
     }
 
+    /* -----------------------------
+       Render Timeline
+    ------------------------------*/
     function renderTimeline(data) {
         let html = '';
 
@@ -82,14 +94,17 @@ frappe.ready(function () {
                 <div class="timeline-item ${isActive ? 'active' : ''}">
                     <div class="timeline-card">
                         <div class="company-name">${escapeHtml(record.company)}</div>
+
                         <div class="date-info">
                             <strong>Start Date:</strong> ${record.start_date || '-'}
                         </div>
+
                         ${record.end_date ? `
                             <div class="date-info">
                                 <strong>End Date:</strong> ${record.end_date}
                             </div>
                         ` : ''}
+
                         <div class="status-wrapper">
                             <span class="status-badge ${isActive ? 'status-active' : 'status-inactive'}">
                                 ${statusText}
@@ -103,6 +118,9 @@ frappe.ready(function () {
         timelineContent.innerHTML = html;
     }
 
+    /* -----------------------------
+       Safe HTML Escape
+    ------------------------------*/
     function escapeHtml(text) {
         if (!text) return '';
         return text.replace(/[&<>"']/g, function (m) {
@@ -117,3 +135,4 @@ frappe.ready(function () {
     }
 
 });
+

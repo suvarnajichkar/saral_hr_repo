@@ -59,13 +59,13 @@
                     <th>Day</th>
                     <th>Date</th>
                     <th class="text-center">
-                        Present <span class="count-badge" id="present_count">0</span>
+                        Present - <span class="count-text" id="present_count">0</span>
                     </th>
                     <th class="text-center">
-                        Absent <span class="count-badge" id="absent_count">0</span>
+                        Absent - <span class="count-text" id="absent_count">0</span>
                     </th>
                     <th class="text-center">
-                        Half Day <span class="count-badge" id="halfday_count">0</span>
+                        Half Day - <span class="count-text" id="halfday_count">0</span>
                     </th>
                 </tr>
             </thead>
@@ -76,118 +76,115 @@
 </div>
 
 <style>
-    html, body {
-        overflow: hidden;
-    }
+html, body {
+    overflow: hidden;
+}
 
-    h3 {
-        margin-top: 0;
-    }
+h3 {
+    margin-top: 0;
+}
 
-    .btn-frappe {
-        background-color: #e6e6e6;
-        color: #222;
-        border: none;
-        border-radius: 999px;
-        padding: 6px 14px;
-        font-weight: 500;
-    }
+.btn-frappe {
+    background-color: #e6e6e6;
+    color: #222;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-weight: 500;
+    transition: none;
+}
 
-    .btn-frappe-primary {
-        background-color: #2d2d2d;
-        color: #ffffff;
-    }
+.btn-frappe-primary {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
 
-    .btn-frappe-primary:hover {
-        background-color: #1a1a1a;
-    }
+/* hover / focus / active LOOK EXACTLY SAME as normal */
+.btn-frappe:hover,
+.btn-frappe:focus,
+.btn-frappe:active {
+    background-color: #e6e6e6;
+    color: #222;
+}
 
-    .btn-frappe:focus,
-    .btn-frappe:active {
-        box-shadow: none;
-        outline: none;
-    }
+.btn-frappe-primary:hover,
+.btn-frappe-primary:focus,
+.btn-frappe-primary:active {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
 
-    .attendance-buttons button {
-        margin-right: 8px;
-    }
+.btn-frappe:focus,
+.btn-frappe:active,
+.btn-frappe-primary:focus,
+.btn-frappe-primary:active {
+    box-shadow: none;
+    outline: none;
+}
 
-    .weekly-off-input {
-        background-color: #ededed;
-        color: #555;
-        font-weight: 500;
-    }
+.attendance-buttons button {
+    margin-right: 8px;
+}
 
-    .table-scroll {
-        max-height: 520px;
-        overflow-y: auto;
-        overflow-x: hidden;
-        position: relative;
-    }
+.weekly-off-input {
+    background-color: #ededed;
+    color: #555;
+    font-weight: 500;
+}
 
-    #attendance_table {
-        position: relative;
-    }
+.table-scroll {
+    max-height: 520px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 
-    thead th {
-        position: sticky;
-        top: 0;
-        background-color: #f7f7f7;
-        z-index: 500;
-        border-bottom: 1px solid #d1d8dd;
-    }
+thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f7f7f7;
+    z-index: 500;
+    border-bottom: 1px solid #d1d8dd;
+}
 
-    .table-bordered th,
-    .table-bordered td {
-        border: 1px solid #d1d8dd;
-        background-color: #fff;
-    }
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #d1d8dd;
+    background-color: #fff;
+}
 
-    tbody {
-        position: relative;
-        z-index: 1;
-    }
+.weekly-off-row td {
+    background-color: #e8e8e8 !important;
+    color: #666;
+}
 
-    .weekly-off-row {
-        background-color: #e8e8e8 !important;
-    }
+.future-date-row {
+    opacity: 0.5;
+}
 
-    .weekly-off-row td {
-        background-color: #e8e8e8 !important;
-        color: #666;
-    }
+.future-date-row td {
+    background-color: #f9f9f9 !important;
+    color: #999;
+}
 
-    .future-date-row {
-        opacity: 0.5;
-    }
+/* SIMPLE count text – no background, no border, no radius */
+.count-text {
+    font-weight: 600;
+    color: #111;
+}
 
-    .future-date-row td {
-        background-color: #f9f9f9 !important;
-        color: #999;
-    }
+.form-control:focus {
+    box-shadow: none;
+    border-color: #999;
+}
 
-    .count-badge {
-        background-color: #111;
-        color: #fff;
-        border-radius: 6px;
-        padding: 2px 6px;
-        font-size: 11px;
-        margin-left: 6px;
-    }
-
-    .form-control:focus {
-        box-shadow: none;
-        border-color: #999;
-    }
-
-    .web-footer {
-        display: none !important;
-    }
+.web-footer {
+    display: none !important;
+}
 </style>
 
 <script>
-    document.getElementById('goto_attendance').onclick = function () {
-        window.location.href = '/app/attendance';
-    };
+document.getElementById('goto_attendance').onclick = function () {
+    window.location.href = '/app/attendance';
+};
 </script>
 {% endblock %}

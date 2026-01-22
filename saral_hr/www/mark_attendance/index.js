@@ -55,6 +55,7 @@ frappe.ready(function () {
     document.getElementById("end_date").addEventListener("change", generateTable);
 
     window.attendanceTableData = {};
+    window.originalAttendanceData = {}; 
 
     function updateCounts() {
         let p = 0, a = 0, h = 0;
@@ -94,6 +95,7 @@ frappe.ready(function () {
 
                 let attendanceMap = res.message || {};
                 window.attendanceTableData = {};
+                window.originalAttendanceData = {}; 
 
                 let current = new Date(start);
                 while (current <= end) {
@@ -111,6 +113,11 @@ frappe.ready(function () {
 
                     let savedStatus = attendanceMap[dateKey] || "";
                     window.attendanceTableData[dateKey] = savedStatus;
+                    
+                
+                    if (savedStatus) {
+                        window.originalAttendanceData[dateKey] = savedStatus;
+                    }
 
                     let row = document.createElement("tr");
                     if (isWeeklyOff) row.classList.add("weekly-off-row");
@@ -146,12 +153,15 @@ frappe.ready(function () {
         });
     }
 
-    // ✅ FIXED BULK MARK FUNCTION
+    // ✅ FIXED: Only mark days that don't already have attendance saved
     function bulkMark(status) {
         Object.keys(window.attendanceTableData).forEach(date => {
             let radios = document.querySelectorAll(`input[name="status_${date}"]`);
             if (!radios.length) return;
             if (radios[0].disabled) return;
+
+            // Skip if this date already has saved attendance (exists in original data)
+            if (window.originalAttendanceData[date]) return;
 
             radios.forEach(r => {
                 r.checked = (r.value === status);
@@ -184,8 +194,13 @@ frappe.ready(function () {
         });
 
         Promise.all(calls).then(() => {
-            frappe.msgprint("Attendance updated successfully");
+            frappe.show_alert({
+            message: __("Attendance updated successfully"),
+            indicator: "green"
+        });
+
             generateTable();
         });
+
     };
 });
