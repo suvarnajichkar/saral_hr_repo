@@ -8,6 +8,7 @@
  "field_order": [
   "employee",
   "employee_name",
+  "aadhar_number",
   "salary_structure",
   "company",
   "column_break_jxct",
@@ -180,11 +181,17 @@
    "fieldtype": "Data",
    "label": "Company",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee.aadhar_number",
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-23 12:17:44.562520",
+ "modified": "2026-01-23 13:59:29.636428",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

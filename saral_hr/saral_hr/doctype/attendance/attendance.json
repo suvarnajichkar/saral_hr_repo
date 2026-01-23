@@ -10,6 +10,7 @@
   "employee",
   "employee_name",
   "working_hours",
+  "aadhar_number",
   "column_break_gchh",
   "status",
   "attendance_date",
@@ -120,11 +121,17 @@
    "label": "Company",
    "options": "Company Link",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee.aadhar_number",
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-19 12:16:31.079698",
+ "modified": "2026-01-23 13:56:25.312358",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",

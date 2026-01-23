@@ -9,6 +9,7 @@
  "field_order": [
   "employee",
   "employee_name",
+  "aadhar_number",
   "currency",
   "column_break_ngyh",
   "salary_structure",
@@ -192,11 +193,17 @@
    "fieldname": "ctc",
    "fieldtype": "Currency",
    "label": "CTC"
+  },
+  {
+   "fetch_from": "employee.aadhar_number",
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-21 17:47:03.477688",
+ "modified": "2026-01-23 14:05:35.895681",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",

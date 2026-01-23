@@ -13,6 +13,7 @@
   "employee",
   "full_name",
   "weekly_off",
+  "aadhar_number",
   "column_break_hopr",
   "department",
   "designation",
@@ -113,11 +114,17 @@
    "fieldtype": "Select",
    "label": "Weekly Off",
    "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
+  },
+  {
+   "fetch_from": "employee.aadhar_number",
+   "fieldname": "aadhar_number",
+   "fieldtype": "Data",
+   "label": "Aadhar Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-16 12:20:23.264183",
+ "modified": "2026-01-23 13:52:11.534598",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
