@@ -9,6 +9,7 @@
   "employee",
   "employee_name",
   "salary_structure",
+  "company",
   "column_break_jxct",
   "start_date",
   "end_date",
@@ -172,11 +173,18 @@
   {
    "fieldname": "column_break_orch",
    "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.company",
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-22 13:44:07.134056",
+ "modified": "2026-01-23 12:17:44.562520",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
