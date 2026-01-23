@@ -14,7 +14,14 @@ frappe.ready(function () {
                 r.message.forEach(row => {
                     let opt = document.createElement("option");
                     opt.value = row.employee;
-                    opt.text = row.full_name;
+                    
+                    // Format: Name (Aadhaar Number)
+                    let displayText = row.full_name;
+                    if (row.aadhaar_number) {
+                        displayText += ` (${row.aadhaar_number})`;
+                    }
+                    opt.text = displayText;
+                    
                     employeeSelect.appendChild(opt);
 
                     window.employeeCompanyMap[row.employee] = row.company;

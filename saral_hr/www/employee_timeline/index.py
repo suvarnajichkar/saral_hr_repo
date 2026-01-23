@@ -7,14 +7,15 @@ def get_context(context):
     return context
 
 def get_employees():
-    """Get all employees using the 'employee' field"""
+    """Get all employees with Aadhaar number"""
     employees = frappe.db.sql("""
         SELECT
             name,
             employee,
             first_name,
             last_name,
-            status
+            status,
+            aadhar_number
         FROM `tabEmployee`
     """, as_dict=1)
 
@@ -28,6 +29,10 @@ def get_employees():
             parts.append(emp['last_name'].strip())
         
         display_name = ' '.join(parts) if parts else emp['employee']
+        
+        # Add Aadhaar number if available
+        if emp.get('aadhar_number'):
+            display_name += f" ({emp['aadhar_number']})"
 
         result.append({
             'name': emp['name'],
@@ -67,10 +72,10 @@ def get_employee_timeline(employee):
 @frappe.whitelist()
 def fix_employee_names():
     """
-    Utility to generate display names dynamically using 'employee' field instead of 'employee_name'.
+    Utility to generate display names dynamically with Aadhaar using 'employee' field.
     """
     employees = frappe.db.sql("""
-        SELECT name, employee, first_name, last_name
+        SELECT name, employee, first_name, last_name, aadhar_number
         FROM `tabEmployee`
     """, as_dict=1)
 
@@ -82,6 +87,10 @@ def fix_employee_names():
         if emp.get('last_name'):
             parts.append(emp['last_name'].strip())
         display_name = ' '.join(parts) if parts else emp['employee']
+        
+        # Add Aadhaar number if available
+        if emp.get('aadhar_number'):
+            display_name += f" ({emp['aadhar_number']})"
 
         result.append({
             'name': emp['name'],

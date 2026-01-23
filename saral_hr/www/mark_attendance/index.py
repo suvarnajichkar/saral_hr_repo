@@ -9,6 +9,12 @@ def get_active_employees():
         fields=["name", "employee", "full_name", "company", "weekly_off"],
         order_by="full_name asc"
     )
+    
+    # Fetch Aadhaar numbers for each employee
+    for emp in employees:
+        aadhaar = frappe.db.get_value("Employee", emp.employee, "aadhar_number")
+        emp["aadhaar_number"] = aadhaar or ""
+    
     return employees
 
 @frappe.whitelist()

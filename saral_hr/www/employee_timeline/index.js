@@ -11,15 +11,14 @@ frappe.ready(function () {
     const gotoEmployeeBtn = document.getElementById("goto_employee");
     const gotoCompanyLinkBtn = document.getElementById("goto_company_link");
 
-    // Navigate to list view
-    gotoEmployeeBtn.addEventListener("click", function() {
-    window.location.href = '/app/employee';  // go to Employee List
-});
+    // Navigate to list views
+    gotoEmployeeBtn.addEventListener("click", () => {
+        window.location.href = '/app/employee';
+    });
 
-gotoCompanyLinkBtn.addEventListener("click", function() {
-    window.location.href = '/app/company-link';  // go to Company Link List
-});
-
+    gotoCompanyLinkBtn.addEventListener("click", () => {
+        window.location.href = '/app/company-link';
+    });
 
     // Extract employees from select options
     const employees = Array.from(employeeSelect.options)
@@ -90,12 +89,19 @@ gotoCompanyLinkBtn.addEventListener("click", function() {
     searchInput.addEventListener('input', () => {
         const searchTerm = searchInput.value.toLowerCase().trim();
         clearBtn.style.display = searchTerm ? 'flex' : 'none';
+
         if (!searchTerm) {
+            // Clear timeline and hide containers because no employee selected
+            timelineSection.style.display = 'none';
+            noData.style.display = 'none';
+            timelineContent.innerHTML = '';
+
             filteredEmployees = employees;
             showResults(filteredEmployees);
             selectedIndex = -1;
             return;
         }
+
         filteredEmployees = employees.filter(emp =>
             emp.employee.toLowerCase().includes(searchTerm)
         );
@@ -106,6 +112,12 @@ gotoCompanyLinkBtn.addEventListener("click", function() {
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         clearBtn.style.display = 'none';
+
+        // Also hide timeline & no-data and clear timeline content here
+        timelineSection.style.display = 'none';
+        noData.style.display = 'none';
+        timelineContent.innerHTML = '';
+
         filteredEmployees = employees;
         showResults(filteredEmployees);
         searchInput.focus();
@@ -113,6 +125,7 @@ gotoCompanyLinkBtn.addEventListener("click", function() {
 
     searchInput.addEventListener('keydown', (e) => {
         if (!searchResults.classList.contains('show')) return;
+
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             selectedIndex = (selectedIndex + 1) % filteredEmployees.length;
