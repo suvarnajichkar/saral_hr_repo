@@ -14,7 +14,28 @@
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">Employee</label>
-                <select id="employee" class="form-control">
+                <!-- NEW: Search Input with Clear Button -->
+                <div class="search-input-wrapper">
+                    <input
+                        type="text"
+                        class="form-control employee-search-readonly"
+                        id="employee-search-input"
+                        placeholder="Select Employee"
+                        autocomplete="off"
+                    />
+                    <button
+                        type="button"
+                        id="clear-search"
+                        class="clear-search-btn"
+                        style="display: none;"
+                    >
+                        ✕
+                    </button>
+                    <!-- Search Results Dropdown -->
+                    <div id="search-results" class="search-results-dropdown"></div>
+                </div>
+                <!-- Hidden select for backend -->
+                <select id="employee" style="display:none !important; height: 0; width: 0; position: absolute; visibility: hidden;">
                     <option value="">Select Employee</option>
                 </select>
             </div>
@@ -99,7 +120,6 @@ h3 {
     color: #ffffff;
 }
 
-/* hover / focus / active LOOK EXACTLY SAME as normal */
 .btn-frappe:hover,
 .btn-frappe:focus,
 .btn-frappe:active {
@@ -166,7 +186,6 @@ thead th {
     color: #999;
 }
 
-/* SIMPLE count text – no background, no border, no radius */
 .count-text {
     font-weight: 600;
     color: #111;
@@ -181,13 +200,97 @@ thead th {
     display: none !important;
 }
 
-#employee {
-    max-width: 100%;
-    font-size: 14px;
+/* NEW: Search Functionality Styles (from Timeline) */
+.search-input-wrapper {
+    position: relative;
 }
 
-#employee option {
-    padding: 8px;
+.employee-search-readonly {
+    background-color: #ededed;
+    color: #555;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.employee-search-readonly::placeholder {
+    color: #999;
+    font-weight: 400;
+}
+
+.employee-search-readonly:focus {
+    background-color: #ededed;
+    outline: none;
+    border-color: #999;
+    box-shadow: none;
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 10px;
+    top: 7px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #b5bcc3;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clear-search-btn:hover {
+    background: #8f98a1;
+}
+
+.search-results-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #d1d8dd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: -1px;
+}
+
+.search-results-dropdown.show {
+    display: block;
+}
+
+.search-result-item {
+    padding: 14px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: #f4f5f6;
+}
+
+.search-result-item.selected {
+    background: #e6f0ff;
+    color: #1f272e;
+}
+
+.no-results {
+    padding: 14px 16px;
+    font-size: 16px;
+    color: #6c757d;
+    text-align: center;
 }
 </style>
 

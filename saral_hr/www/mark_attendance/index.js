@@ -1,10 +1,19 @@
 frappe.ready(function () {
 
+    // Search elements
+    const searchInput = document.getElementById('employee-search-input');
+    const searchResults = document.getElementById('search-results');
+    const employeeSelect = document.getElementById('employee');
+
+    let employees = [];
+    let selectedIndex = -1;
+    let filteredEmployees = [];
+
+    // Fetch employees
     frappe.call({
         method: "saral_hr.www.mark_attendance.index.get_active_employees",
         callback: function (r) {
             if (r.message) {
-                let employeeSelect = document.getElementById("employee");
                 employeeSelect.innerHTML = `<option value="">Select Employee</option>`;
 
                 window.employeeCompanyMap = {};
@@ -26,28 +35,148 @@ frappe.ready(function () {
 
                     window.employeeCompanyMap[row.employee] = row.company;
                     window.employeeCLMap[row.employee] = row.name;
-
                     window.employeeWeeklyOffMap[row.employee] = row.weekly_off
                         ? row.weekly_off.split(",").map(d => d.trim().toLowerCase())
                         : [];
                 });
+
+                // Build employees array for search
+                employees = Array.from(employeeSelect.options)
+                    .filter(option => option.value)
+                    .map(option => ({
+                        value: option.value,
+                        name: option.text.trim()
+                    }));
             }
         }
     });
 
-    document.getElementById("employee").addEventListener("change", function () {
-        let emp = this.value;
-        document.getElementById("company").value = window.employeeCompanyMap[emp] || "";
+    // Search Functions (from Timeline)
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/[&<>"']/g, m => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        })[m]);
+    }
 
-        document.getElementById("weekly_off").value = window.employeeWeeklyOffMap[emp]
-            ? window.employeeWeeklyOffMap[emp]
+    function showResults(results) {
+        if (results.length === 0) {
+            searchResults.innerHTML = '<div class="no-results">No employee found</div>';
+            searchResults.classList.add('show');
+            selectedIndex = -1;
+            return;
+        }
+
+        searchResults.innerHTML = results.map((emp, index) =>
+            `<div class="search-result-item" data-index="${index}" data-value="${emp.value}">
+                ${escapeHtml(emp.name)}
+            </div>`
+        ).join('');
+        searchResults.classList.add('show');
+
+        const items = searchResults.querySelectorAll('.search-result-item');
+        items.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                const empValue = item.getAttribute('data-value');
+                const emp = employees.find(e => e.value === empValue);
+                if (emp) selectEmployee(emp);
+            });
+
+            item.addEventListener('mouseenter', () => {
+                selectedIndex = index;
+                highlightResult();
+            });
+        });
+    }
+
+    function highlightResult() {
+        const items = searchResults.querySelectorAll('.search-result-item');
+        items.forEach((item, index) => {
+            item.classList.toggle('selected', index === selectedIndex);
+        });
+        if (selectedIndex >= 0 && items[selectedIndex]) {
+            items[selectedIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function selectEmployee(emp) {
+        searchInput.value = emp.name;
+        employeeSelect.value = emp.value;
+        searchResults.classList.remove('show');
+        selectedIndex = -1;
+
+        // Trigger change event to update company and weekly off
+        document.getElementById("company").value = window.employeeCompanyMap[emp.value] || "";
+        document.getElementById("weekly_off").value = window.employeeWeeklyOffMap[emp.value]
+            ? window.employeeWeeklyOffMap[emp.value]
                 .map(d => d.charAt(0).toUpperCase() + d.slice(1))
                 .join(", ")
             : "";
 
         generateTable();
+    }
+
+    // Search Input Events
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim() === '') {
+            filteredEmployees = employees;
+            showResults(filteredEmployees);
+        }
     });
 
+    searchInput.addEventListener('input', () => {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        
+        if (!searchTerm) {
+            filteredEmployees = employees;
+            showResults(filteredEmployees);
+            selectedIndex = -1;
+            return;
+        }
+        
+        filteredEmployees = employees.filter(emp =>
+            emp.name.toLowerCase().includes(searchTerm)
+        );
+        showResults(filteredEmployees);
+        selectedIndex = -1;
+    });
+
+    // Keyboard Navigation
+    searchInput.addEventListener('keydown', (e) => {
+        if (!searchResults.classList.contains('show')) return;
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = (selectedIndex + 1) % filteredEmployees.length;
+            highlightResult();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = (selectedIndex - 1 + filteredEmployees.length) % filteredEmployees.length;
+            highlightResult();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && filteredEmployees[selectedIndex]) {
+                selectEmployee(filteredEmployees[selectedIndex]);
+            }
+        } else if (e.key === 'Escape') {
+            searchResults.classList.remove('show');
+            selectedIndex = -1;
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.remove('show');
+            selectedIndex = -1;
+        }
+    });
+
+    // Original Attendance Functionality
     document.getElementById("start_date").addEventListener("change", function () {
         let startDate = this.value;
         if (startDate) {
@@ -79,7 +208,7 @@ frappe.ready(function () {
     }
 
     function generateTable() {
-        let employee = document.getElementById("employee").value;
+        let employee = employeeSelect.value;
         if (!employee) return;
 
         let weeklyOffDays = window.employeeWeeklyOffMap[employee];
@@ -121,7 +250,6 @@ frappe.ready(function () {
                     let savedStatus = attendanceMap[dateKey] || "";
                     window.attendanceTableData[dateKey] = savedStatus;
                     
-                
                     if (savedStatus) {
                         window.originalAttendanceData[dateKey] = savedStatus;
                     }
@@ -160,14 +288,12 @@ frappe.ready(function () {
         });
     }
 
-    // ✅ FIXED: Only mark days that don't already have attendance saved
     function bulkMark(status) {
         Object.keys(window.attendanceTableData).forEach(date => {
             let radios = document.querySelectorAll(`input[name="status_${date}"]`);
             if (!radios.length) return;
             if (radios[0].disabled) return;
 
-            // Skip if this date already has saved attendance (exists in original data)
             if (window.originalAttendanceData[date]) return;
 
             radios.forEach(r => {
@@ -185,7 +311,7 @@ frappe.ready(function () {
     document.getElementById("mark_halfday").onclick = () => bulkMark("Half Day");
 
     document.getElementById("save_attendance").onclick = function () {
-        let employee = document.getElementById("employee").value;
+        let employee = employeeSelect.value;
         if (!employee) return;
 
         let clId = window.employeeCLMap[employee];
@@ -202,12 +328,11 @@ frappe.ready(function () {
 
         Promise.all(calls).then(() => {
             frappe.show_alert({
-            message: __("Attendance updated successfully"),
-            indicator: "green"
-        });
+                message: __("Attendance updated successfully"),
+                indicator: "green"
+            });
 
             generateTable();
         });
-
     };
 });
