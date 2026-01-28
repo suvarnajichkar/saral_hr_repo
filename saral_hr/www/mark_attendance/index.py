@@ -3,19 +3,38 @@ from frappe.utils import getdate
 
 @frappe.whitelist()
 def get_active_employees():
+    user = frappe.session.user
+
+    # get company restrictions (if any)
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+
+    filters = {"is_active": 1}
+
+    # apply company filter ONLY if restriction exists
+    if companies:
+        filters["company"] = ["in", companies]
+
     employees = frappe.get_all(
         "Company Link",
-        filters={"is_active": 1},
+        filters=filters,
         fields=["name", "employee", "full_name", "company", "weekly_off"],
         order_by="full_name asc"
     )
-    
-    # Fetch Aadhaar numbers for each employee
+
+    # Fetch Aadhaar numbers
     for emp in employees:
         aadhaar = frappe.db.get_value("Employee", emp.employee, "aadhar_number")
         emp["aadhaar_number"] = aadhaar or ""
-    
+
     return employees
+
 
 @frappe.whitelist()
 def get_attendance_between_dates(employee, start_date, end_date):
@@ -31,20 +50,46 @@ def get_attendance_between_dates(employee, start_date, end_date):
         fields=["attendance_date", "status"]
     )
 
-    attendance_map = {str(row.attendance_date): row.status for row in attendance_records}
-    return attendance_map
+    return {str(row.attendance_date): row.status for row in attendance_records}
+
 
 @frappe.whitelist()
 def save_attendance(employee, attendance_date, status):
+    user = frappe.session.user
     attendance_date = getdate(attendance_date)
 
-    # Check if it's a weekly off - if yes, skip saving (don't throw error)
-    weekly_off = frappe.db.get_value("Company Link", employee, "weekly_off")
+    # company restriction check (dynamic)
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+
+    if companies:
+        allowed = frappe.db.exists(
+            "Company Link",
+            {
+                "employee": employee,
+                "company": ["in", companies]
+            }
+        )
+
+        if not allowed:
+            frappe.throw("Not permitted to mark attendance for this employee")
+
+    # weekly off check
+    weekly_off = frappe.db.get_value(
+        "Company Link",
+        {"employee": employee},
+        "weekly_off"
+    )
+
     if weekly_off:
         weekly_off_days = [d.strip().lower() for d in weekly_off.split(",")]
-        day_name = attendance_date.strftime("%A").lower()
-        if day_name in weekly_off_days:
-            # Skip saving for weekly off, but don't throw error
+        if attendance_date.strftime("%A").lower() in weekly_off_days:
             return "skipped_weekly_off"
 
     existing_attendance = frappe.db.get_value(

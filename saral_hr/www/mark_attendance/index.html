@@ -6,9 +6,17 @@
     <div class="sticky-top bg-white py-3" style="z-index: 1000;">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3 class="mb-0">Mark Attendance</h3>
-            <button id="goto_attendance" class="btn btn-frappe btn-frappe-primary">
-                Go to Attendance
-            </button>
+            <div>
+                <button id="save_attendance" class="btn btn-frappe btn-frappe-primary btn-sm"
+                    style="margin-right: 6px;">
+                    Save
+                </button>
+                <button id="goto_attendance" class="btn btn-frappe btn-frappe-primary">
+                    Go to Attendance
+                </button>
+
+
+            </div>
         </div>
 
         <div class="row g-3">
@@ -16,26 +24,17 @@
                 <label class="form-label">Employee</label>
                 <!-- NEW: Search Input with Clear Button -->
                 <div class="search-input-wrapper">
-                    <input
-                        type="text"
-                        class="form-control employee-search-readonly"
-                        id="employee-search-input"
-                        placeholder="Select Employee"
-                        autocomplete="off"
-                    />
-                    <button
-                        type="button"
-                        id="clear-search"
-                        class="clear-search-btn"
-                        style="display: none;"
-                    >
+                    <input type="text" class="form-control employee-search-readonly" id="employee-search-input"
+                        placeholder="Select Employee" autocomplete="off" />
+                    <button type="button" id="clear-search" class="clear-search-btn" style="display: none;">
                         ✕
                     </button>
                     <!-- Search Results Dropdown -->
                     <div id="search-results" class="search-results-dropdown"></div>
                 </div>
                 <!-- Hidden select for backend -->
-                <select id="employee" style="display:none !important; height: 0; width: 0; position: absolute; visibility: hidden;">
+                <select id="employee"
+                    style="display:none !important; height: 0; width: 0; position: absolute; visibility: hidden;">
                     <option value="">Select Employee</option>
                 </select>
             </div>
@@ -51,25 +50,44 @@
 
         <div class="row mt-3 g-3">
             <div class="col-md-3">
-                <label class="form-label">Start Date</label>
-                <input type="date" id="start_date" class="form-control">
+                <label class="form-label">Year</label>
+                <select id="year_select" class="form-control">
+                    <option value="">Select Year</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
             </div>
+
             <div class="col-md-3">
-                <label class="form-label">End Date</label>
-                <input type="date" id="end_date" class="form-control">
+                <label class="form-label">Month</label>
+                <select id="month_select" class="form-control">
+                    <option value="">Select Month</option>
+                    <option value="0">January</option>
+                    <option value="1">February</option>
+                    <option value="2">March</option>
+                    <option value="3">April</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9">October</option>
+                    <option value="10">November</option>
+                    <option value="11">December</option>
+                </select>
             </div>
         </div>
+
+        <!-- Hidden date fields (logic stays SAME) -->
+        <input type="hidden" id="start_date">
+        <input type="hidden" id="end_date">
 
         <div class="d-flex align-items-center mt-4 attendance-buttons">
             <span class="me-3">Mark remaining days as:</span>
             <button id="mark_present" class="btn btn-frappe btn-sm">Present</button>
             <button id="mark_absent" class="btn btn-frappe btn-sm">Absent</button>
             <button id="mark_halfday" class="btn btn-frappe btn-sm">Half Day</button>
-            <div class="ms-auto">
-                <button id="save_attendance" class="btn btn-frappe btn-frappe-primary btn-sm">
-                    Save
-                </button>
-            </div>
+            <!-- Removed Save button from here -->
         </div>
     </div>
 
@@ -97,206 +115,207 @@
 </div>
 
 <style>
-html, body {
-    overflow: hidden;
-}
+    html,
+    body {
+        overflow: hidden;
+    }
 
-h3 {
-    margin-top: 0;
-}
+    h3 {
+        margin-top: 0;
+    }
 
-.btn-frappe {
-    background-color: #e6e6e6;
-    color: #222;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 14px;
-    font-weight: 500;
-    transition: none;
-}
+    .btn-frappe {
+        background-color: #e6e6e6;
+        color: #222;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 14px;
+        font-weight: 500;
+        transition: none;
+    }
 
-.btn-frappe-primary {
-    background-color: #2d2d2d;
-    color: #ffffff;
-}
+    .btn-frappe-primary {
+        background-color: #2d2d2d;
+        color: #ffffff;
+    }
 
-.btn-frappe:hover,
-.btn-frappe:focus,
-.btn-frappe:active {
-    background-color: #e6e6e6;
-    color: #222;
-}
+    .btn-frappe:hover,
+    .btn-frappe:focus,
+    .btn-frappe:active {
+        background-color: #e6e6e6;
+        color: #222;
+    }
 
-.btn-frappe-primary:hover,
-.btn-frappe-primary:focus,
-.btn-frappe-primary:active {
-    background-color: #2d2d2d;
-    color: #ffffff;
-}
+    .btn-frappe-primary:hover,
+    .btn-frappe-primary:focus,
+    .btn-frappe-primary:active {
+        background-color: #2d2d2d;
+        color: #ffffff;
+    }
 
-.btn-frappe:focus,
-.btn-frappe:active,
-.btn-frappe-primary:focus,
-.btn-frappe-primary:active {
-    box-shadow: none;
-    outline: none;
-}
+    .btn-frappe:focus,
+    .btn-frappe:active,
+    .btn-frappe-primary:focus,
+    .btn-frappe-primary:active {
+        box-shadow: none;
+        outline: none;
+    }
 
-.attendance-buttons button {
-    margin-right: 8px;
-}
+    .attendance-buttons button {
+        margin-right: 8px;
+    }
 
-.weekly-off-input {
-    background-color: #ededed;
-    color: #555;
-    font-weight: 500;
-}
+    .weekly-off-input {
+        background-color: #ededed;
+        color: #555;
+        font-weight: 500;
+    }
 
-.table-scroll {
-    max-height: 520px;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
+    .table-scroll {
+        max-height: 520px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
 
-thead th {
-    position: sticky;
-    top: 0;
-    background-color: #f7f7f7;
-    z-index: 500;
-    border-bottom: 1px solid #d1d8dd;
-}
+    thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f7f7f7;
+        z-index: 500;
+        border-bottom: 1px solid #d1d8dd;
+    }
 
-.table-bordered th,
-.table-bordered td {
-    border: 1px solid #d1d8dd;
-    background-color: #fff;
-}
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #d1d8dd;
+        background-color: #fff;
+    }
 
-.weekly-off-row td {
-    background-color: #e8e8e8 !important;
-    color: #666;
-}
+    .weekly-off-row td {
+        background-color: #e8e8e8 !important;
+        color: #666;
+    }
 
-.future-date-row {
-    opacity: 0.5;
-}
+    .future-date-row {
+        opacity: 0.5;
+    }
 
-.future-date-row td {
-    background-color: #f9f9f9 !important;
-    color: #999;
-}
+    .future-date-row td {
+        background-color: #f9f9f9 !important;
+        color: #999;
+    }
 
-.count-text {
-    font-weight: 600;
-    color: #111;
-}
+    .count-text {
+        font-weight: 600;
+        color: #111;
+    }
 
-.form-control:focus {
-    box-shadow: none;
-    border-color: #999;
-}
+    .form-control:focus {
+        box-shadow: none;
+        border-color: #999;
+    }
 
-.web-footer {
-    display: none !important;
-}
+    .web-footer {
+        display: none !important;
+    }
 
-/* NEW: Search Functionality Styles (from Timeline) */
-.search-input-wrapper {
-    position: relative;
-}
+    /* NEW: Search Functionality Styles (from Timeline) */
+    .search-input-wrapper {
+        position: relative;
+    }
 
-.employee-search-readonly {
-    background-color: #ededed;
-    color: #555;
-    font-weight: 500;
-    cursor: pointer;
-}
+    .employee-search-readonly {
+        background-color: #ededed;
+        color: #555;
+        font-weight: 500;
+        cursor: pointer;
+    }
 
-.employee-search-readonly::placeholder {
-    color: #999;
-    font-weight: 400;
-}
+    .employee-search-readonly::placeholder {
+        color: #999;
+        font-weight: 400;
+    }
 
-.employee-search-readonly:focus {
-    background-color: #ededed;
-    outline: none;
-    border-color: #999;
-    box-shadow: none;
-}
+    .employee-search-readonly:focus {
+        background-color: #ededed;
+        outline: none;
+        border-color: #999;
+        box-shadow: none;
+    }
 
-.clear-search-btn {
-    position: absolute;
-    right: 10px;
-    top: 7px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #b5bcc3;
-    border: none;
-    color: #fff;
-    font-size: 15px;
-    cursor: pointer;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+    .clear-search-btn {
+        position: absolute;
+        right: 10px;
+        top: 7px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #b5bcc3;
+        border: none;
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-.clear-search-btn:hover {
-    background: #8f98a1;
-}
+    .clear-search-btn:hover {
+        background: #8f98a1;
+    }
 
-.search-results-dropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #fff;
-    border: 1px solid #d1d8dd;
-    border-top: none;
-    border-radius: 0 0 4px 4px;
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 1000;
-    margin-top: -1px;
-}
+    .search-results-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #d1d8dd;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: -1px;
+    }
 
-.search-results-dropdown.show {
-    display: block;
-}
+    .search-results-dropdown.show {
+        display: block;
+    }
 
-.search-result-item {
-    padding: 14px 16px;
-    font-size: 16px;
-    cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
-}
+    .search-result-item {
+        padding: 14px 16px;
+        font-size: 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+    }
 
-.search-result-item:last-child {
-    border-bottom: none;
-}
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
 
-.search-result-item:hover {
-    background: #f4f5f6;
-}
+    .search-result-item:hover {
+        background: #f4f5f6;
+    }
 
-.search-result-item.selected {
-    background: #e6f0ff;
-    color: #1f272e;
-}
+    .search-result-item.selected {
+        background: #e6f0ff;
+        color: #1f272e;
+    }
 
-.no-results {
-    padding: 14px 16px;
-    font-size: 16px;
-    color: #6c757d;
-    text-align: center;
-}
+    .no-results {
+        padding: 14px 16px;
+        font-size: 16px;
+        color: #6c757d;
+        text-align: center;
+    }
 </style>
 
 <script>
-document.getElementById('goto_attendance').onclick = function () {
-    window.location.href = '/app/attendance';
-};
+    document.getElementById('goto_attendance').onclick = function () {
+        window.location.href = '/app/attendance';
+    };
 </script>
 {% endblock %}
