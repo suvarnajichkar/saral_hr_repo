@@ -210,76 +210,81 @@ frappe.ready(function () {
         halfday_count.textContent = h;
     }
 
-    function generateTable() {
-        const employee = employeeSelect.value;
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-        if (!employee || !startDate || !endDate) return;
+   function generateTable() {
+    const employee = employeeSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    if (!employee || !startDate || !endDate) return;
 
-        const weeklyOffDays = window.employeeWeeklyOffMap[employee];
-        const clId = window.employeeCLMap[employee];
+    const weeklyOffDays = window.employeeWeeklyOffMap[employee];
+    const clId = window.employeeCLMap[employee];
 
-        const tbody = document.getElementById("attendance_table_body");
-        document.getElementById("attendance_table").style.display = "table";
-        tbody.innerHTML = "";
+    const tbody = document.getElementById("attendance_table_body");
+    document.getElementById("attendance_table").style.display = "table";
+    tbody.innerHTML = "";
 
-        frappe.call({
-            method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
-            args: { employee: clId, start_date: startDate, end_date: endDate },
-            callback: function (res) {
+    frappe.call({
+        method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
+        args: { employee: clId, start_date: startDate, end_date: endDate },
+        callback: function (res) {
 
-                const attendanceMap = res.message || {};
-                window.attendanceTableData = {};
-                window.originalAttendanceData = {};
+            const attendanceMap = res.message || {};
+            window.attendanceTableData = {};
+            window.originalAttendanceData = {};
 
-                let current = new Date(startDate);
-                const end = new Date(endDate);
+            let current = new Date(startDate);
+            const end = new Date(endDate);
 
-                while (current <= end) {
-                    const dayName = current.toLocaleDateString("en-US", { weekday: "long" });
-                    const dateKey = current.toISOString().split("T")[0];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);  // normalize today
 
-                    const isWeeklyOff = weeklyOffDays.includes(dayName.toLowerCase());
-                    const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const isFuture = current > today;
+            while (current <= end) {
+                let currentDate = new Date(current);
+                currentDate.setHours(0, 0, 0, 0);  // normalize current date
 
-                    const savedStatus = attendanceMap[dateKey] || "";
-                    window.attendanceTableData[dateKey] = savedStatus;
-                    if (savedStatus) window.originalAttendanceData[dateKey] = savedStatus;
+                const dayName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
+                const dateKey = currentDate.toISOString().split("T")[0];
 
-                    const row = document.createElement("tr");
-                    if (isWeeklyOff) row.classList.add("weekly-off-row");
-                    if (isFuture) row.classList.add("future-date-row");
+                const isWeeklyOff = weeklyOffDays.includes(dayName.toLowerCase());
+                const isFuture = currentDate > today;  // disables only dates after today
 
-                    row.innerHTML = `
-                        <td>${dayName}</td>
-                        <td>${current.getDate()} ${current.toLocaleDateString("en-US", { month: "long" })} ${current.getFullYear()}</td>
-                        ${["Present", "Absent", "Half Day"].map(s => `
-                            <td class="text-center">
-                                <input type="radio" name="status_${dateKey}" value="${s}"
-                                    ${savedStatus === s ? "checked" : ""}
-                                    ${isWeeklyOff || isFuture ? "disabled" : ""}>
-                            </td>
-                        `).join("")}
-                    `;
+                const savedStatus = attendanceMap[dateKey] || "";
+                window.attendanceTableData[dateKey] = savedStatus;
+                if (savedStatus) window.originalAttendanceData[dateKey] = savedStatus;
 
-                    if (!isWeeklyOff && !isFuture) {
-                        row.querySelectorAll("input").forEach(i => {
-                            i.addEventListener("change", () => {
-                                window.attendanceTableData[dateKey] = i.value;
-                                updateCounts();
-                            });
+                const row = document.createElement("tr");
+                if (isWeeklyOff) row.classList.add("weekly-off-row");
+                if (isFuture) row.classList.add("future-date-row");
+
+                row.innerHTML = `
+                    <td>${dayName}</td>
+                    <td>${currentDate.getDate()} ${currentDate.toLocaleDateString("en-US", { month: "long" })} ${currentDate.getFullYear()}</td>
+                    ${["Present", "Absent", "Half Day"].map(s => `
+                        <td class="text-center">
+                            <input type="radio" name="status_${dateKey}" value="${s}"
+                                ${savedStatus === s ? "checked" : ""}
+                                ${isWeeklyOff || isFuture ? "disabled" : ""}>
+                        </td>
+                    `).join("")}
+                `;
+
+                if (!isWeeklyOff && !isFuture) {
+                    row.querySelectorAll("input").forEach(i => {
+                        i.addEventListener("change", () => {
+                            window.attendanceTableData[dateKey] = i.value;
+                            updateCounts();
                         });
-                    }
-
-                    tbody.appendChild(row);
-                    current.setDate(current.getDate() + 1);
+                    });
                 }
 
-                updateCounts();
+                tbody.appendChild(row);
+                current.setDate(current.getDate() + 1);
             }
-        });
-    }
+
+            updateCounts();
+        }
+    });
+}
 
     // ================================
     // Bulk + Save
