@@ -30,7 +30,8 @@
   "column_break_orch",
   "total_deductions",
   "total_employer_contribution",
-  "net_salary"
+  "net_salary",
+  "amended_from"
  ],
  "fields": [
   {
@@ -180,11 +181,22 @@
    "fieldtype": "Data",
    "label": "Company",
    "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Salary Slip",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-01-23 12:17:44.562520",
+ "modified": "2026-01-23 16:01:40.177295",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
