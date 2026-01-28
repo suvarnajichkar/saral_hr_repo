@@ -193,7 +193,7 @@ frappe.ready(function () {
     monthSelect.addEventListener("change", updateDatesFromMonthYear);
 
     // ================================
-    // Attendance table logic (UNCHANGED)
+    // Attendance table logic
     // ================================
     window.attendanceTableData = {};
     window.originalAttendanceData = {};
@@ -240,7 +240,7 @@ frappe.ready(function () {
                     const dateKey = current.toISOString().split("T")[0];
 
                     const isWeeklyOff = weeklyOffDays.includes(dayName.toLowerCase());
-                    const today = new Date(); today.setHours(0,0,0,0);
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
                     const isFuture = current > today;
 
                     const savedStatus = attendanceMap[dateKey] || "";
@@ -253,8 +253,8 @@ frappe.ready(function () {
 
                     row.innerHTML = `
                         <td>${dayName}</td>
-                        <td>${current.getDate()} ${current.toLocaleDateString("en-US",{month:"long"})} ${current.getFullYear()}</td>
-                        ${["Present","Absent","Half Day"].map(s => `
+                        <td>${current.getDate()} ${current.toLocaleDateString("en-US", { month: "long" })} ${current.getFullYear()}</td>
+                        ${["Present", "Absent", "Half Day"].map(s => `
                             <td class="text-center">
                                 <input type="radio" name="status_${dateKey}" value="${s}"
                                     ${savedStatus === s ? "checked" : ""}
@@ -282,7 +282,7 @@ frappe.ready(function () {
     }
 
     // ================================
-    // Bulk + Save (UNCHANGED)
+    // Bulk + Save
     // ================================
     function bulkMark(status) {
         Object.keys(window.attendanceTableData).forEach(date => {
@@ -320,4 +320,206 @@ frappe.ready(function () {
             generateTable();
         });
     };
+
+    // ================================
+    // Calendar Modal Functions
+    // ================================
+    let currentCalendarYear = 2025;
+    let yearAttendanceData = {};
+
+    // Helper function to normalize date formats
+    function normalizeDateKey(dateStr) {
+        if (!dateStr) return null;
+
+        if (dateStr instanceof Date) {
+            const year = dateStr.getFullYear();
+            const month = String(dateStr.getMonth() + 1).padStart(2, '0');
+            const day = String(dateStr.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const parts = dateStr.toString().split('-');
+        if (parts.length === 3) {
+            return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+
+        return dateStr;
+    }
+
+    window.openCalendarModal = function () {
+        const modal = document.getElementById('calendar-modal');
+        const employee = employeeSelect.value;
+
+        if (!employee) {
+            frappe.show_alert({ message: "Please select an employee first", indicator: "orange" });
+            return;
+        }
+
+        modal.classList.add('show');
+        currentCalendarYear = parseInt(yearSelect.value) || new Date().getFullYear();
+        document.getElementById('selected-year').textContent = currentCalendarYear;
+
+        loadYearAttendance();
+    }
+
+    window.closeCalendarModal = function () {
+        const modal = document.getElementById('calendar-modal');
+        modal.classList.remove('show');
+    }
+
+    window.changeYear = function (direction) {
+        currentCalendarYear += direction;
+        document.getElementById('selected-year').textContent = currentCalendarYear;
+        loadYearAttendance();
+    }
+
+    function loadYearAttendance() {
+        const employee = employeeSelect.value;
+        const clId = window.employeeCLMap[employee];
+
+        if (!clId) {
+            console.error('No Company Link ID found');
+            return;
+        }
+
+        const startDate = `${currentCalendarYear}-01-01`;
+        const endDate = `${currentCalendarYear}-12-31`;
+
+        console.log('Loading attendance for:', clId, 'Year:', currentCalendarYear);
+
+        frappe.call({
+            method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
+            args: {
+                employee: clId,
+                start_date: startDate,
+                end_date: endDate
+            },
+            callback: function (res) {
+                const rawData = res.message || {};
+
+                // Normalize all date keys
+                yearAttendanceData = {};
+                Object.entries(rawData).forEach(([dateKey, status]) => {
+                    const normalized = normalizeDateKey(dateKey);
+                    if (normalized) {
+                        yearAttendanceData[normalized] = status;
+                    }
+                });
+
+                console.log('✅ Loaded attendance data:', Object.keys(yearAttendanceData).length, 'records');
+
+                renderMonthsGrid();
+            },
+            error: function (err) {
+                console.error('❌ Error loading attendance:', err);
+            }
+        });
+    }
+
+    function renderMonthsGrid() {
+        const employee = employeeSelect.value;
+        const weeklyOffDays = window.employeeWeeklyOffMap[employee] || [];
+
+        const monthsGrid = document.getElementById('months-grid');
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+        monthsGrid.innerHTML = '';
+        let totalColoredDays = 0;
+
+        monthNames.forEach((monthName, monthIndex) => {
+            const monthCard = document.createElement('div');
+            monthCard.className = 'month-card';
+            monthCard.onclick = () => selectMonth(monthIndex);
+
+            const firstDay = new Date(currentCalendarYear, monthIndex, 1);
+            const lastDay = new Date(currentCalendarYear, monthIndex + 1, 0);
+            const startDay = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+
+            let miniCalendarHTML = `<div class="month-name">${monthName}</div><div class="mini-calendar">`;
+
+            // Day headers
+            dayNames.forEach(day => {
+                miniCalendarHTML += `<div class="mini-calendar-header">${day}</div>`;
+            });
+
+            // Empty cells
+            for (let i = 0; i < startDay; i++) {
+                miniCalendarHTML += `<div class="mini-calendar-day empty"></div>`;
+            }
+
+            // Days of the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentCalendarYear, monthIndex, day);
+                const dateKey = normalizeDateKey(date);
+                const isToday = date.toDateString() === today.toDateString();
+                const dayName = date
+                    .toLocaleDateString("en-US", { weekday: "long" })
+                    .toLowerCase();
+
+                const isWeeklyOff = weeklyOffDays.includes(dayName);
+
+
+                let dayClass = 'mini-calendar-day';
+                if (isToday) dayClass += ' today';
+
+                // attendance has highest priority
+                const status = yearAttendanceData[dateKey];
+
+                if (status === 'Present') {
+                    dayClass += ' present';
+                    totalColoredDays++;
+                } else if (status === 'Absent') {
+                    dayClass += ' absent';
+                    totalColoredDays++;
+                } else if (status === 'Half Day') {
+                    dayClass += ' halfday';
+                    totalColoredDays++;
+                } else if (isWeeklyOff) {
+                    dayClass += ' weekend'; // blue weekly off
+                }
+
+
+                miniCalendarHTML += `<div class="${dayClass}">${day}</div>`;
+            }
+
+            miniCalendarHTML += '</div>';
+            monthCard.innerHTML = miniCalendarHTML;
+            monthsGrid.appendChild(monthCard);
+        });
+
+        console.log(`✅ Rendered ${totalColoredDays} colored days in calendar`);
+    }
+
+    function selectMonth(monthIndex) {
+        yearSelect.value = currentCalendarYear;
+        monthSelect.value = monthIndex;
+
+        const event = new Event('change');
+        monthSelect.dispatchEvent(event);
+
+        window.closeCalendarModal();
+    }
+
+    // Event listeners
+    document.getElementById('get_attendance_info').onclick = function () {
+        window.openCalendarModal();
+    };
+
+    document.getElementById('calendar-modal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            window.closeCalendarModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            window.closeCalendarModal();
+        }
+    });
 });

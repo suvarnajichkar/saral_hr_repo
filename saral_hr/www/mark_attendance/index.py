@@ -41,6 +41,9 @@ def get_attendance_between_dates(employee, start_date, end_date):
     start_date = getdate(start_date)
     end_date = getdate(end_date)
 
+    # Debug log
+    frappe.logger().info(f"Fetching attendance for {employee} from {start_date} to {end_date}")
+
     attendance_records = frappe.db.get_all(
         "Attendance",
         filters={
@@ -50,7 +53,17 @@ def get_attendance_between_dates(employee, start_date, end_date):
         fields=["attendance_date", "status"]
     )
 
-    return {str(row.attendance_date): row.status for row in attendance_records}
+    # Debug log
+    frappe.logger().info(f"Found {len(attendance_records)} records")
+    
+    result = {}
+    for row in attendance_records:
+        date_str = str(row.attendance_date)
+        result[date_str] = row.status
+        
+    frappe.logger().info(f"Returning data: {result}")
+    
+    return result
 
 
 @frappe.whitelist()
@@ -115,3 +128,27 @@ def save_attendance(employee, attendance_date, status):
 
     frappe.db.commit()
     return "success"
+
+
+@frappe.whitelist()
+def get_employee_attendance_for_year(employee, year):
+    if not employee or not year:
+        return {}
+
+    records = frappe.db.get_all(
+        "Attendance",
+        filters={
+            "employee": employee,
+            "attendance_date": ["between", [f"{year}-01-01", f"{year}-12-31"]],
+            "status": ["in", ["Present", "Absent", "Half Day"]]
+        },
+        fields=["attendance_date", "status"]
+    )
+
+    attendance_map = {}
+
+    for r in records:
+        # ONLY dates which actually have attendance
+        attendance_map[str(r.attendance_date)] = r.status
+
+    return attendance_map
