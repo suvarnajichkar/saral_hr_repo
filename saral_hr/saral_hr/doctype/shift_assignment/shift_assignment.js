@@ -1,4 +1,14 @@
 frappe.ui.form.on('Shift Assignment', {
+	onload(frm) {
+		frm.set_query('employee', function () {
+			return {
+				filters: {
+					is_active: 1
+				}
+			};
+		});
+	},
+
 	from_date(frm) {
 		validate_dates(frm);
 	},

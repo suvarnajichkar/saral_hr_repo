@@ -62,8 +62,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "no_copy": 1,
-   "options": "\nPresent\nAbsent\nOn Leave\nHalf Day\nWork From Home",
+   "options": "\nPresent\nAbsent\nOn Leave\nHalf Day",
    "reqd": 1,
    "search_index": 1
   },
@@ -131,7 +130,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-23 13:56:25.312358",
+ "modified": "2026-01-29 16:35:21.950224",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",
