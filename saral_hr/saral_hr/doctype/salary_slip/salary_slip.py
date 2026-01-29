@@ -9,13 +9,14 @@ class SalarySlip(Document):
         if self.start_date:
             self.end_date = get_last_day(getdate(self.start_date))
 
-@frappe.whitelist()
-def get_active_employees():
-    return {
-        "filters": {
-            "is_active": 1
-        }
-    }
+# Removed
+# @frappe.whitelist()
+# def get_active_employees():
+#     return {
+#         "filters": {
+#             "is_active": 1
+#         }
+#     }
 
 
 @frappe.whitelist()

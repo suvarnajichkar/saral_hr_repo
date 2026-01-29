@@ -105,7 +105,6 @@
    "fieldtype": "Link",
    "label": "Employee",
    "options": "Company Link",
-   "get_query": "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_active_employees",
    "reqd": 1
   },
 

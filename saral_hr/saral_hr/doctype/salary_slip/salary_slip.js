@@ -7,6 +7,15 @@ frappe.ui.form.on("Salary Slip", {
         if (frm.doc.deduct_weekly_off_from_working_days === undefined) {
             frm.set_value("deduct_weekly_off_from_working_days", 1);
         }
+        
+        // Set query to filter only active employees
+        frm.set_query("employee", () => {
+            return {
+                filters: {
+                    is_active: 1
+                }
+            };
+        });
     },
 
     employee(frm) {
