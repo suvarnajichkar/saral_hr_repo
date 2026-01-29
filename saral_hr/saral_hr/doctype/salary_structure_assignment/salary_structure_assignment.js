@@ -1,5 +1,9 @@
 frappe.ui.form.on("Salary Structure Assignment", {
 
+    refresh(frm) {
+        calculate_totals(frm);
+    },
+
     setup(frm) {
         frm.set_query("employee", () => ({
             filters: { is_active: 1 }
@@ -23,11 +27,13 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
                 clear_salary_tables(frm);
 
+                // Earnings
                 (r.message.earnings || []).forEach(row => {
                     let e = frm.add_child("earnings");
                     copy_row(e, row);
                 });
 
+                // Deductions
                 (r.message.deductions || []).forEach(row => {
                     let d = frm.add_child("deductions");
                     copy_row(d, row);
@@ -35,6 +41,8 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
                 frm.set_value("currency", r.message.currency || "INR");
                 frm.refresh_fields(["earnings", "deductions"]);
+
+                // 🔥 force calculation after rows render
                 calculate_totals(frm);
             }
         });
@@ -42,11 +50,14 @@ frappe.ui.form.on("Salary Structure Assignment", {
 });
 
 
+// ✅ CORRECT child table handler
 frappe.ui.form.on("Salary Details", {
-    amount(frm) {
+
+    amount(frm, cdt, cdn) {
         calculate_totals(frm);
     },
-    salary_details_remove(frm) {
+
+    salary_details_remove(frm, cdt, cdn) {
         calculate_totals(frm);
     }
 });
@@ -56,44 +67,51 @@ function calculate_totals(frm) {
 
     let total_earnings = 0;
     let total_deductions = 0;
-    let employer_contribution = 0;
+    let total_employer_contribution = 0;
 
+    // Earnings = Gross
     (frm.doc.earnings || []).forEach(r => {
         total_earnings += flt(r.amount);
     });
 
-    let deduction_rows = frm.doc.deductions || [];
-    let components = deduction_rows.map(r => r.salary_component);
+    let deductions = frm.doc.deductions || [];
 
-    if (!components.length) {
+    if (!deductions.length) {
         set_totals(frm, total_earnings, 0, 0);
         return;
     }
 
+    // Fetch employer contribution flags
     frappe.call({
         method: "frappe.client.get_list",
         args: {
             doctype: "Salary Component",
             fields: ["name", "employer_contribution"],
-            filters: { name: ["in", components] },
-            limit_page_length: 100
+            filters: {
+                name: ["in", deductions.map(d => d.salary_component)]
+            }
         },
         callback(res) {
 
-            let map = {};
+            let employer_map = {};
             (res.message || []).forEach(r => {
-                map[r.name] = r.employer_contribution;
+                employer_map[r.name] = r.employer_contribution;
             });
 
-            deduction_rows.forEach(r => {
-                if (map[r.salary_component]) {
-                    employer_contribution += flt(r.amount);
+            deductions.forEach(d => {
+                if (employer_map[d.salary_component]) {
+                    total_employer_contribution += flt(d.amount);
                 } else {
-                    total_deductions += flt(r.amount);
+                    total_deductions += flt(d.amount);
                 }
             });
 
-            set_totals(frm, total_earnings, total_deductions, employer_contribution);
+            set_totals(
+                frm,
+                total_earnings,
+                total_deductions,
+                total_employer_contribution
+            );
         }
     });
 }

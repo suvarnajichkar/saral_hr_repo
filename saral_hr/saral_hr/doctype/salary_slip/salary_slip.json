@@ -1,229 +1,252 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "format:SS-{YYYY}-{MM}-{##}",
-  "creation": "2026-01-17 11:03:48.653379",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "employee",
-    "employee_name",
-    "aadhar_number",
-    "salary_structure",
-    "company",
-    "column_break_jxct",
-    "start_date",
-    "end_date",
-    "currency",
-    "payment_days_tab",
-    "total_working_days",
-    "column_break_puyt",
-    "absent_days",
-    "earnings_and_deductions_tab",
-    "earnings_and_deductions_section",
-    "earnings",
-    "column_break_zrdn",
-    "deductions",
-    "totals_section",
-    "total_earnings",
-    "gross_salary",
-    "ctc",
-    "column_break_orch",
-    "total_deductions",
-    "total_employer_contribution",
-    "net_salary",
-    "amended_from"
-  ],
-  "fields": [
-    {
-      "fetch_from": "employee.full_name",
-      "fieldname": "employee_name",
-      "fieldtype": "Data",
-      "in_list_view": 1,
-      "label": "Employee Name"
-    },
-    {
-      "fieldname": "end_date",
-      "fieldtype": "Date",
-      "label": "End Date"
-    },
-    {
-      "fieldname": "salary_structure",
-      "fieldtype": "Link",
-      "label": "Salary Structure",
-      "options": "Salary Structure"
-    },
-    {
-      "fieldname": "payment_days_tab",
-      "fieldtype": "Tab Break",
-      "label": "Payment Days"
-    },
-    {
-      "fieldname": "total_working_days",
-      "fieldtype": "Float",
-      "label": "Working Days",
-      "precision": "2"
-    },
-    {
-      "fieldname": "column_break_puyt",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "absent_days",
-      "fieldtype": "Float",
-      "label": "Absent Days",
-      "precision": "2"
-    },
-    {
-      "fieldname": "earnings_and_deductions_tab",
-      "fieldtype": "Tab Break",
-      "label": "Earnings and Deductions"
-    },
-    {
-      "fieldname": "earnings_and_deductions_section",
-      "fieldtype": "Section Break",
-      "label": "Earnings and Deductions"
-    },
-    {
-      "fieldname": "earnings",
-      "fieldtype": "Table",
-      "label": "Earnings",
-      "options": "Salary Details"
-    },
-    {
-      "fieldname": "deductions",
-      "fieldtype": "Table",
-      "label": "Deductions",
-      "options": "Salary Details"
-    },
-    {
-      "fieldname": "employee",
-      "fieldtype": "Link",
-      "label": "Employee",
-      "options": "Company Link"
-    },
-    {
-      "default": "INR",
-      "fieldname": "currency",
-      "fieldtype": "Link",
-      "label": "Currency",
-      "options": "Currency",
-      "read_only": 1
-    },
-    {
-      "fieldname": "start_date",
-      "fieldtype": "Date",
-      "in_list_view": 1,
-      "label": "Start Date",
-      "reqd": 1
-    },
-    {
-      "fieldname": "total_earnings",
-      "fieldtype": "Float",
-      "label": "Total Earnings",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "total_deductions",
-      "fieldtype": "Float",
-      "label": "Total Deductions",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "gross_salary",
-      "fieldtype": "Float",
-      "label": "Gross Salary",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "ctc",
-      "fieldtype": "Float",
-      "label": "CTC",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "column_break_zrdn",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "total_employer_contribution",
-      "fieldtype": "Float",
-      "label": "Total Employer Contribution",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "net_salary",
-      "fieldtype": "Float",
-      "label": "Net Salary",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "column_break_jxct",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "totals_section",
-      "fieldtype": "Section Break",
-      "label": "Totals"
-    },
-    {
-      "fieldname": "column_break_orch",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fetch_from": "employee.company",
-      "fieldname": "company",
-      "fieldtype": "Data",
-      "label": "Company",
-      "read_only": 1
-    },
-    {
-      "fieldname": "amended_from",
-      "fieldtype": "Link",
-      "label": "Amended From",
-      "no_copy": 1,
-      "options": "Salary Slip",
-      "print_hide": 1,
-      "read_only": 1,
-      "search_index": 1
-    },
-    {
-      "fetch_from": "employee.aadhar_number",
-      "fieldname": "aadhar_number",
-      "fieldtype": "Data",
-      "label": "Aadhar Number"
-    }
-  ],
-  "index_web_pages_for_search": 1,
-  "is_submittable": 1,
-  "links": [],
-  "modified": "2026-01-23 16:01:40.177295",
-  "modified_by": "Administrator",
-  "module": "Saral Hr",
-  "name": "Salary Slip",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "write": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": []
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SS-{YYYY}-{MM}-{##}",
+ "creation": "2026-01-17 11:03:48.653379",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "salary_structure",
+  "company",
+  "column_break_jxct",
+  "start_date",
+  "end_date",
+  "currency",
+  "deduct_weekly_off_from_working_days",
+  "payment_days_tab",
+  "total_working_days",
+  "payment_days",
+  "present_days",
+  "column_break_puyt",
+  "absent_days",
+  "weekly_offs_count",
+  "earnings_and_deductions_tab",
+  "earnings_and_deductions_section",
+  "earnings",
+  "column_break_zrdn",
+  "deductions",
+  "totals_section",
+  "total_earnings",
+  "gross_salary",
+  "ctc",
+  "column_break_orch",
+  "total_deductions",
+  "total_employer_contribution",
+  "net_salary",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fetch_from": "employee.full_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "salary_structure",
+   "fieldtype": "Link",
+   "label": "Salary Structure",
+   "options": "Salary Structure"
+  },
+  {
+   "fieldname": "payment_days_tab",
+   "fieldtype": "Tab Break",
+   "label": "Days Calculations"
+  },
+  {
+   "fieldname": "total_working_days",
+   "fieldtype": "Float",
+   "label": "Working Days",
+   "precision": "2"
+  },
+  {
+   "fieldname": "column_break_puyt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "absent_days",
+   "fieldtype": "Float",
+   "label": "Absent Days",
+   "precision": "2"
+  },
+  {
+   "fieldname": "earnings_and_deductions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Earnings and Deductions"
+  },
+  {
+   "fieldname": "earnings_and_deductions_section",
+   "fieldtype": "Section Break",
+   "label": "Earnings and Deductions"
+  },
+  {
+   "fieldname": "earnings",
+   "fieldtype": "Table",
+   "label": "Earnings",
+   "options": "Salary Details"
+  },
+  {
+   "fieldname": "deductions",
+   "fieldtype": "Table",
+   "label": "Deductions",
+   "options": "Salary Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee ",
+   "options": "Company Link",
+   "get_query": "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_active_employees"
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Float",
+   "label": "Total Earnings",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Float",
+   "label": "Total Deductions",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gross_salary",
+   "fieldtype": "Float",
+   "label": "Gross Salary",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ctc",
+   "fieldtype": "Float",
+   "label": "CTC",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zrdn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_employer_contribution",
+   "fieldtype": "Float",
+   "label": "Total Employer Contribution",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "net_salary",
+   "fieldtype": "Float",
+   "label": "Net Salary",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_jxct",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "column_break_orch",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.company",
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Salary Slip",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "payment_days",
+   "fieldtype": "Float",
+   "label": "Payment Days"
+  },
+  {
+   "fieldname": "present_days",
+   "fieldtype": "Float",
+   "label": "Present Days ",
+   "precision": "2"
+  },
+  {
+   "fieldname": "weekly_offs_count",
+   "fieldtype": "Float",
+   "label": "Weekly Offs Count",
+   "precision": "2"
+  },
+  {
+   "default": "1",
+   "fieldname": "deduct_weekly_off_from_working_days",
+   "fieldtype": "Check",
+   "label": "Deduct Weekly Off from Working Days"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-01-29 15:33:27.362647",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Salary Slip",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }
