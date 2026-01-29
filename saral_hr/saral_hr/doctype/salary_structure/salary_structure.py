@@ -9,8 +9,8 @@ from frappe import _
 class SalaryStructure(Document):
     def validate(self):
         self.validate_salary_components()
-        self.calculate_totals()
-    
+        # Totals calculation removed
+
     def validate_salary_components(self):
         """Validate that earnings have Earning type and deductions have Deduction type"""
         
@@ -55,12 +55,6 @@ class SalaryStructure(Document):
         deductions_components = [d.salary_component for d in self.get('deductions', []) if d.salary_component]
         if len(deductions_components) != len(set(deductions_components)):
             frappe.throw(_('Duplicate salary components found in Deductions table. Each component can only be added once.'))
-    
-    def calculate_totals(self):
-        """Calculate total earnings, deductions and net pay"""
-        self.total_earnings = sum([flt(d.amount) for d in self.get('earnings', [])])
-        self.total_deduction = sum([flt(d.amount) for d in self.get('deductions', [])])
-        self.net_pay = self.total_earnings - self.total_deduction
 
 
 def flt(value, decimals=2):

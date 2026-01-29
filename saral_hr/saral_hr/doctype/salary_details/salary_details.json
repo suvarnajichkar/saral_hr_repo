@@ -57,7 +57,6 @@
    "fetch_from": "salary_component.employer_contribution",
    "fieldname": "employer_contribution",
    "fieldtype": "Check",
-   "hidden": 1,
    "in_list_view": 1,
    "label": "Employer Contribution"
   }
@@ -65,7 +64,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-29 16:43:16.636766",
+ "modified": "2026-01-29 17:17:23.911287",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Details",
