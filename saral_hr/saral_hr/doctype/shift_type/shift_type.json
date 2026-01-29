@@ -1,79 +1,72 @@
 {
- "actions": [],
- "allow_rename": 1,
- "creation": "2026-01-09 12:40:38.711988",
  "doctype": "DocType",
- "engine": "InnoDB",
- "field_order": [
-  "start_time",
-  "end_time",
-  "column_break_pygi",
-  "holiday_list",
-  "enable_auto_attendance",
-  "auto_attendance_settings_section",
-  "determine_check_in_and_check_out"
- ],
+ "name": "Shift Type",
+ "module": "Saral Hr",
+ "custom": 0,
+ "is_submittable": 0,
+ "track_changes": 1,
+ "autoname": "field:shift_name",
  "fields": [
+  {
+   "fieldname": "shift_name",
+   "fieldtype": "Data",
+   "label": "Shift Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_timing",
+   "fieldtype": "Section Break",
+   "label": "Shift Timings"
+  },
   {
    "fieldname": "start_time",
    "fieldtype": "Time",
-   "label": "Start Time"
+   "label": "Start Time",
+   "reqd": 1
   },
   {
    "fieldname": "end_time",
    "fieldtype": "Time",
-   "label": "End Time"
+   "label": "End Time",
+   "reqd": 1
   },
   {
-   "fieldname": "holiday_list",
-   "fieldtype": "Data",
-   "label": "Holiday List"
-  },
-  {
-   "default": "0",
-   "description": "Mark attendance based on 'Employee Checkin' for Employees assigned to this shift.",
-   "fieldname": "enable_auto_attendance",
-   "fieldtype": "Check",
-   "label": "Enable Auto Attendance"
-  },
-  {
-   "fieldname": "column_break_pygi",
+   "fieldname": "column_break_1",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "auto_attendance_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Auto Attendance Settings"
+   "fieldname": "late_entry_grace",
+   "fieldtype": "Int",
+   "label": "Late Entry Grace (Minutes)",
+   "default": 0
   },
   {
-   "description": "Alternating entries as IN and OUT during the same shift\nStrictly based on Log Type in Employee Checkin",
-   "fieldname": "determine_check_in_and_check_out",
-   "fieldtype": "Select",
-   "label": "Determine Checkin and Checkout"
+   "fieldname": "early_exit_grace",
+   "fieldtype": "Int",
+   "label": "Early Exit Grace (Minutes)",
+   "default": 0
+  },
+  {
+   "fieldname": "half_day_hours",
+   "fieldtype": "Float",
+   "label": "Half Day Threshold (Hours)",
+   "default": 4
   }
  ],
- "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-01-09 12:43:27.827444",
- "modified_by": "Administrator",
- "module": "Saral Hr",
- "name": "Shift Type",
- "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
    "role": "System Manager",
-   "share": 1,
-   "write": 1
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  },
+  {
+   "role": "HR User",
+   "read": 1,
+   "write": 1,
+   "create": 1
   }
- ],
- "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+ ]
 }

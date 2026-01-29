@@ -8,17 +8,20 @@
  "field_order": [
   "employee",
   "employee_name",
-  "aadhar_number",
   "salary_structure",
   "company",
   "column_break_jxct",
   "start_date",
   "end_date",
   "currency",
+  "deduct_weekly_off_from_working_days",
   "payment_days_tab",
   "total_working_days",
+  "payment_days",
+  "present_days",
   "column_break_puyt",
   "absent_days",
+  "weekly_offs_count",
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
@@ -31,7 +34,8 @@
   "column_break_orch",
   "total_deductions",
   "total_employer_contribution",
-  "net_salary"
+  "net_salary",
+  "amended_from"
  ],
  "fields": [
   {
@@ -44,7 +48,8 @@
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
-   "label": "End Date"
+   "label": "End Date",
+   "reqd": 1
   },
   {
    "fieldname": "salary_structure",
@@ -55,7 +60,7 @@
   {
    "fieldname": "payment_days_tab",
    "fieldtype": "Tab Break",
-   "label": "Payment Days"
+   "label": "Days Calculations"
   },
   {
    "fieldname": "total_working_days",
@@ -99,7 +104,8 @@
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee ",
-   "options": "Company Link"
+   "options": "Company Link",
+   "get_query": "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_active_employees"
   },
   {
    "default": "INR",
@@ -113,6 +119,7 @@
    "fieldname": "start_date",
    "fieldtype": "Date",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Start Date",
    "reqd": 1
   },
@@ -183,15 +190,43 @@
    "read_only": 1
   },
   {
-   "fetch_from": "employee.aadhar_number",
-   "fieldname": "aadhar_number",
-   "fieldtype": "Data",
-   "label": "Aadhar Number"
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Salary Slip",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "payment_days",
+   "fieldtype": "Float",
+   "label": "Payment Days"
+  },
+  {
+   "fieldname": "present_days",
+   "fieldtype": "Float",
+   "label": "Present Days ",
+   "precision": "2"
+  },
+  {
+   "fieldname": "weekly_offs_count",
+   "fieldtype": "Float",
+   "label": "Weekly Offs Count",
+   "precision": "2"
+  },
+  {
+   "default": "1",
+   "fieldname": "deduct_weekly_off_from_working_days",
+   "fieldtype": "Check",
+   "label": "Deduct Weekly Off from Working Days"
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-01-23 13:59:29.636428",
+ "modified": "2026-01-29 15:33:27.362647",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

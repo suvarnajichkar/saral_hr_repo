@@ -1,8 +1,12 @@
-// Copyright (c) 2026, sj and contributors
-// For license information, please see license.txt
+frappe.listview_settings['Salary Component'] = {
+	add_fields: ['type'],
 
-// frappe.ui.form.on("Salary Component", {
-// 	refresh(frm) {
-
-// 	},
-// });
+	get_indicator: function (doc) {
+		if (doc.type === 'Earning') {
+			return ['Earning', 'green', 'type,=,Earning'];
+		}
+		if (doc.type === 'Deduction') {
+			return ['Deduction', 'red', 'type,=,Deduction'];
+		}
+	}
+};
