@@ -27,13 +27,11 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
                 clear_salary_tables(frm);
 
-                // Earnings
                 (r.message.earnings || []).forEach(row => {
                     let e = frm.add_child("earnings");
                     copy_row(e, row);
                 });
 
-                // Deductions
                 (r.message.deductions || []).forEach(row => {
                     let d = frm.add_child("deductions");
                     copy_row(d, row);
@@ -42,15 +40,12 @@ frappe.ui.form.on("Salary Structure Assignment", {
                 frm.set_value("currency", r.message.currency || "INR");
                 frm.refresh_fields(["earnings", "deductions"]);
 
-                // 🔥 force calculation after rows render
                 calculate_totals(frm);
             }
         });
     }
 });
 
-
-// ✅ CORRECT child table handler
 frappe.ui.form.on("Salary Details", {
 
     amount(frm, cdt, cdn) {
@@ -62,78 +57,80 @@ frappe.ui.form.on("Salary Details", {
     }
 });
 
-
 function calculate_totals(frm) {
 
-    let total_earnings = 0;
-    let total_deductions = 0;
-    let total_employer_contribution = 0;
+    let gross = 0;
+    let employee_deductions = 0;
+    let employer_contribution = 0;
+    let retention = 0;
 
-    // Earnings = Gross
-    (frm.doc.earnings || []).forEach(r => {
-        total_earnings += flt(r.amount);
+    (frm.doc.earnings || []).forEach(row => {
+        gross += flt(row.amount);
     });
 
     let deductions = frm.doc.deductions || [];
 
     if (!deductions.length) {
-        set_totals(frm, total_earnings, 0, 0);
+        set_totals(frm, gross, 0, 0, 0);
         return;
     }
 
-    // Fetch employer contribution flags
     frappe.call({
         method: "frappe.client.get_list",
         args: {
             doctype: "Salary Component",
-            fields: ["name", "employer_contribution"],
+            fields: ["name", "employer_contribution", "deduct_from_cash_in_hand_only"],
             filters: {
                 name: ["in", deductions.map(d => d.salary_component)]
             }
         },
         callback(res) {
 
-            let employer_map = {};
+            let component_map = {};
             (res.message || []).forEach(r => {
-                employer_map[r.name] = r.employer_contribution;
+                component_map[r.name] = {
+                    employer_contribution: r.employer_contribution,
+                    deduct_from_cash_in_hand_only: r.deduct_from_cash_in_hand_only
+                };
             });
 
             deductions.forEach(d => {
-                if (employer_map[d.salary_component]) {
-                    total_employer_contribution += flt(d.amount);
+                let comp = component_map[d.salary_component];
+                if (!comp) return;
+
+                if (comp.employer_contribution) {
+                    employer_contribution += flt(d.amount);
+                } else if (comp.deduct_from_cash_in_hand_only) {
+                    retention += flt(d.amount);
                 } else {
-                    total_deductions += flt(d.amount);
+                    employee_deductions += flt(d.amount);
                 }
             });
 
-            set_totals(
-                frm,
-                total_earnings,
-                total_deductions,
-                total_employer_contribution
-            );
+            set_totals(frm, gross, employee_deductions, employer_contribution, retention);
         }
     });
 }
 
+function set_totals(frm, gross, deductions, employer, retention) {
 
-function set_totals(frm, earnings, deductions, employer) {
-
-    let gross_salary = earnings;
-    let net_salary = earnings - deductions;
-    let ctc = gross_salary + employer;
+    let net_salary = gross - deductions;
+    let cash_in_hand = net_salary - retention;
+    let monthly_ctc = gross + employer;
+    let annual_ctc = monthly_ctc * 12;
 
     frm.set_value({
-        total_earnings: earnings,
-        gross_salary: gross_salary,
+        total_earnings: gross,
+        gross_salary: gross,
         total_deductions: deductions,
         total_employer_contribution: employer,
+        retention: retention,
         net_salary: net_salary,
-        net_in_hand: net_salary,
-        ctc: ctc
+        cash_in_hand: cash_in_hand,
+        monthly_ctc: monthly_ctc,
+        annual_ctc: annual_ctc
     });
 }
-
 
 function clear_salary_tables(frm) {
 
@@ -142,17 +139,18 @@ function clear_salary_tables(frm) {
 
     frm.set_value({
         total_earnings: 0,
-        total_deductions: 0,
         gross_salary: 0,
+        total_deductions: 0,
         total_employer_contribution: 0,
+        retention: 0,
         net_salary: 0,
-        net_in_hand: 0,
-        ctc: 0
+        cash_in_hand: 0,
+        monthly_ctc: 0,
+        annual_ctc: 0
     });
 
     frm.refresh_fields();
 }
-
 
 function copy_row(target, source) {
     Object.keys(source).forEach(key => {

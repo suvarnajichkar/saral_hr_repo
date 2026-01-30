@@ -8,7 +8,6 @@ frappe.ui.form.on("Salary Slip", {
             frm.set_value("deduct_weekly_off_from_working_days", 1);
         }
         
-        // Set query to filter only active employees
         frm.set_query("employee", () => {
             return {
                 filters: {
@@ -66,6 +65,7 @@ function fetch_salary(frm) {
                 d.base_amount = row.amount;
             });
             frm.refresh_fields(["earnings", "deductions"]);
+            recalculate_salary(frm);
         }
     });
 }
@@ -93,8 +93,10 @@ function fetch_days_and_attendance(frm) {
 
 function recalculate_salary(frm) {
     let gross = 0;
-    let deductions = 0;
-    let employer = 0;
+    let employee_deductions = 0;
+    let employer_contribution = 0;
+    let retention = 0;
+    
     let wd = flt(frm.doc.total_working_days);
     let pd = flt(frm.doc.payment_days);
 
@@ -102,9 +104,11 @@ function recalculate_salary(frm) {
         let base_amt = row.base_amount || row.amount || 0;
         if (!row.base_amount) row.base_amount = row.amount || 0;
         let amt = base_amt;
+        
         if (row.depends_on_payment_days && wd > 0) {
             amt = (base_amt / wd) * pd;
         }
+        
         row.amount = flt(amt, 2);
         gross += flt(row.amount);
     });
@@ -113,24 +117,37 @@ function recalculate_salary(frm) {
         let base_amt = row.base_amount || row.amount || 0;
         if (!row.base_amount) row.base_amount = row.amount || 0;
         let amt = base_amt;
+        
         if (row.depends_on_payment_days && wd > 0) {
             amt = (base_amt / wd) * pd;
         }
+        
         row.amount = flt(amt, 2);
+        
         if (row.employer_contribution) {
-            employer += flt(row.amount);
+            employer_contribution += flt(row.amount);
+        } else if (row.deduct_from_cash_in_hand_only) {
+            retention += flt(row.amount);
         } else {
-            deductions += flt(row.amount);
+            employee_deductions += flt(row.amount);
         }
     });
+
+    let net_salary = gross - employee_deductions;
+    let cash_in_hand = net_salary - retention;
+    let monthly_ctc = gross + employer_contribution;
+    let annual_ctc = monthly_ctc * 12;
 
     frm.set_value({
         gross_salary: gross,
         total_earnings: gross,
-        total_deductions: deductions,
-        total_employer_contribution: employer,
-        net_salary: gross - deductions,
-        ctc: gross + employer
+        total_deductions: employee_deductions,
+        total_employer_contribution: employer_contribution,
+        retention: retention,
+        net_salary: net_salary,
+        cash_in_hand: cash_in_hand,
+        monthly_ctc: monthly_ctc,
+        annual_ctc: annual_ctc
     });
 
     frm.refresh_fields(["earnings", "deductions"]);
@@ -149,8 +166,11 @@ function reset_form(frm) {
         total_earnings: 0,
         total_deductions: 0,
         total_employer_contribution: 0,
+        retention: 0,
         net_salary: 0,
-        ctc: 0
+        cash_in_hand: 0,
+        monthly_ctc: 0,
+        annual_ctc: 0
     });
     frm.refresh_fields();
 }

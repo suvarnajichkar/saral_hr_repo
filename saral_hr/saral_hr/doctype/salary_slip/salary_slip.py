@@ -9,15 +9,6 @@ class SalarySlip(Document):
         if self.start_date:
             self.end_date = get_last_day(getdate(self.start_date))
 
-# Removed
-# @frappe.whitelist()
-# def get_active_employees():
-#     return {
-#         "filters": {
-#             "is_active": 1
-#         }
-#     }
-
 
 @frappe.whitelist()
 def get_salary_structure_for_employee(employee):
@@ -50,7 +41,7 @@ def get_salary_structure_for_employee(employee):
         comp = frappe.db.get_value(
             "Salary Component",
             row.salary_component,
-            ["salary_component_abbr", "employer_contribution", "depends_on_payment_days"],
+            ["salary_component_abbr", "employer_contribution", "depends_on_payment_days", "deduct_from_cash_in_hand_only"],
             as_dict=True
         )
         deductions.append({
@@ -58,7 +49,8 @@ def get_salary_structure_for_employee(employee):
             "abbr": comp.salary_component_abbr,
             "amount": row.amount,
             "employer_contribution": comp.employer_contribution,
-            "depends_on_payment_days": comp.depends_on_payment_days
+            "depends_on_payment_days": comp.depends_on_payment_days,
+            "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only
         })
     return {
         "salary_structure": ssa_doc.salary_structure,
