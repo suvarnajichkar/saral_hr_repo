@@ -4,15 +4,15 @@ frappe.ui.form.on("Salary Slip", {
         if (!frm.doc.currency) {
             frm.set_value("currency", "INR");
         }
+
         if (frm.doc.deduct_weekly_off_from_working_days === undefined) {
             frm.set_value("deduct_weekly_off_from_working_days", 1);
         }
-        
+
+        // Show only active employees
         frm.set_query("employee", () => {
             return {
-                filters: {
-                    is_active: 1
-                }
+                filters: { is_active: 1 }
             };
         });
     },
@@ -37,9 +37,9 @@ frappe.ui.form.on("Salary Slip", {
 });
 
 function set_end_date(frm) {
-    let startDate = frappe.datetime.str_to_obj(frm.doc.start_date);
-    let lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-    frm.set_value("end_date", frappe.datetime.obj_to_str(lastDay));
+    let start = frappe.datetime.str_to_obj(frm.doc.start_date);
+    let end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    frm.set_value("end_date", frappe.datetime.obj_to_str(end));
 }
 
 function fetch_salary(frm) {
@@ -51,19 +51,24 @@ function fetch_salary(frm) {
                 frappe.msgprint("No Salary Structure found");
                 return;
             }
+
             frm.set_value("salary_structure", r.message.salary_structure);
+
             frm.clear_table("earnings");
             frm.clear_table("deductions");
+
             (r.message.earnings || []).forEach(row => {
                 let e = frm.add_child("earnings");
                 Object.assign(e, row);
                 e.base_amount = row.amount;
             });
+
             (r.message.deductions || []).forEach(row => {
                 let d = frm.add_child("deductions");
                 Object.assign(d, row);
                 d.base_amount = row.amount;
             });
+
             frm.refresh_fields(["earnings", "deductions"]);
             recalculate_salary(frm);
         }
@@ -80,12 +85,14 @@ function fetch_days_and_attendance(frm) {
         },
         callback(r) {
             if (!r.message) return;
+
             let d = r.message;
-            frm.set_value("total_working_days", d.working_days || 0);
-            frm.set_value("payment_days", d.payment_days || 0);
-            frm.set_value("present_days", d.present_days || 0);
-            frm.set_value("absent_days", d.absent_days || 0);
-            frm.set_value("weekly_offs_count", d.weekly_offs || 0);
+            frm.set_value("total_working_days", d.working_days);
+            frm.set_value("payment_days", d.payment_days);
+            frm.set_value("present_days", d.present_days);
+            frm.set_value("absent_days", d.absent_days);
+            frm.set_value("weekly_offs_count", d.weekly_offs);
+
             recalculate_salary(frm);
         }
     });
@@ -96,40 +103,40 @@ function recalculate_salary(frm) {
     let employee_deductions = 0;
     let employer_contribution = 0;
     let retention = 0;
-    
+
     let wd = flt(frm.doc.total_working_days);
     let pd = flt(frm.doc.payment_days);
 
+    // Earnings
     (frm.doc.earnings || []).forEach(row => {
-        let base_amt = row.base_amount || row.amount || 0;
-        if (!row.base_amount) row.base_amount = row.amount || 0;
-        let amt = base_amt;
-        
-        if (row.depends_on_payment_days && wd > 0) {
-            amt = (base_amt / wd) * pd;
-        }
-        
-        row.amount = flt(amt, 2);
-        gross += flt(row.amount);
+        let base = row.base_amount || row.amount || 0;
+        row.base_amount = base;
+
+        let amount = row.depends_on_payment_days && wd > 0
+            ? (base / wd) * pd
+            : base;
+
+        row.amount = flt(amount, 2);
+        gross += row.amount;
     });
 
+    // Deductions categorization
     (frm.doc.deductions || []).forEach(row => {
-        let base_amt = row.base_amount || row.amount || 0;
-        if (!row.base_amount) row.base_amount = row.amount || 0;
-        let amt = base_amt;
-        
-        if (row.depends_on_payment_days && wd > 0) {
-            amt = (base_amt / wd) * pd;
-        }
-        
-        row.amount = flt(amt, 2);
-        
+        let base = row.base_amount || row.amount || 0;
+        row.base_amount = base;
+
+        let amount = row.depends_on_payment_days && wd > 0
+            ? (base / wd) * pd
+            : base;
+
+        row.amount = flt(amount, 2);
+
         if (row.employer_contribution) {
-            employer_contribution += flt(row.amount);
+            employer_contribution += row.amount;
         } else if (row.deduct_from_cash_in_hand_only) {
-            retention += flt(row.amount);
+            retention += row.amount;
         } else {
-            employee_deductions += flt(row.amount);
+            employee_deductions += row.amount;
         }
     });
 
@@ -156,6 +163,7 @@ function recalculate_salary(frm) {
 function reset_form(frm) {
     frm.clear_table("earnings");
     frm.clear_table("deductions");
+
     frm.set_value({
         total_working_days: 0,
         payment_days: 0,
@@ -172,5 +180,6 @@ function reset_form(frm) {
         monthly_ctc: 0,
         annual_ctc: 0
     });
+
     frm.refresh_fields();
 }
