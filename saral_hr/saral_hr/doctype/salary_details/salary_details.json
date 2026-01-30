@@ -11,7 +11,8 @@
   "column_break_snib",
   "amount",
   "depends_on_payment_days",
-  "employer_contribution"
+  "employer_contribution",
+  "deduct_from_cash_in_hand_only"
  ],
  "fields": [
   {
@@ -59,12 +60,19 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Employer Contribution"
+  },
+  {
+   "default": "0",
+   "fieldname": "deduct_from_cash_in_hand_only",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Deduct from Cash in Hand Only"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-29 17:17:23.911287",
+ "modified": "2026-01-30 12:44:04.147612",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Details",

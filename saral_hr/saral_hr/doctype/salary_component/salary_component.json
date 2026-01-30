@@ -13,7 +13,8 @@
   "column_break_phkq",
   "type",
   "employer_contribution",
-  "depends_on_payment_days"
+  "depends_on_payment_days",
+  "deduct_from_cash_in_hand_only"
  ],
  "fields": [
   {
@@ -63,11 +64,18 @@
   {
    "fieldname": "column_break_phkq",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.type == 'Deduction'",
+   "fieldname": "deduct_from_cash_in_hand_only",
+   "fieldtype": "Check",
+   "label": "Deduct from Cash in Hand Only"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-20 14:48:58.073861",
+ "modified": "2026-01-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Component",

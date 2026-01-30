@@ -9,7 +9,6 @@
  "field_order": [
   "employee",
   "employee_name",
-  "aadhar_number",
   "currency",
   "column_break_ngyh",
   "salary_structure",
@@ -26,15 +25,16 @@
   "column_break_oeow",
   "deductions",
   "calculations_section",
-  "column_break_wwjg",
   "total_earnings",
-  "gross_salary",
-  "net_in_hand",
-  "net_salary",
-  "column_break_lrth",
   "total_deductions",
   "total_employer_contribution",
-  "ctc"
+  "monthly_ctc",
+  "column_break_nlti",
+  "retention",
+  "gross_salary",
+  "net_salary",
+  "cash_in_hand",
+  "annual_ctc"
  ],
  "fields": [
   {
@@ -56,7 +56,7 @@
   {
    "fetch_from": "employee.branch",
    "fieldname": "branch",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Branch",
    "options": "Branch",
    "read_only": 1
@@ -150,60 +150,75 @@
   },
   {
    "fieldname": "total_earnings",
-   "fieldtype": "Currency",
-   "label": "Total Earnings"
+   "fieldtype": "Float",
+   "label": "Total Earnings",
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "total_deductions",
-   "fieldtype": "Currency",
+   "fieldtype": "Float",
    "label": "Total Deductions",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "net_in_hand",
-   "fieldtype": "Currency",
-   "label": "Net In Hand",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "column_break_lrth",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_wwjg",
-   "fieldtype": "Column Break",
-   "options": "Currency"
-  },
-  {
-   "fieldname": "net_salary",
-   "fieldtype": "Currency",
-   "label": "Net Salary"
-  },
-  {
-   "fieldname": "gross_salary",
-   "fieldtype": "Currency",
-   "label": "Gross Salary"
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "total_employer_contribution",
-   "fieldtype": "Currency",
-   "label": "Total Employer Contribution"
+   "fieldtype": "Float",
+   "label": "Total Employer Contribution",
+   "precision": "2",
+   "read_only": 1
   },
   {
-   "fieldname": "ctc",
-   "fieldtype": "Currency",
-   "label": "CTC"
+   "fieldname": "retention",
+   "fieldtype": "Float",
+   "label": "Retention",
+   "precision": "2",
+   "read_only": 1
   },
   {
-   "fetch_from": "employee.aadhar_number",
-   "fieldname": "aadhar_number",
-   "fieldtype": "Data",
-   "label": "Aadhar Number"
+   "fieldname": "gross_salary",
+   "fieldtype": "Float",
+   "label": "Gross Salary",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "net_salary",
+   "fieldtype": "Float",
+   "label": "Net Salary",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cash_in_hand",
+   "fieldtype": "Float",
+   "label": "Cash in Hand",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monthly_ctc",
+   "fieldtype": "Float",
+   "label": "Monthly CTC",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "annual_ctc",
+   "fieldtype": "Float",
+   "label": "Annual CTC",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nlti",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-23 14:05:35.895681",
+ "modified": "2026-01-30 14:29:16.007795",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",

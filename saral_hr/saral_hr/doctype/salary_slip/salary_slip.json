@@ -29,12 +29,16 @@
   "deductions",
   "totals_section",
   "total_earnings",
-  "gross_salary",
-  "ctc",
-  "column_break_orch",
   "total_deductions",
   "total_employer_contribution",
+  "retention",
+  "column_break_snfl",
+  "gross_salary",
   "net_salary",
+  "monthly_ctc",
+  "column_break_orch",
+  "cash_in_hand",
+  "annual_ctc",
   "amended_from"
  ],
  "fields": [
@@ -105,10 +109,8 @@
    "fieldtype": "Link",
    "label": "Employee",
    "options": "Company Link",
-   "get_query": "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_active_employees",
    "reqd": 1
   },
-
   {
    "default": "INR",
    "fieldname": "currency",
@@ -143,13 +145,6 @@
    "fieldname": "gross_salary",
    "fieldtype": "Float",
    "label": "Gross Salary",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "ctc",
-   "fieldtype": "Float",
-   "label": "CTC",
    "precision": "2",
    "read_only": 1
   },
@@ -209,7 +204,7 @@
   {
    "fieldname": "present_days",
    "fieldtype": "Float",
-   "label": "Present Days ",
+   "label": "Present Days",
    "precision": "2"
   },
   {
@@ -223,12 +218,44 @@
    "fieldname": "deduct_weekly_off_from_working_days",
    "fieldtype": "Check",
    "label": "Deduct Weekly Off from Working Days"
+  },
+  {
+   "fieldname": "retention",
+   "fieldtype": "Float",
+   "label": "Retention",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cash_in_hand",
+   "fieldtype": "Float",
+   "label": "Cash in Hand",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "monthly_ctc",
+   "fieldtype": "Float",
+   "label": "Monthly CTC",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "annual_ctc",
+   "fieldtype": "Float",
+   "label": "Annual CTC",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_snfl",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-29 15:33:27.362647",
+ "modified": "2026-01-30 14:03:17.549266",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
