@@ -107,11 +107,12 @@ function recalculate_salary(frm) {
     let wd = flt(frm.doc.total_working_days);
     let pd = flt(frm.doc.payment_days);
 
-    // Earnings
+    // ========== EARNINGS CALCULATION ==========
     (frm.doc.earnings || []).forEach(row => {
         let base = row.base_amount || row.amount || 0;
         row.base_amount = base;
 
+        // Pro-rata calculation based on payment days
         let amount = row.depends_on_payment_days && wd > 0
             ? (base / wd) * pd
             : base;
@@ -120,39 +121,64 @@ function recalculate_salary(frm) {
         gross += row.amount;
     });
 
-    // Deductions categorization
+    // ========== DEDUCTIONS CATEGORIZATION ==========
     (frm.doc.deductions || []).forEach(row => {
         let base = row.base_amount || row.amount || 0;
         row.base_amount = base;
 
+        // Pro-rata calculation based on payment days
         let amount = row.depends_on_payment_days && wd > 0
             ? (base / wd) * pd
             : base;
 
         row.amount = flt(amount, 2);
 
+        // CRITICAL LOGIC:
+        // 1. First check if it's employer contribution
+        // 2. Then check if component name is "Retention" AND has deduct_from_cash_in_hand_only flag
+        // 3. Otherwise treat as regular employee deduction
+        //    (Even if deduct_from_cash_in_hand_only = 1, components like Employee PF, PT, ESIC
+        //     should be part of total deductions)
+
         if (row.employer_contribution) {
+            // Employer contributions: Employer ESIC, Employer PF, Bonus, Gratuity
             employer_contribution += row.amount;
-        } else if (row.deduct_from_cash_in_hand_only) {
+        } else if (row.deduct_from_cash_in_hand_only && row.salary_component === 'Retention') {
+            // ONLY "Retention" component goes here
+            // NOT part of total deductions, only deducted from cash in hand
             retention += row.amount;
         } else {
+            // Regular employee deductions: Employee ESIC, Employee PF, Professional Tax
+            // These ARE part of total deductions
+            // (Even if they have deduct_from_cash_in_hand_only = 1)
             employee_deductions += row.amount;
         }
     });
 
-    let net_salary = gross - employee_deductions;
+    // ========== FINAL CALCULATIONS ==========
+    // Total Deductions = ONLY employee deductions (NOT including retention)
+    let total_deductions = employee_deductions;
+
+    // Net Salary = Gross - Total Deductions
+    let net_salary = gross - total_deductions;
+
+    // Cash in Hand = Net Salary - Retention
     let cash_in_hand = net_salary - retention;
+
+    // Monthly CTC = Gross + Employer Contribution
     let monthly_ctc = gross + employer_contribution;
+
+    // Annual CTC = Monthly CTC × 12
     let annual_ctc = monthly_ctc * 12;
 
     frm.set_value({
         gross_salary: gross,
         total_earnings: gross,
-        total_deductions: employee_deductions,
+        total_deductions: total_deductions,           // ✅ ONLY employee deductions (NO retention)
         total_employer_contribution: employer_contribution,
-        retention: retention,
-        net_salary: net_salary,
-        cash_in_hand: cash_in_hand,
+        retention: retention,                         // ✅ Tracked separately
+        net_salary: net_salary,                       // Gross - Total Deductions
+        cash_in_hand: cash_in_hand,                   // Net Salary - Retention
         monthly_ctc: monthly_ctc,
         annual_ctc: annual_ctc
     });

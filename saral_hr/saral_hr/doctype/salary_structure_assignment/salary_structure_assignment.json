@@ -25,13 +25,11 @@
   "column_break_oeow",
   "deductions",
   "calculations_section",
-  "total_earnings",
+  "gross_salary",
   "total_deductions",
   "total_employer_contribution",
   "monthly_ctc",
   "column_break_nlti",
-  "retention",
-  "gross_salary",
   "net_salary",
   "cash_in_hand",
   "annual_ctc"
@@ -149,13 +147,6 @@
    "label": "Calculations"
   },
   {
-   "fieldname": "total_earnings",
-   "fieldtype": "Float",
-   "label": "Total Earnings",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
    "fieldname": "total_deductions",
    "fieldtype": "Float",
    "label": "Total Deductions",
@@ -166,13 +157,6 @@
    "fieldname": "total_employer_contribution",
    "fieldtype": "Float",
    "label": "Total Employer Contribution",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "retention",
-   "fieldtype": "Float",
-   "label": "Retention",
    "precision": "2",
    "read_only": 1
   },
@@ -218,7 +202,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-30 14:29:16.007795",
+ "modified": "2026-01-31 11:28:59.964973",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
