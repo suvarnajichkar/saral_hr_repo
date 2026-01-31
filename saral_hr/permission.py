@@ -79,3 +79,49 @@ def attendance_permission_query(user):
             WHERE cl.company IN ({companies_escaped})
         )
     """
+    
+def salary_structure_assignment_permission_query(user):
+    if user == "Administrator":
+        return ""
+
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+
+    if not companies:
+        return "1=0"
+
+    companies_escaped = ", ".join(frappe.db.escape(c) for c in companies)
+
+    return f"""
+        `tabSalary Structure Assignment`.company IN ({companies_escaped})
+    """
+
+def salary_slip_permission_query(user):
+    if user == "Administrator":
+        return ""
+
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+
+    if not companies:
+        return "1=0"
+
+    companies_escaped = ", ".join(
+        frappe.db.escape(c) for c in companies
+    )
+
+    return f"""
+        `tabSalary Slip`.company IN ({companies_escaped})
+    """

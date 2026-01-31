@@ -25,11 +25,13 @@
   "column_break_oeow",
   "deductions",
   "calculations_section",
-  "gross_salary",
+  "total_earnings",
   "total_deductions",
   "total_employer_contribution",
   "monthly_ctc",
   "column_break_nlti",
+  "retention",
+  "gross_salary",
   "net_salary",
   "cash_in_hand",
   "annual_ctc"
@@ -198,11 +200,25 @@
   {
    "fieldname": "column_break_nlti",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Float",
+   "label": "Total Earnings",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "retention",
+   "fieldtype": "Float",
+   "label": "Retention",
+   "precision": "2",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 15:17:45.857771",
+ "modified": "2026-01-31 15:26:16.710330",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
@@ -218,6 +234,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
    "share": 1,
    "write": 1
   }

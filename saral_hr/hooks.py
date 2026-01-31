@@ -68,6 +68,8 @@ permission_query_conditions = {
     "Company Link": "saral_hr.permission.company_link_permission_query",
     "Employee": "saral_hr.permission.employee_permission_query",
     "Attendance": "saral_hr.permission.attendance_permission_query",
+    "Salary Structure Assignment": "saral_hr.permission.salary_structure_assignment_permission_query",
+    "Salary Slip": "saral_hr.permission.salary_slip_permission_query"
 }
 
 
