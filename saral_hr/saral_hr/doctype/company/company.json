@@ -15,7 +15,7 @@
   "is_group",
   "default_holiday_list",
   "date_of_establishment",
-  "attched",
+  "add_logo",
   "address_and_contact_section",
   "company_logo",
   "date_of_incorporation",
@@ -144,11 +144,6 @@
    "label": "Date of Establishment"
   },
   {
-   "fieldname": "attched",
-   "fieldtype": "Attach",
-   "label": "Attched"
-  },
-  {
    "description": "Company registration numbers for your reference. Tax numbers etc.",
    "fieldname": "registration_details",
    "fieldtype": "Code",
@@ -183,11 +178,16 @@
    "fieldname": "address",
    "fieldtype": "Small Text",
    "label": "Address"
+  },
+  {
+   "fieldname": "add_logo",
+   "fieldtype": "Attach",
+   "label": "Add Logo"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-23 11:53:41.469234",
+ "modified": "2026-01-31 17:20:20.479393",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",

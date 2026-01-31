@@ -29,14 +29,11 @@
   "company_email",
   "address_section",
   "current_address",
-  "current_accommodation_type",
   "column_break_jpvt",
   "permanent_address",
-  "permanent_address_is",
   "tab_3_tab",
   "attendance_and_leaves_section",
-  "attendance_device_id",
-  "holiday_list"
+  "attendance_device_id"
  ],
  "fields": [
   {
@@ -139,12 +136,6 @@
    "label": "Current Address"
   },
   {
-   "fieldname": "current_accommodation_type",
-   "fieldtype": "Select",
-   "label": "current_accommodation_type",
-   "options": "\nRented\nOwned"
-  },
-  {
    "fieldname": "column_break_jpvt",
    "fieldtype": "Column Break"
   },
@@ -152,12 +143,6 @@
    "fieldname": "permanent_address",
    "fieldtype": "Small Text",
    "label": "Permanent Address"
-  },
-  {
-   "fieldname": "permanent_address_is",
-   "fieldtype": "Select",
-   "label": "Permanent Address Is",
-   "options": "\nRented\nOwned"
   },
   {
    "fieldname": "tab_3_tab",
@@ -175,14 +160,6 @@
    "label": "Attendance Device ID (Biometric/RF tag ID)",
    "no_copy": 1,
    "unique": 1
-  },
-  {
-   "description": "Applicable Holiday List",
-   "fieldname": "holiday_list",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "Holiday List",
-   "options": "Holiday List"
   },
   {
    "fieldname": "pan_number",
@@ -222,7 +199,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-14 12:40:19.743082",
+ "modified": "2026-01-31 17:14:43.043218",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",

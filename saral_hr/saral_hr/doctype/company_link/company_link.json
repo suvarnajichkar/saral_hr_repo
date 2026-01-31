@@ -18,6 +18,8 @@
   "department",
   "designation",
   "branch",
+  "division",
+  "category",
   "section_break_dates",
   "date_of_joining",
   "column_break_leftdate",
@@ -120,11 +122,23 @@
    "fieldname": "aadhar_number",
    "fieldtype": "Data",
    "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "division",
+   "fieldtype": "Link",
+   "label": "Division",
+   "options": "Division"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "Category"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-28 17:49:59.236443",
+ "modified": "2026-01-31 17:19:17.462477",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
