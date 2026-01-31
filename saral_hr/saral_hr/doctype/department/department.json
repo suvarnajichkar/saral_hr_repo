@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:department",
  "creation": "2026-01-09 12:07:30.598493",
@@ -18,7 +19,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-12 15:35:35.209385",
+ "modified": "2026-01-31 17:45:10.730966",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Department",
