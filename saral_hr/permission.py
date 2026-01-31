@@ -81,7 +81,8 @@ def attendance_permission_query(user):
     """
     
 def salary_structure_assignment_permission_query(user):
-    if user == "Administrator":
+    # System Manager OR Administrator → unrestricted
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
         return ""
 
     companies = frappe.get_all(
@@ -102,8 +103,9 @@ def salary_structure_assignment_permission_query(user):
         `tabSalary Structure Assignment`.company IN ({companies_escaped})
     """
 
+
 def salary_slip_permission_query(user):
-    if user == "Administrator":
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
         return ""
 
     companies = frappe.get_all(
@@ -118,9 +120,7 @@ def salary_slip_permission_query(user):
     if not companies:
         return "1=0"
 
-    companies_escaped = ", ".join(
-        frappe.db.escape(c) for c in companies
-    )
+    companies_escaped = ", ".join(frappe.db.escape(c) for c in companies)
 
     return f"""
         `tabSalary Slip`.company IN ({companies_escaped})
