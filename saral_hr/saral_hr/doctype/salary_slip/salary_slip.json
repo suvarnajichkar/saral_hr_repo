@@ -28,7 +28,6 @@
   "column_break_zrdn",
   "deductions",
   "totals_section",
-  "total_earnings",
   "total_deductions",
   "total_employer_contribution",
   "retention",
@@ -126,13 +125,6 @@
    "in_standard_filter": 1,
    "label": "Start Date",
    "reqd": 1
-  },
-  {
-   "fieldname": "total_earnings",
-   "fieldtype": "Float",
-   "label": "Total Earnings",
-   "precision": "2",
-   "read_only": 1
   },
   {
    "fieldname": "total_deductions",
@@ -255,7 +247,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-30 14:03:17.549266",
+ "modified": "2026-01-31 15:18:20.273813",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
