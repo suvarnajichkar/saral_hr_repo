@@ -75,7 +75,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Master",
-   "link_count": 12,
+   "link_count": 14,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -199,9 +199,29 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Holiday List",
+   "link_count": 0,
+   "link_to": "Holiday List",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Variable Pay Assignment",
+   "link_count": 0,
+   "link_to": "Variable Pay Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-01-31 17:36:47.559159",
+ "modified": "2026-02-02 16:27:05.909168",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",
