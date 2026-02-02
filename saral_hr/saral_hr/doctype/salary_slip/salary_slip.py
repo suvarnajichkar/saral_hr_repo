@@ -75,11 +75,9 @@ def get_salary_structure_for_employee(employee):
 
 
 @frappe.whitelist()
-def get_attendance_and_days(employee, start_date, deduct_weekly_off=1):
+def get_attendance_and_days(employee, start_date, working_days_calculation_method="Exclude Weekly Offs"):
     start_date = getdate(start_date)
     end_date = get_last_day(start_date)
-
-    deduct_weekly_off = int(deduct_weekly_off)
 
     weekly_off = frappe.db.get_value("Company Link", employee, "weekly_off")
     total_days = calendar.monthrange(start_date.year, start_date.month)[1]
@@ -99,7 +97,7 @@ def get_attendance_and_days(employee, start_date, deduct_weekly_off=1):
                 weekly_off_count += 1
             current += timedelta(days=1)
 
-    # Attendance records - FIXED: Removed docstatus filter since Attendance is not submittable
+    # Attendance records
     attendance = frappe.db.get_all(
         "Attendance",
         filters={
@@ -121,7 +119,14 @@ def get_attendance_and_days(employee, start_date, deduct_weekly_off=1):
         elif a.status == "Absent":
             absent_days += 1
 
-    working_days = total_days - weekly_off_count if deduct_weekly_off else total_days
+    # Calculate working days based on the method
+    if working_days_calculation_method == "Include Weekly Offs":
+        # Working days = Total days in month (no deduction for weekly offs)
+        working_days = total_days
+    else:  # "Exclude Weekly Offs"
+        # Working days = Total days - Weekly offs
+        working_days = total_days - weekly_off_count
+
     payment_days = working_days - absent_days
 
     return {
@@ -132,3 +137,44 @@ def get_attendance_and_days(employee, start_date, deduct_weekly_off=1):
         "present_days": present_days,
         "absent_days": absent_days
     }
+
+
+@frappe.whitelist()
+def get_variable_pay_percentage(division, start_date):
+    """
+    Fetch Variable Pay percentage for a given division and month/year
+    """
+    if not division or not start_date:
+        return {"percentage": 0}
+    
+    start_date = getdate(start_date)
+    month_name = start_date.strftime("%B")  # e.g., "December"
+    year = str(start_date.year)  # e.g., "2025"
+    
+    # Find the Variable Pay Assignment document for this month and year
+    vpa_name = f"{year} - {month_name}"
+    
+    try:
+        vpa_doc = frappe.get_doc("Variable Pay Assignment", vpa_name)
+        
+        # Search for the division in the child table
+        for row in vpa_doc.variable_pay:
+            if row.division == division:
+                return {
+                    "percentage": row.percentage or 0,
+                    "found": True
+                }
+        
+        # Division not found in the assignment
+        return {
+            "percentage": 0,
+            "found": False,
+            "message": f"No variable pay percentage found for division '{division}' in {month_name} {year}"
+        }
+        
+    except frappe.DoesNotExistError:
+        return {
+            "percentage": 0,
+            "found": False,
+            "message": f"No Variable Pay Assignment found for {month_name} {year}"
+        }

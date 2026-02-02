@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2026-01-10 16:47:22.388127",
@@ -14,6 +15,8 @@
   "full_name",
   "weekly_off",
   "aadhar_number",
+  "working_days_calculation_method",
+  "holiday_list",
   "column_break_hopr",
   "department",
   "designation",
@@ -134,11 +137,24 @@
    "fieldtype": "Link",
    "label": "Category",
    "options": "Category"
+  },
+  {
+   "fetch_from": "company.working_days_calculation_method",
+   "fieldname": "working_days_calculation_method",
+   "fieldtype": "Data",
+   "label": "Working Days Calculation Method"
+  },
+  {
+   "fetch_from": "company.default_holiday_list",
+   "fieldname": "holiday_list",
+   "fieldtype": "Link",
+   "label": "Holiday List",
+   "options": "Company"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 17:19:17.462477",
+ "modified": "2026-02-02 16:04:32.809543",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",

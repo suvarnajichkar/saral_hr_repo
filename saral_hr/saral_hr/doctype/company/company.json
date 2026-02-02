@@ -9,13 +9,11 @@
  "field_order": [
   "company",
   "abbr",
+  "working_days_calculation_method",
+  "column_break_opgj",
   "country",
   "default_currency",
-  "column_break_opgj",
-  "is_group",
   "default_holiday_list",
-  "date_of_establishment",
-  "add_logo",
   "address_and_contact_section",
   "company_logo",
   "date_of_incorporation",
@@ -23,15 +21,11 @@
   "email",
   "company_description",
   "column_break_wtbl",
+  "date_of_establishment",
   "date_of_commencement",
   "fax",
   "website",
-  "address",
-  "section_break_knlr",
-  "registration_details",
-  "lft",
-  "rgt",
-  "old_parent"
+  "address"
  ],
  "fields": [
   {
@@ -118,17 +112,6 @@
    "label": "Website"
   },
   {
-   "fieldname": "section_break_knlr",
-   "fieldtype": "Section Break"
-  },
-  {
-   "bold": 1,
-   "default": "0",
-   "fieldname": "is_group",
-   "fieldtype": "Check",
-   "label": "Is Group"
-  },
-  {
    "fieldname": "default_holiday_list",
    "fieldtype": "Link",
    "label": "Default Holiday List",
@@ -144,50 +127,22 @@
    "label": "Date of Establishment"
   },
   {
-   "description": "Company registration numbers for your reference. Tax numbers etc.",
-   "fieldname": "registration_details",
-   "fieldtype": "Code",
-   "label": "Registration Details"
-  },
-  {
-   "fieldname": "lft",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Lft",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "rgt",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Rgt",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "old_parent",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "old_parent",
-   "print_hide": 1,
-   "read_only": 1
-  },
-  {
    "fieldname": "address",
    "fieldtype": "Small Text",
    "label": "Address"
   },
   {
-   "fieldname": "add_logo",
-   "fieldtype": "Attach",
-   "label": "Add Logo"
+   "default": "Exclude Weekly Offs",
+   "fieldname": "working_days_calculation_method",
+   "fieldtype": "Select",
+   "label": "Working Days Calculation Method",
+   "options": "Exclude Weekly Offs\nInclude Weekly Offs",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 17:20:20.479393",
+ "modified": "2026-02-02 14:51:29.929673",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",

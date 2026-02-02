@@ -13,11 +13,11 @@
   "start_date",
   "end_date",
   "currency",
-  "deduct_weekly_off_from_working_days",
   "employee_company_details_section",
   "company",
   "department",
   "designation",
+  "working_days_calculation_method",
   "column_break_alvo",
   "branch",
   "category",
@@ -214,12 +214,6 @@
    "precision": "2"
   },
   {
-   "default": "1",
-   "fieldname": "deduct_weekly_off_from_working_days",
-   "fieldtype": "Check",
-   "label": "Deduct Weekly Off from Working Days"
-  },
-  {
    "fieldname": "retention",
    "fieldtype": "Float",
    "label": "Retention",
@@ -301,12 +295,19 @@
    "fieldtype": "Data",
    "label": "Division",
    "read_only": 1
+  },
+  {
+   "fetch_from": "employee.working_days_calculation_method",
+   "fieldname": "working_days_calculation_method",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Working Days Calculation Method"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-31 17:24:27.371358",
+ "modified": "2026-02-02 14:31:34.202860",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
