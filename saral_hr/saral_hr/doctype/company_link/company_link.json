@@ -147,14 +147,13 @@
   {
    "fetch_from": "company.default_holiday_list",
    "fieldname": "holiday_list",
-   "fieldtype": "Link",
-   "label": "Holiday List",
-   "options": "Company"
+   "fieldtype": "Data",
+   "label": "Holiday List"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 16:04:32.809543",
+ "modified": "2026-02-02 16:16:03.392832",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
