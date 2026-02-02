@@ -9,12 +9,19 @@
   "employee",
   "employee_name",
   "salary_structure",
-  "company",
   "column_break_jxct",
   "start_date",
   "end_date",
   "currency",
-  "deduct_weekly_off_from_working_days",
+  "employee_company_details_section",
+  "company",
+  "department",
+  "designation",
+  "working_days_calculation_method",
+  "column_break_alvo",
+  "branch",
+  "category",
+  "division",
   "payment_days_tab",
   "total_working_days",
   "payment_days",
@@ -207,12 +214,6 @@
    "precision": "2"
   },
   {
-   "default": "1",
-   "fieldname": "deduct_weekly_off_from_working_days",
-   "fieldtype": "Check",
-   "label": "Deduct Weekly Off from Working Days"
-  },
-  {
    "fieldname": "retention",
    "fieldtype": "Float",
    "label": "Retention",
@@ -250,12 +251,63 @@
    "label": "Total Earnings",
    "precision": "2",
    "read_only": 1
+  },
+  {
+   "fieldname": "employee_company_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Company Details"
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_alvo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.branch",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.category",
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.division",
+   "fieldname": "division",
+   "fieldtype": "Data",
+   "label": "Division",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.working_days_calculation_method",
+   "fieldname": "working_days_calculation_method",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Working Days Calculation Method"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-31 15:26:49.134200",
+ "modified": "2026-02-02 14:31:34.202860",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

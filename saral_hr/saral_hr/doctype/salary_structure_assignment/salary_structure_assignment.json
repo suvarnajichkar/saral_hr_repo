@@ -25,7 +25,6 @@
   "column_break_oeow",
   "deductions",
   "calculations_section",
-  "total_earnings",
   "total_deductions",
   "total_employer_contribution",
   "monthly_ctc",
@@ -202,13 +201,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "total_earnings",
-   "fieldtype": "Float",
-   "label": "Total Earnings",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
    "fieldname": "retention",
    "fieldtype": "Float",
    "label": "Retention",
@@ -218,7 +210,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 15:26:16.710330",
+ "modified": "2026-02-01 00:47:57.224257",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",

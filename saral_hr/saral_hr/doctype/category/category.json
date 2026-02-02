@@ -1,28 +1,27 @@
 {
  "actions": [],
- "allow_import": 1,
  "allow_rename": 1,
- "autoname": "field:designation",
- "creation": "2026-01-09 12:07:02.085206",
+ "autoname": "field:category",
+ "creation": "2026-01-31 17:12:16.311413",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "designation"
+  "category"
  ],
  "fields": [
   {
-   "fieldname": "designation",
+   "fieldname": "category",
    "fieldtype": "Data",
-   "label": "Designation",
+   "label": "Category",
    "unique": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 17:45:37.238650",
+ "modified": "2026-01-31 17:16:33.838690",
  "modified_by": "Administrator",
  "module": "Saral Hr",
- "name": "Designation",
+ "name": "Category",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [

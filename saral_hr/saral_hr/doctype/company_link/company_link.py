@@ -6,8 +6,25 @@ from frappe import _
 class CompanyLink(Document):
 
     def validate(self):
+        self.sync_holiday_list_from_company()
         self.validate_active_employee()
         self.validate_left_date()
+
+    def sync_holiday_list_from_company(self):
+        """
+        Always sync holiday list from Company
+        """
+        if not self.company:
+            return
+
+        holiday_list = frappe.db.get_value(
+            "Company",
+            self.company,
+            "default_holiday_list"
+        )
+
+        if holiday_list:
+            self.holiday_list = holiday_list
 
     def validate_active_employee(self):
         """

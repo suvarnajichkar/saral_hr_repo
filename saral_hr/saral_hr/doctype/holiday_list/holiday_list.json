@@ -1,19 +1,17 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
- "creation": "2026-01-09 12:58:02.679279",
+ "autoname": "field:holiday_list_name",
+ "creation": "2026-02-02 15:41:19.735431",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "holiday_list_name",
   "from_date",
   "to_date",
-  "column_break_nvdo",
-  "total_holidays",
-  "add_weekly_holidays_section",
-  "weekly_off",
-  "get_weekly_off_dates",
-  "subdivision"
+  "section_break_tzbl",
+  "holidays"
  ],
  "fields": [
   {
@@ -35,53 +33,27 @@
    "fieldname": "to_date",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "To Date"
+   "label": "To Date",
+   "reqd": 1
   },
   {
-   "fieldname": "column_break_nvdo",
-   "fieldtype": "Column Break"
+   "fieldname": "holidays",
+   "fieldtype": "Table",
+   "label": "Holidays",
+   "options": "Holiday"
   },
   {
-   "fieldname": "total_holidays",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Total Holidays",
-   "read_only": 1
-  },
-  {
-   "fieldname": "add_weekly_holidays_section",
-   "fieldtype": "Section Break",
-   "label": "Add Weekly Holidays"
-  },
-  {
-   "fieldname": "weekly_off",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Weekly Off",
-   "no_copy": 1,
-   "options": "\nSunday\nMonday\nTuesday\nWednesday\nThursday\nFriday\nSaturday",
-   "print_hide": 1,
-   "report_hide": 1
-  },
-  {
-   "fieldname": "get_weekly_off_dates",
-   "fieldtype": "Button",
-   "label": "Add to Holidays",
-   "options": "get_local_holidays"
-  },
-  {
-   "depends_on": "country",
-   "fieldname": "subdivision",
-   "fieldtype": "Autocomplete",
-   "label": "Subdivision"
+   "fieldname": "section_break_tzbl",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-09 16:11:53.768470",
+ "modified": "2026-02-02 15:54:12.695525",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Holiday List",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

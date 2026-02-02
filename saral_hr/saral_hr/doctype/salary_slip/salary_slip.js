@@ -1,12 +1,7 @@
 frappe.ui.form.on("Salary Slip", {
-
     refresh(frm) {
         if (!frm.doc.currency) {
             frm.set_value("currency", "INR");
-        }
-
-        if (frm.doc.deduct_weekly_off_from_working_days === undefined) {
-            frm.set_value("deduct_weekly_off_from_working_days", 1);
         }
 
         // Show only active employees
@@ -30,9 +25,45 @@ frappe.ui.form.on("Salary Slip", {
         fetch_days_and_attendance(frm);
     },
 
-    deduct_weekly_off_from_working_days(frm) {
+    working_days_calculation_method(frm) {
         if (!frm.doc.employee || !frm.doc.start_date) return;
         fetch_days_and_attendance(frm);
+    },
+
+    division(frm) {
+        // Recalculate variable pay when division changes
+        if (frm.doc.employee && frm.doc.start_date && frm.doc.total_working_days && frm.doc.payment_days) {
+            calculate_variable_pay(frm);
+        }
+    }
+});
+
+// Event handler for Earnings child table
+frappe.ui.form.on("Salary Details", {
+    amount(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        
+        // Check if this is a Base/Basic salary component using name matching
+        let component_name = (row.salary_component || "").toLowerCase();
+        let is_base = component_name.includes("base") || 
+                      component_name.includes("basic") || 
+                      component_name === "basicpay";
+        
+        if (is_base && row.parentfield === "earnings") {
+            // Trigger variable pay calculation
+            calculate_variable_pay(frm);
+        } else {
+            // Regular recalculation
+            recalculate_salary(frm);
+        }
+    },
+    
+    earnings_remove(frm) {
+        recalculate_salary(frm);
+    },
+    
+    deductions_remove(frm) {
+        recalculate_salary(frm);
     }
 });
 
@@ -81,7 +112,7 @@ function fetch_days_and_attendance(frm) {
         args: {
             employee: frm.doc.employee,
             start_date: frm.doc.start_date,
-            deduct_weekly_off: frm.doc.deduct_weekly_off_from_working_days ? 1 : 0
+            working_days_calculation_method: frm.doc.working_days_calculation_method || "Exclude Weekly Offs"
         },
         callback(r) {
             if (!r.message) return;
@@ -93,6 +124,102 @@ function fetch_days_and_attendance(frm) {
             frm.set_value("absent_days", d.absent_days);
             frm.set_value("weekly_offs_count", d.weekly_offs);
 
+            // After attendance is fetched, check if we need to calculate variable pay
+            calculate_variable_pay(frm);
+        }
+    });
+}
+
+function calculate_variable_pay(frm) {
+    // Check if we have all required data
+    if (!frm.doc.division || !frm.doc.start_date || !frm.doc.total_working_days || !frm.doc.payment_days) {
+        recalculate_salary(frm);
+        return;
+    }
+
+    // Find the base salary component using name matching
+    let base_salary = 0;
+    let base_component_name = null;
+    
+    (frm.doc.earnings || []).forEach(row => {
+        let component_name = (row.salary_component || "").toLowerCase();
+        let is_base = component_name.includes("base") || 
+                      component_name.includes("basic") || 
+                      component_name === "basicpay";
+        
+        if (is_base) {
+            base_salary = row.base_amount || row.amount || 0;
+            base_component_name = row.salary_component;
+        }
+    });
+
+    if (!base_salary) {
+        recalculate_salary(frm);
+        return;
+    }
+
+    // Fetch variable pay percentage for this division and month
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_variable_pay_percentage",
+        args: {
+            division: frm.doc.division,
+            start_date: frm.doc.start_date
+        },
+        callback(r) {
+            if (!r.message) {
+                recalculate_salary(frm);
+                return;
+            }
+
+            let variable_percentage = r.message.percentage || 0;
+            
+            if (variable_percentage > 0 && r.message.found) {
+                // Calculate attendance factor based on payment days
+                let working_days = flt(frm.doc.total_working_days);
+                let payment_days = flt(frm.doc.payment_days);
+                let attendance_factor = working_days > 0 ? (payment_days / working_days) : 0;
+
+                // Calculate Variable Pay
+                // Variable Pay = Base × (Variable % / 100) × Attendance Factor
+                let variable_pay = base_salary * (variable_percentage / 100) * attendance_factor;
+
+                // Find or create Variable Pay component using name matching
+                let variable_row = null;
+                (frm.doc.earnings || []).forEach(row => {
+                    let component_name = (row.salary_component || "").toLowerCase();
+                    if (component_name.includes("variable")) {
+                        variable_row = row;
+                    }
+                });
+
+                if (variable_row) {
+                    // Update existing variable pay row
+                    variable_row.amount = flt(variable_pay, 2);
+                    variable_row.base_amount = flt(variable_pay, 2);
+                } else {
+                    // Create new variable pay row
+                    let vp = frm.add_child("earnings");
+                    vp.salary_component = "Variable Pay";
+                    vp.abbr = "VP";
+                    vp.amount = flt(variable_pay, 2);
+                    vp.base_amount = flt(variable_pay, 2);
+                    vp.depends_on_payment_days = 0;
+                }
+
+                frm.refresh_field("earnings");
+                
+                frappe.show_alert({
+                    message: `Variable Pay calculated: ₹${flt(variable_pay, 2).toLocaleString()} (${variable_percentage}% × ${attendance_factor.toFixed(2)} attendance factor)`,
+                    indicator: "green"
+                });
+            } else if (!r.message.found) {
+                frappe.show_alert({
+                    message: r.message.message || "No variable pay percentage configured",
+                    indicator: "orange"
+                });
+            }
+
+            // Always recalculate totals after variable pay calculation
             recalculate_salary(frm);
         }
     });
@@ -113,9 +240,20 @@ function recalculate_salary(frm) {
         row.base_amount = base;
 
         // Pro-rata calculation based on payment days
-        let amount = row.depends_on_payment_days && wd > 0
-            ? (base / wd) * pd
-            : base;
+        // Variable Pay should NOT be pro-rated as it's already calculated with attendance factor
+        let component_name = (row.salary_component || "").toLowerCase();
+        let is_variable = component_name.includes("variable");
+        
+        let amount;
+        if (is_variable) {
+            // Variable pay is already calculated, don't pro-rate it
+            amount = row.amount;
+        } else if (row.depends_on_payment_days && wd > 0) {
+            // Pro-rate other components based on payment days
+            amount = (base / wd) * pd;
+        } else {
+            amount = base;
+        }
 
         row.amount = flt(amount, 2);
         gross += row.amount;

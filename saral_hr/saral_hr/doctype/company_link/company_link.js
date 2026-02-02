@@ -1,7 +1,6 @@
 frappe.ui.form.on("Company Link", {
 
 	setup(frm) {
-		// Default naming series
 		if (frm.is_new() && !frm.doc.naming_series) {
 			frm.set_value("naming_series", "CL-.YYYY.-");
 		}
@@ -14,20 +13,34 @@ frappe.ui.form.on("Company Link", {
 	},
 
 	refresh(frm) {
-		// Status indicator
 		if (frm.doc.is_active) {
 			frm.page.set_indicator(__("Active"), "green");
 		} else {
 			frm.page.set_indicator(__("Inactive"), "gray");
 		}
 
-		// View all records for this employee
 		if (frm.doc.employee && !frm.is_new()) {
 			frm.add_custom_button(__("View All Records"), function () {
 				frappe.set_route("List", "Company Link", {
 					employee: frm.doc.employee
 				});
 			});
+		}
+	},
+
+	company(frm) {
+		// Auto-fetch holiday list when company changes
+		if (frm.doc.company) {
+			frappe.db.get_value(
+				"Company",
+				frm.doc.company,
+				"default_holiday_list",
+				(r) => {
+					if (r && r.default_holiday_list) {
+						frm.set_value("holiday_list", r.default_holiday_list);
+					}
+				}
+			);
 		}
 	},
 
@@ -50,7 +63,6 @@ frappe.ui.form.on("Company Link", {
 		}
 	}
 });
-
 
 function check_existing_active_employee(frm) {
 	frappe.call({
@@ -79,5 +91,3 @@ function check_existing_active_employee(frm) {
 		}
 	});
 }
-
-

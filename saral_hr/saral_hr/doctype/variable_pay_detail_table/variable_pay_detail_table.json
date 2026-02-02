@@ -1,37 +1,39 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-02-02 15:40:18.331198",
+ "creation": "2026-02-02 12:35:06.662856",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "holiday_date",
-  "description"
+  "division",
+  "percentage"
  ],
  "fields": [
   {
-   "fieldname": "holiday_date",
-   "fieldtype": "Date",
+   "fieldname": "division",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Holiday Date",
+   "label": "Division",
+   "options": "Division",
    "reqd": 1
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Data",
+   "fieldname": "percentage",
+   "fieldtype": "Percent",
    "in_list_view": 1,
-   "label": "Description",
+   "label": "Percentage",
+   "precision": "2",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-02 15:42:42.727750",
+ "modified": "2026-02-02 12:43:56.691705",
  "modified_by": "Administrator",
  "module": "Saral Hr",
- "name": "Holiday",
+ "name": "Variable Pay Detail Table",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",
