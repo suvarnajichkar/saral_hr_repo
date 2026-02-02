@@ -5,10 +5,25 @@ frappe.ui.form.on("Salary Structure Assignment", {
     },
 
     setup(frm) {
-        frm.set_query("employee", () => ({
-            filters: { is_active: 1 }
-        }));
-    },
+    // Filter active employees
+    frm.set_query("employee", () => ({
+        filters: { is_active: 1 }
+    }));
+
+    // Filter Salary Structure by Company
+    frm.set_query("salary_structure", () => {
+        if (!frm.doc.company) {
+            return {};
+        }
+        return {
+            filters: {
+                company: frm.doc.company,
+                is_active: "Yes"
+            }
+        };
+    });
+},
+
 
     salary_structure(frm) {
         if (!frm.doc.salary_structure) {
