@@ -67,9 +67,18 @@ def get_attendance_between_dates(employee, start_date, end_date):
 
 
 @frappe.whitelist()
-def save_attendance(employee, attendance_date, status):
+def save_attendance(employee, attendance_date, status, override_weekly_off=0):
     user = frappe.session.user
     attendance_date = getdate(attendance_date)
+    
+    # Convert override_weekly_off to boolean
+    override_weekly_off = int(override_weekly_off) == 1
+    
+    frappe.logger().info(f"=== SAVE ATTENDANCE ===")
+    frappe.logger().info(f"Employee: {employee}")
+    frappe.logger().info(f"Date: {attendance_date}")
+    frappe.logger().info(f"Status: {status}")
+    frappe.logger().info(f"Override Weekly Off: {override_weekly_off}")
 
     # company restriction check (dynamic)
     companies = frappe.get_all(
@@ -93,17 +102,24 @@ def save_attendance(employee, attendance_date, status):
         if not allowed:
             frappe.throw("Not permitted to mark attendance for this employee")
 
-    # weekly off check
-    weekly_off = frappe.db.get_value(
-        "Company Link",
-        {"employee": employee},
-        "weekly_off"
-    )
+    # Weekly off check - ONLY block if override is NOT enabled
+    if not override_weekly_off:
+        weekly_off = frappe.db.get_value(
+            "Company Link",
+            {"employee": employee},
+            "weekly_off"
+        )
 
-    if weekly_off:
-        weekly_off_days = [d.strip().lower() for d in weekly_off.split(",")]
-        if attendance_date.strftime("%A").lower() in weekly_off_days:
-            return "skipped_weekly_off"
+        if weekly_off:
+            weekly_off_days = [d.strip().lower() for d in weekly_off.split(",")]
+            day_name = attendance_date.strftime("%A").lower()
+            frappe.logger().info(f"Day: {day_name}, Weekly offs: {weekly_off_days}")
+            
+            if day_name in weekly_off_days:
+                frappe.logger().info(f"Skipping - this is a weekly off and override is disabled")
+                return "skipped_weekly_off"
+    else:
+        frappe.logger().info(f"Override enabled - allowing attendance on weekly off")
 
     existing_attendance = frappe.db.get_value(
         "Attendance",
@@ -112,11 +128,13 @@ def save_attendance(employee, attendance_date, status):
     )
 
     if existing_attendance:
+        frappe.logger().info(f"Updating existing attendance: {existing_attendance}")
         doc = frappe.get_doc("Attendance", existing_attendance)
         doc.status = status
         doc.flags.ignore_validate = True
         doc.save(ignore_permissions=True)
     else:
+        frappe.logger().info(f"Creating new attendance record")
         doc = frappe.get_doc({
             "doctype": "Attendance",
             "employee": employee,
@@ -127,6 +145,7 @@ def save_attendance(employee, attendance_date, status):
         doc.insert(ignore_permissions=True)
 
     frappe.db.commit()
+    frappe.logger().info(f"✓ Attendance saved successfully")
     return "success"
 
 
