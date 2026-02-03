@@ -17,26 +17,29 @@
         </div>
     </div>
 
-    <div class="search-wrapper">
-        <label class="control-label">{{ _("Select Employee") }}</label>
+    <div class="search-section">
+        <label class="search-label">Select Employee</label>
+        
+        <div class="search-input-container">
+            <div class="search-input-wrapper">
+                <input
+                    type="text"
+                    class="search-input"
+                    id="employee-search-input"
+                    placeholder="Type employee name to search..."
+                    autocomplete="off"
+                />
+                <button
+                    type="button"
+                    id="clear-search"
+                    class="clear-btn"
+                    style="display: none;"
+                >
+                    Clear
+                </button>
+            </div>
 
-        <div style="position: relative;">
-            <input
-                type="text"
-                class="form-control"
-                id="employee-search-input"
-                placeholder="Type employee name to search..."
-                autocomplete="off"
-            />
-
-            <button
-                type="button"
-                id="clear-search"
-                class="clear-search-btn"
-                style="display: none;"
-            >
-                ✕
-            </button>
+            <div id="search-results" class="search-dropdown"></div>
         </div>
 
         <select id="employee-select" style="display:none;">
@@ -45,23 +48,26 @@
                 <option value="{{ emp.name }}">{{ emp.employee }}</option>
             {% endfor %}
         </select>
-
-        <div id="search-results" class="search-results-dropdown"></div>
     </div>
 
     <div id="timeline-container" class="timeline-container">
-        <h3 class="section-title">Employment History</h3>
-        <div id="timeline-content" class="timeline-wrapper"></div>
+        <h3 class="timeline-title">Employment History</h3>
+        <div id="timeline-content" class="timeline-content"></div>
     </div>
 
     <div id="no-data" class="no-data-message">
-        No employment records found for this employee.
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p>No employment records found for this employee.</p>
     </div>
 
 </div>
 
 <style>
-/* Force no margin or padding on the root html and body so content starts at very top */
+/* Reset */
 html, body {
     margin: 0;
     padding: 0;
@@ -75,24 +81,28 @@ html, body {
     padding: 0;
 }
 
+/* Main Container */
 .employee-timeline-wrapper {
     max-width: 1100px;
-    margin: auto;
-    padding: 0 30px 40px 30px; /* no top padding */
+    margin: 0 auto;
+    padding: 40px 30px;
+    min-height: 100vh;
+    background: #f8f9fa;
 }
 
+/* Header */
 .header-section {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 36px;
+    margin-bottom: 40px;
 }
 
 .page-title {
-    font-size: 36px;
-    font-weight: 600;
+    font-size: 32px;
+    font-weight: 700;
     color: #1f272e;
-    margin-bottom: 30px;
+    margin: 0;
 }
 
 .button-group {
@@ -104,93 +114,111 @@ html, body {
     background: #000;
     border: none;
     color: #fff;
-    border-radius: 4px;
-    padding: 14px 28px;
-    font-size: 18px;
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 500;
     cursor: pointer;
-    transition: none;
+    transition: background 0.2s ease;
 }
 
 .btn-frappe:hover {
-    background: #000;
-    color: #fff;
+    background: #2d2d2d;
 }
 
-.search-wrapper {
+/* Search Section */
+.search-section {
     background: #fff;
-    border: 1px solid #d1d8dd;
-    border-radius: 4px;
-    padding: 24px;
-    margin-bottom: 40px;
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     position: relative;
 }
 
-.control-label {
-    margin-bottom: 16px;
+.search-label {
     display: block;
+    font-size: 15px;
     font-weight: 600;
-    font-size: 18px;
+    color: #1f272e;
+    margin-bottom: 12px;
+}
+
+.search-input-container {
+    position: relative;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 14px 16px;
+    font-size: 15px;
+    border: 1.5px solid #d1d8dd;
+    border-radius: 6px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.search-input::placeholder {
+    color: #a8b1ba;
+}
+
+.clear-btn {
+    padding: 14px 24px;
+    background: #f1f3f5;
+    border: none;
+    border-radius: 6px;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.clear-btn:hover {
+    background: #e9ecef;
     color: #1f272e;
 }
 
-#employee-search-input {
-    width: 100%;
-    padding: 14px 48px 14px 16px;
-    font-size: 18px;
-    border: 1px solid #d1d8dd;
-    border-radius: 4px;
-    background: #fff;
-}
-
-#employee-search-input:focus {
-    outline: none;
-    border-color: #a3b1bf;
-    box-shadow: 0 0 0 1px rgba(163, 177, 191, 0.4);
-}
-
-.clear-search-btn {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #b5bcc3;
-    border: none;
-    color: #fff;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.clear-search-btn:hover {
-    background: #8f98a1;
-}
-
-.search-results-dropdown {
+/* Search Dropdown */
+.search-dropdown {
     display: none;
     position: absolute;
-    top: 100%;
-    left: 20px;
-    right: 20px;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
     background: #fff;
-    border: 1px solid #d1d8dd;
-    border-top: none;
-    border-radius: 0 0 4px 4px;
-    max-height: 300px;
+    border: 1.5px solid #d1d8dd;
+    border-radius: 6px;
+    max-height: 320px;
     overflow-y: auto;
     z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.search-results-dropdown.show {
+.search-dropdown.show {
     display: block;
 }
 
 .search-result-item {
     padding: 14px 16px;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background 0.15s ease;
 }
 
 .search-result-item:last-child {
@@ -198,37 +226,50 @@ html, body {
 }
 
 .search-result-item:hover {
-    background: #f4f5f6;
-}
-
-.search-result-item.highlighted {
-    background: #eef2f6;
+    background: #f8f9fa;
 }
 
 .search-result-item.selected {
-    background: #e6f0ff;
-    color: #1f272e;
+    background: #e7f5ff;
+    color: #1864ab;
 }
 
+.no-results {
+    padding: 24px;
+    text-align: center;
+    color: #868e96;
+    font-size: 14px;
+}
+
+/* Timeline Container */
 .timeline-container {
     display: none;
+    background: #fff;
+    border-radius: 8px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.section-title {
+.timeline-title {
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 20px;
+    color: #1f272e;
+    margin: 0 0 28px 0;
 }
 
-.timeline-wrapper {
-    padding-left: 28px;
+.timeline-content {
+    padding-left: 32px;
 }
 
 .timeline-item {
-    border-left: 2px solid #e5e7eb;
+    border-left: 2px solid #e9ecef;
     padding-left: 28px;
-    padding-bottom: 20px;
+    padding-bottom: 28px;
     position: relative;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
 }
 
 .timeline-item::before {
@@ -236,43 +277,124 @@ html, body {
     width: 12px;
     height: 12px;
     background: #adb5bd;
+    border: 3px solid #fff;
     border-radius: 50%;
     position: absolute;
-    left: -8px;
-    top: 26px;
+    left: -7px;
+    top: 24px;
+    box-shadow: 0 0 0 2px #e9ecef;
 }
 
 .timeline-item.active::before {
-    background: #21ba45;
+    background: #51cf66;
+    box-shadow: 0 0 0 2px #d3f9d8;
 }
 
 .timeline-card {
-    background: #fff;
-    border: 1px solid #d1d8dd;
-    border-radius: 4px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
     padding: 20px;
-    font-size: 16px;
 }
 
 .company-name {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 8px;
+    color: #1f272e;
+    margin-bottom: 12px;
 }
 
 .date-info {
     font-size: 14px;
-    color: #6c757d;
+    color: #495057;
+    margin-bottom: 6px;
 }
 
+.date-info:last-of-type {
+    margin-bottom: 12px;
+}
+
+.status-wrapper {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.status-active {
+    background: #d3f9d8;
+    color: #2b8a3e;
+}
+
+.status-inactive {
+    background: #f1f3f5;
+    color: #495057;
+}
+
+/* No Data Message */
 .no-data-message {
     display: none;
-    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 60px 40px;
     text-align: center;
-    border: 1px dashed #ced4da;
-    border-radius: 4px;
-    color: #6c757d;
-    font-size: 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.no-data-message svg {
+    color: #adb5bd;
+    margin-bottom: 16px;
+}
+
+.no-data-message p {
+    color: #868e96;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .employee-timeline-wrapper {
+        padding: 24px 16px;
+    }
+
+    .header-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .button-group {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .btn-frappe {
+        width: 100%;
+    }
+
+    .search-section {
+        padding: 24px;
+    }
+
+    .search-input-wrapper {
+        flex-direction: column;
+    }
+
+    .clear-btn {
+        width: 100%;
+    }
+
+    .timeline-content {
+        padding-left: 24px;
+    }
 }
 </style>
 {% endblock %}
