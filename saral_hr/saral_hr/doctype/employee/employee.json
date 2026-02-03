@@ -19,10 +19,16 @@
   "aadhar_number",
   "lin_number",
   "column_break_ngyj",
-  "employee_pf_account",
-  "bank_account_details",
   "status",
   "employee_image",
+  "bank_details_section",
+  "bank_name",
+  "ifsc_code",
+  "account_number",
+  "column_break_pxbz",
+  "employee_pf_account",
+  "pf_account_ifsc_code",
+  "pf_account_number",
   "contact_details",
   "cell_number",
   "column_break_kwfk",
@@ -184,12 +190,6 @@
    "label": "Employee PF Account"
   },
   {
-   "fieldname": "bank_account_details",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Bank Account Details"
-  },
-  {
    "description": "Get your globally recognized avatar from Gravatar.com",
    "fieldname": "employee_image",
    "fieldtype": "Attach Image",
@@ -201,11 +201,46 @@
    "fieldname": "lin_number",
    "fieldtype": "Data",
    "label": "LIN Number"
+  },
+  {
+   "fieldname": "bank_details_section",
+   "fieldtype": "Section Break",
+   "label": "Bank Details"
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Link",
+   "label": "Bank Name",
+   "options": "Bank Name"
+  },
+  {
+   "fieldname": "ifsc_code",
+   "fieldtype": "Data",
+   "label": "IFSC Code"
+  },
+  {
+   "fieldname": "account_number",
+   "fieldtype": "Data",
+   "label": "Account Number"
+  },
+  {
+   "fieldname": "column_break_pxbz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pf_account_ifsc_code",
+   "fieldtype": "Data",
+   "label": "PF Account IFSC Code"
+  },
+  {
+   "fieldname": "pf_account_number",
+   "fieldtype": "Data",
+   "label": "PF Account Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 16:14:40.077852",
+ "modified": "2026-02-02 18:07:08.965584",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",

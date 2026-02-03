@@ -15,7 +15,7 @@
   "full_name",
   "weekly_off",
   "aadhar_number",
-  "working_days_calculation_method",
+  "salary_calculation_based_on",
   "holiday_list",
   "column_break_hopr",
   "department",
@@ -139,21 +139,21 @@
    "options": "Category"
   },
   {
-   "fetch_from": "company.working_days_calculation_method",
-   "fieldname": "working_days_calculation_method",
-   "fieldtype": "Data",
-   "label": "Working Days Calculation Method"
-  },
-  {
    "fetch_from": "company.default_holiday_list",
    "fieldname": "holiday_list",
    "fieldtype": "Data",
    "label": "Holiday List"
+  },
+  {
+   "fetch_from": "company.salary_calculation_based_on",
+   "fieldname": "salary_calculation_based_on",
+   "fieldtype": "Data",
+   "label": "Salary Calculation Based on"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 16:16:03.392832",
+ "modified": "2026-02-03 14:03:07.861452",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",

@@ -1,9 +1,14 @@
 # Copyright (c) 2026, sj and contributors
 # For license information, please see license.txt
 
-# import frappe
 from frappe.model.document import Document
 
 
 class Company(Document):
-	pass
+    def validate(self):
+        """Validate company details before saving"""
+        pass
+
+    def on_update(self):
+        """Called after company is updated"""
+        pass
