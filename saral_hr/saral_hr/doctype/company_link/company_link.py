@@ -11,9 +11,6 @@ class CompanyLink(Document):
         self.validate_left_date()
 
     def sync_holiday_list_from_company(self):
-        """
-        Always sync holiday list from Company
-        """
         if not self.company:
             return
 
@@ -27,9 +24,6 @@ class CompanyLink(Document):
             self.holiday_list = holiday_list
 
     def validate_active_employee(self):
-        """
-        An employee can be active in ONLY ONE company at a time
-        """
         if not self.employee or not self.is_active:
             return
 
@@ -54,17 +48,11 @@ class CompanyLink(Document):
                     frappe.bold(self.employee),
                     frappe.bold(existing_active[0][1]),
                     frappe.bold(existing_active[0][0])
-                ),
-                title=_("Employee Already Active")
+                )
             )
 
     def validate_left_date(self):
-        """
-        Automatically deactivate when left date is set
-        """
         if self.left_date and self.is_active:
-            frappe.msgprint(
-                _("Employee has a left date. The record will be marked as inactive."),
-                indicator="orange"
-            )
             self.is_active = 0
+
+
