@@ -12,7 +12,7 @@ class SalarySlip(Document):
 
 
 @frappe.whitelist()
-def get_salary_structure_for_employee(employee):
+def get_salary_structure_for_employee(employee, start_date=None):
     ssa = frappe.db.get_all(
         "Salary Structure Assignment",
         filters={"employee": employee},
@@ -52,10 +52,16 @@ def get_salary_structure_for_employee(employee):
                 "salary_component_abbr",
                 "employer_contribution",
                 "depends_on_payment_days",
-                "deduct_from_cash_in_hand_only"
+                "deduct_from_cash_in_hand_only",
+                "is_labour_welfare_fund"
             ],
             as_dict=True
         )
+
+        # Skip LWF components from salary structure
+        # They will be added conditionally based on month
+        if comp.is_labour_welfare_fund:
+            continue
 
         deductions.append({
             "salary_component": row.salary_component,
@@ -65,6 +71,43 @@ def get_salary_structure_for_employee(employee):
             "depends_on_payment_days": comp.depends_on_payment_days,
             "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only
         })
+
+    # Add Labour Welfare Fund components for June and December only
+    if start_date:
+        start_date_obj = getdate(start_date)
+        month = start_date_obj.month
+        
+        # Check if month is June (6) or December (12)
+        if month in [6, 12]:
+            # Get all LWF components
+            lwf_components = frappe.db.get_all(
+                "Salary Component",
+                filters={
+                    "is_labour_welfare_fund": 1,
+                    "type": "Deduction"
+                },
+                fields=[
+                    "name",
+                    "salary_component_abbr",
+                    "employer_contribution"
+                ]
+            )
+            
+            for lwf in lwf_components:
+                # Determine amount based on employer/employee
+                if lwf.employer_contribution:
+                    amount = 75  # Employer LWF
+                else:
+                    amount = 25  # Employee LWF
+                
+                deductions.append({
+                    "salary_component": lwf.name,
+                    "abbr": lwf.salary_component_abbr,
+                    "amount": amount,
+                    "employer_contribution": lwf.employer_contribution,
+                    "depends_on_payment_days": 0,
+                    "deduct_from_cash_in_hand_only": 0
+                })
 
     return {
         "salary_structure": ssa_doc.salary_structure,
@@ -121,10 +164,8 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
     # Calculate working days based on the method
     if working_days_calculation_method == "Include Weekly Offs":
-        # Working days = Total days in month (no deduction for weekly offs)
         working_days = total_days
     else:  # "Exclude Weekly Offs"
-        # Working days = Total days - Weekly offs
         working_days = total_days - weekly_off_count
 
     payment_days = working_days - absent_days
@@ -137,44 +178,3 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "present_days": present_days,
         "absent_days": absent_days
     }
-
-
-@frappe.whitelist()
-def get_variable_pay_percentage(division, start_date):
-    """
-    Fetch Variable Pay percentage for a given division and month/year
-    """
-    if not division or not start_date:
-        return {"percentage": 0}
-    
-    start_date = getdate(start_date)
-    month_name = start_date.strftime("%B")  # e.g., "December"
-    year = str(start_date.year)  # e.g., "2025"
-    
-    # Find the Variable Pay Assignment document for this month and year
-    vpa_name = f"{year} - {month_name}"
-    
-    try:
-        vpa_doc = frappe.get_doc("Variable Pay Assignment", vpa_name)
-        
-        # Search for the division in the child table
-        for row in vpa_doc.variable_pay:
-            if row.division == division:
-                return {
-                    "percentage": row.percentage or 0,
-                    "found": True
-                }
-        
-        # Division not found in the assignment
-        return {
-            "percentage": 0,
-            "found": False,
-            "message": f"No variable pay percentage found for division '{division}' in {month_name} {year}"
-        }
-        
-    except frappe.DoesNotExistError:
-        return {
-            "percentage": 0,
-            "found": False,
-            "message": f"No Variable Pay Assignment found for {month_name} {year}"
-        }

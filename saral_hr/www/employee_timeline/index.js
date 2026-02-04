@@ -28,10 +28,18 @@ frappe.ready(function () {
             employee: option.textContent.trim()
         }));
 
+    console.log('Total employees loaded:', employees.length);
+    if (employees.length > 0) {
+        console.log('Sample employee:', employees[0]);
+    }
+
     let selectedIndex = -1;
     let filteredEmployees = [];
+    let currentSelectedEmployee = null;
 
     function showResults(results) {
+        console.log('showResults called with', results.length, 'results');
+        
         if (results.length === 0) {
             searchResults.innerHTML = '<div class="no-results">No employee found</div>';
             searchResults.classList.add('show');
@@ -45,6 +53,8 @@ frappe.ready(function () {
             </div>`
         ).join('');
         searchResults.classList.add('show');
+        
+        console.log('Dropdown HTML set, classList:', searchResults.classList.toString());
 
         const items = searchResults.querySelectorAll('.search-result-item');
         items.forEach((item, index) => {
@@ -74,34 +84,81 @@ frappe.ready(function () {
     function selectEmployee(emp) {
         searchInput.value = emp.employee;
         employeeSelect.value = emp.name;
+        currentSelectedEmployee = emp;
         searchResults.classList.remove('show');
+        clearBtn.style.display = 'block'; // Show clear button after selection
         loadEmployeeTimeline(emp.name);
         selectedIndex = -1;
     }
 
-    searchInput.addEventListener('focus', () => {
-        if (searchInput.value.trim() === '') {
-            filteredEmployees = employees;
-            showResults(filteredEmployees);
+    function clearSearch() {
+        searchInput.value = '';
+        currentSelectedEmployee = null;
+        clearBtn.style.display = 'none';
+        timelineSection.style.display = 'none';
+        noData.style.display = 'none';
+        timelineContent.innerHTML = '';
+        searchResults.classList.remove('show');
+        searchInput.focus();
+    }
+
+    // Show clear button and dropdown when clicking on input if there's existing value
+    searchInput.addEventListener('click', () => {
+        if (searchInput.value.trim() !== '') {
+            clearBtn.style.display = 'block';
         }
+        
+        // Show dropdown with all or filtered results
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        if (searchTerm) {
+            filteredEmployees = employees.filter(emp =>
+                emp.employee.toLowerCase().includes(searchTerm)
+            );
+        } else {
+            filteredEmployees = employees;
+        }
+        showResults(filteredEmployees);
+    });
+
+    searchInput.addEventListener('focus', () => {
+        // Show clear button if there's text
+        if (searchInput.value.trim() !== '') {
+            clearBtn.style.display = 'block';
+        }
+
+        // Show dropdown
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        if (searchTerm) {
+            filteredEmployees = employees.filter(emp =>
+                emp.employee.toLowerCase().includes(searchTerm)
+            );
+        } else {
+            filteredEmployees = employees;
+        }
+        showResults(filteredEmployees);
     });
 
     searchInput.addEventListener('input', () => {
         const searchTerm = searchInput.value.toLowerCase().trim();
-        clearBtn.style.display = searchTerm ? 'flex' : 'none';
+        
+        // Show/hide clear button based on input
+        clearBtn.style.display = searchTerm ? 'block' : 'none';
 
         if (!searchTerm) {
-            // Clear timeline and hide containers because no employee selected
+            // Clear timeline when input is empty
             timelineSection.style.display = 'none';
             noData.style.display = 'none';
             timelineContent.innerHTML = '';
+            currentSelectedEmployee = null;
 
+            // Show all employees in dropdown
             filteredEmployees = employees;
             showResults(filteredEmployees);
             selectedIndex = -1;
             return;
         }
 
+        // Filter and show matching employees
         filteredEmployees = employees.filter(emp =>
             emp.employee.toLowerCase().includes(searchTerm)
         );
@@ -110,17 +167,7 @@ frappe.ready(function () {
     });
 
     clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        clearBtn.style.display = 'none';
-
-        // Also hide timeline & no-data and clear timeline content here
-        timelineSection.style.display = 'none';
-        noData.style.display = 'none';
-        timelineContent.innerHTML = '';
-
-        filteredEmployees = employees;
-        showResults(filteredEmployees);
-        searchInput.focus();
+        clearSearch();
     });
 
     searchInput.addEventListener('keydown', (e) => {
@@ -146,7 +193,9 @@ frappe.ready(function () {
     });
 
     document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        if (!searchInput.contains(e.target) && 
+            !searchResults.contains(e.target) && 
+            !clearBtn.contains(e.target)) {
             searchResults.classList.remove('show');
             selectedIndex = -1;
         }
@@ -159,6 +208,7 @@ frappe.ready(function () {
             timelineContent.innerHTML = '';
             return;
         }
+        
         timelineContent.innerHTML = '';
         timelineSection.style.display = 'none';
         noData.style.display = 'none';

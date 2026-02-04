@@ -14,7 +14,8 @@
   "type",
   "employer_contribution",
   "depends_on_payment_days",
-  "deduct_from_cash_in_hand_only"
+  "deduct_from_cash_in_hand_only",
+  "is_labour_welfare_fund"
  ],
  "fields": [
   {
@@ -71,11 +72,19 @@
    "fieldname": "deduct_from_cash_in_hand_only",
    "fieldtype": "Check",
    "label": "Deduct from Cash in Hand Only"
+  },
+  {
+   "default": "0",
+   "description": "If check? deduct only in the month of June and December",
+   "fieldname": "is_labour_welfare_fund",
+   "fieldtype": "Check",
+   "label": "Is Labour Welfare Fund",
+   "mandatory_depends_on": "eval:doc.type == 'Deduction'"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 14:03:48.179383",
+ "modified": "2026-02-03 12:48:04.384329",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Component",

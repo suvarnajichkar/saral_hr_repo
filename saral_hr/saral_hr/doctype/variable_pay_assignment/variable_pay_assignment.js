@@ -1,57 +1,60 @@
-// Copyright (c) 2026, sj and contributors
-// For license information, please see license.txt
-
 frappe.ui.form.on("Variable Pay Assignment", {
     refresh(frm) {
-        set_division_filter(frm);
+        // Prevent manual add/delete
+        frm.set_df_property("variable_pay", "cannot_add_rows", true);
+        frm.set_df_property("variable_pay", "cannot_delete_rows", true);
+    },
+
+    month(frm) {
+        if (frm.doc.year && frm.doc.month) {
+            check_existing_and_load_divisions(frm);
+        }
+    },
+
+    year(frm) {
+        if (frm.doc.year && frm.doc.month) {
+            check_existing_and_load_divisions(frm);
+        }
     }
 });
 
-frappe.ui.form.on("Variable Pay Detail Table", {
-    division(frm, cdt, cdn) {
-        set_division_filter(frm);
-    },
-
-    percentage(frm, cdt, cdn) {
-        validate_total_percentage(frm);
-    },
-
-    variable_pay_remove(frm) {
-        validate_total_percentage(frm);
-        set_division_filter(frm);
-    }
-});
-
-function set_division_filter(frm) {
-    let selected_divisions = [];
-
-    (frm.doc.variable_pay || []).forEach(row => {
-        if (row.division) {
-            selected_divisions.push(row.division);
+function check_existing_and_load_divisions(frm) {
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.variable_pay_assignment.variable_pay_assignment.check_existing_assignment",
+        args: {
+            year: frm.doc.year,
+            month: frm.doc.month,
+            name: frm.doc.name
+        },
+        callback(r) {
+            if (r.message.exists) {
+                frappe.throw(
+                    `${frm.doc.month} ${frm.doc.year} Variable Pay Assignment already exists`
+                );
+            } else {
+                load_all_divisions(frm);
+            }
         }
     });
-
-    frm.fields_dict.variable_pay.grid.get_field("division").get_query = function () {
-        return {
-            filters: [
-                ["Division", "name", "not in", selected_divisions]
-            ]
-        };
-    };
 }
 
-function validate_total_percentage(frm) {
-    let total = 0;
+function load_all_divisions(frm) {
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.variable_pay_assignment.variable_pay_assignment.get_all_divisions",
+        callback(r) {
+            if (!r.message) return;
 
-    (frm.doc.variable_pay || []).forEach(row => {
-        total += flt(row.percentage);
+            frm.clear_table("variable_pay");
+
+            r.message.forEach(div => {
+                let row = frm.add_child("variable_pay");
+                row.division = div.name;
+                row.percentage = 0;
+                row.target = 0.00;
+                row.achievement = 0.00;
+            });
+
+            frm.refresh_field("variable_pay");
+        }
     });
-
-    if (total > 100) {
-        frappe.msgprint({
-            title: "Percentage Limit Exceeded",
-            message: `Total Variable Pay Percentage cannot exceed 100%. Current total: ${total}%`,
-            indicator: "red"
-        });
-    }
 }

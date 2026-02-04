@@ -9,11 +9,12 @@
  "field_order": [
   "company",
   "abbr",
-  "working_days_calculation_method",
+  "salary_calculation_based_on",
   "column_break_opgj",
   "country",
   "default_currency",
   "default_holiday_list",
+  "addresscontact_tab",
   "address_and_contact_section",
   "company_logo",
   "date_of_incorporation",
@@ -25,7 +26,11 @@
   "date_of_commencement",
   "fax",
   "website",
-  "address"
+  "address",
+  "bank_details_tab",
+  "bank_name",
+  "ifcs_code",
+  "bank_account_number"
  ],
  "fields": [
   {
@@ -132,17 +137,43 @@
    "label": "Address"
   },
   {
-   "default": "Exclude Weekly Offs",
-   "fieldname": "working_days_calculation_method",
+   "fieldname": "addresscontact_tab",
+   "fieldtype": "Tab Break",
+   "label": "Address/Contact"
+  },
+  {
+   "fieldname": "bank_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Bank Details"
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Link",
+   "label": "Bank Name",
+   "options": "Bank Name"
+  },
+  {
+   "fieldname": "ifcs_code",
+   "fieldtype": "Data",
+   "label": "IFCS Code"
+  },
+  {
+   "fieldname": "bank_account_number",
+   "fieldtype": "Data",
+   "label": "Bank Account Number"
+  },
+  {
+   "fieldname": "salary_calculation_based_on",
    "fieldtype": "Select",
-   "label": "Working Days Calculation Method",
-   "options": "Exclude Weekly Offs\nInclude Weekly Offs",
+   "label": "Salary Calculation Based on",
+   "description": "<b>Working days in a month:</b> Salary calculated based on actual working days (typically 22-26 days). Formula: (Monthly Salary ÷ Working Days) × Days Worked. <br><b>No. of days in a month:</b> Salary calculated based on calendar days (28-31 days). Formula: (Monthly Salary ÷ Total Days) × Days Worked.",
+   "options": "Working days in a month\nNo. of days in a month",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 14:51:29.929673",
+ "modified": "2026-02-03 11:02:46.588056",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",

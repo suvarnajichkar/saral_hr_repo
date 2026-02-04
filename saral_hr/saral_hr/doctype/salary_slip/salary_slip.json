@@ -297,17 +297,17 @@
    "read_only": 1
   },
   {
-   "fetch_from": "employee.working_days_calculation_method",
+   "fetch_from": "employee.salary_calculation_based_on",
    "fieldname": "working_days_calculation_method",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Working Days Calculation Method"
+   "label": "Salary Calculation Based on"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-02 14:31:34.202860",
+ "modified": "2026-02-03 14:39:37.479862",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
