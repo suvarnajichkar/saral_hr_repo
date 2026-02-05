@@ -29,6 +29,7 @@
   "column_break_puyt",
   "absent_days",
   "weekly_offs_count",
+  "total_half_days",
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
@@ -333,12 +334,18 @@
    "hidden": 1,
    "label": "Previous Carry Forward",
    "precision": "2"
+  },
+  {
+   "fieldname": "total_half_days",
+   "fieldtype": "Float",
+   "label": "Total Half Days",
+   "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-04 17:25:08.349084",
+ "modified": "2026-02-05 15:05:31.166597",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

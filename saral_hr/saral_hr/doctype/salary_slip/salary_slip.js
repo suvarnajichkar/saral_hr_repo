@@ -123,7 +123,8 @@ function fetch_days_and_attendance(frm) {
                 payment_days: d.payment_days,
                 present_days: d.present_days,
                 absent_days: d.absent_days,
-                weekly_offs_count: d.weekly_offs
+                weekly_offs_count: d.weekly_offs,
+                total_half_days: d.total_half_days  // NEW: Set total half days
             });
 
             recalculate_salary(frm);
@@ -141,8 +142,6 @@ function recalculate_salary(frm) {
     let wd = flt(frm.doc.total_working_days);
     let pd = flt(frm.doc.payment_days);
     let variable_pct = flt(frm.variable_pay_percentage || 0);
-
-    let earnings_before_rounding = 0;
 
     // ================= EARNINGS =================
     // All earnings (type = "Earning") go to gross_salary
@@ -168,7 +167,6 @@ function recalculate_salary(frm) {
             }
         }
 
-        earnings_before_rounding += amount;
         row.amount = flt(amount, 2);
         gross_salary += row.amount;
     });
@@ -205,15 +203,44 @@ function recalculate_salary(frm) {
         employee_deductions += row.amount;
     });
 
-    // ================= ROUNDING =================
-    let carried_forward = flt(earnings_before_rounding - gross_salary, 2);
+    // ================= BROUGHT FORWARD (from previous month) =================
+    // This value comes from previous month's carried_forward
+    // It's automatically fetched in Python validate() method
     let brought_forward = flt(frm.doc.previous_carry_forward || 0);
-    let total_earnings = gross_salary + brought_forward;
-
-    // ================= FINAL TOTALS =================
-    // Net Salary = Gross Salary - Employee Deductions
-    let net_salary = flt(gross_salary - employee_deductions, 2);
     
+    // Total Earnings = Gross Salary + Brought Forward
+    let total_earnings = flt(gross_salary + brought_forward, 2);
+
+    // ================= NET SALARY CALCULATION WITH ROUNDING =================
+    // Step 1: Calculate actual net salary (with decimals)
+    let actual_net_salary = total_earnings - employee_deductions;
+    
+    // Step 2: Round net salary
+    // Choose your rounding method based on company policy:
+    
+    // Option 1: Round to nearest whole number
+    let net_salary = Math.round(actual_net_salary);
+    
+    // Option 2: Round to nearest 5 (uncomment if needed)
+    // let net_salary = Math.round(actual_net_salary / 5) * 5;
+    
+    // Option 3: Round to nearest 10 (uncomment if needed)
+    // let net_salary = Math.round(actual_net_salary / 10) * 10;
+    
+    // Option 4: Round down (uncomment if needed)
+    // let net_salary = Math.floor(actual_net_salary);
+
+    // ================= CARRIED FORWARD CALCULATION =================
+    // Carried Forward = The difference created by rounding
+    // This will be added to next month's brought forward
+    // Example: If actual = 31519.70 and rounded = 31515, then carried_forward = 4.70
+    let carried_forward = flt(actual_net_salary - net_salary, 2);
+    
+    // Total Deductions includes the carried forward to balance the books
+    // This ensures: Total Earnings - Total Deductions = Net Salary (rounded)
+    let total_deductions = flt(employee_deductions + carried_forward, 2);
+
+    // ================= OTHER FINAL CALCULATIONS =================
     // Cash in Hand = Net Salary - Cash in Hand Deductions
     let cash_in_hand = flt(net_salary - cash_in_hand_deductions, 2);
     
@@ -223,18 +250,19 @@ function recalculate_salary(frm) {
     // Annual CTC = Monthly CTC × 12
     let annual_ctc = flt(monthly_ctc * 12, 2);
 
+    // ================= SET ALL VALUES =================
     frm.set_value({
-        gross_salary,
-        total_earnings,
-        brought_forward,
-        carried_forward,
-        total_deductions: employee_deductions,
-        total_employer_contribution: employer_contribution,
-        cash_in_hand_deductions,
-        net_salary,
-        cash_in_hand,
-        monthly_ctc,
-        annual_ctc
+        gross_salary: flt(gross_salary, 2),
+        total_earnings: total_earnings,
+        brought_forward: brought_forward,
+        carried_forward: carried_forward,
+        total_deductions: total_deductions,
+        total_employer_contribution: flt(employer_contribution, 2),
+        cash_in_hand_deductions: flt(cash_in_hand_deductions, 2),
+        net_salary: net_salary,
+        cash_in_hand: cash_in_hand,
+        monthly_ctc: monthly_ctc,
+        annual_ctc: annual_ctc
     });
 
     frm.refresh_fields(["earnings", "deductions"]);
@@ -250,6 +278,7 @@ function reset_form(frm) {
         present_days: 0,
         absent_days: 0,
         weekly_offs_count: 0,
+        total_half_days: 0,  // NEW: Reset total half days
         gross_salary: 0,
         total_earnings: 0,
         brought_forward: 0,
@@ -266,3 +295,45 @@ function reset_form(frm) {
     frm.variable_pay_percentage = 0;
     frm.refresh_fields();
 }
+
+
+// ---
+
+// ## Summary of Changes:
+
+// ### **Python (salary_slip.py)**
+// 1. ✅ Added `half_day_count` variable to track number of half days
+// 2. ✅ Added logic to count half days: `half_day_count += 1`
+// 3. ✅ Added calculation: `total_half_days = flt(half_day_count * 0.5, 2)`
+// 4. ✅ Added `total_half_days` to return dictionary
+
+// ### **JavaScript (salary_slip.js)**
+// 1. ✅ Added `total_half_days: d.total_half_days` in `fetch_days_and_attendance` callback
+// 2. ✅ Added `total_half_days: 0` in `reset_form` function
+
+// ### **No DocType Changes Needed**
+// - The field `total_half_days` already exists in your JSON ✅
+
+// ---
+
+// ## How It Works:
+
+// **Example:**
+// - Working Days: 26
+// - Present: 24 full days
+// - Half Days: 2 (attendance status = "Half Day")
+// - Absent: 1 full day
+
+// **Results:**
+// - `half_day_count` = 2
+// - `total_half_days` = 2 × 0.5 = **1.0** (displayed)
+// - `present_days` = 24 + (2 × 0.5) = **25.0**
+// - `absent_days` = 1 + (2 × 0.5) = **2.0**
+// - `payment_days` = 26 - 2.0 = **24.0**
+
+// **Salary Calculation:**
+// ```
+// Gross Salary = 30,000
+// Payment Days = 24.0
+// Working Days = 26
+// Prorated Salary = (30,000 / 26) × 24.0 = 27,692.31
