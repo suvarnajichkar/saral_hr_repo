@@ -144,7 +144,7 @@
   {
    "fieldname": "bank_details_tab",
    "fieldtype": "Tab Break",
-   "label": "Bank Details"
+   "label": "Home Bank Details"
   },
   {
    "fieldname": "bank_name",
@@ -163,17 +163,17 @@
    "label": "Bank Account Number"
   },
   {
+   "description": "<b>Working days in a month:</b> Salary calculated based on actual working days (typically 22-26 days). Formula: (Monthly Salary \u00f7 Working Days) \u00d7 Days Worked. <br><b>No. of days in a month:</b> Salary calculated based on calendar days (28-31 days). Formula: (Monthly Salary \u00f7 Total Days) \u00d7 Days Worked.",
    "fieldname": "salary_calculation_based_on",
    "fieldtype": "Select",
    "label": "Salary Calculation Based on",
-   "description": "<b>Working days in a month:</b> Salary calculated based on actual working days (typically 22-26 days). Formula: (Monthly Salary ÷ Working Days) × Days Worked. <br><b>No. of days in a month:</b> Salary calculated based on calendar days (28-31 days). Formula: (Monthly Salary ÷ Total Days) × Days Worked.",
    "options": "Working days in a month\nNo. of days in a month",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-03 11:02:46.588056",
+ "modified": "2026-02-04 12:48:15.254993",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",

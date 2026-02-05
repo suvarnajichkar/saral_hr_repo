@@ -1,18 +1,47 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate, get_last_day
+from frappe.utils import getdate, get_last_day, flt
 import calendar
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 
 
 class SalarySlip(Document):
     def validate(self):
         if self.start_date:
             self.end_date = get_last_day(getdate(self.start_date))
+            
+        # Auto-fetch previous month's carried forward
+        if self.employee and self.start_date and not self.previous_carry_forward:
+            prev_slip = self.get_previous_salary_slip()
+            if prev_slip:
+                self.previous_carry_forward = prev_slip.carried_forward
+
+    def get_previous_salary_slip(self):
+        """Get previous month's salary slip for this employee"""
+        current_date = getdate(self.start_date)
+        prev_month_start = current_date - relativedelta(months=1)
+        
+        prev_slip = frappe.db.get_value(
+            "Salary Slip",
+            filters={
+                "employee": self.employee,
+                "start_date": prev_month_start.replace(day=1),
+                "docstatus": 1  # Only submitted slips
+            },
+            fieldname=["name", "carried_forward"],
+            as_dict=True
+        )
+        
+        return prev_slip
 
 
 @frappe.whitelist()
 def get_salary_structure_for_employee(employee, start_date=None):
+    """
+    Fetch salary structure for employee with special component handling
+    Also includes special components not in salary structure if they have amount for current month
+    """
     ssa = frappe.db.get_all(
         "Salary Structure Assignment",
         filters={"employee": employee},
@@ -28,22 +57,55 @@ def get_salary_structure_for_employee(employee, start_date=None):
 
     earnings = []
     deductions = []
+    
+    # Get current month name for special component lookup
+    current_month = None
+    if start_date:
+        start_date_obj = getdate(start_date)
+        month_names = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ]
+        current_month = month_names[start_date_obj.month - 1]
 
+    # Track which components we've already added from salary structure
+    added_earnings = set()
+    added_deductions = set()
+
+    # Process Earnings from Salary Structure
     for row in ssa_doc.earnings:
         comp = frappe.db.get_value(
             "Salary Component",
             row.salary_component,
-            ["salary_component_abbr", "depends_on_payment_days"],
+            [
+                "salary_component_abbr",
+                "depends_on_payment_days",
+                "is_special_component",
+                "type"
+            ],
             as_dict=True
         )
+        
+        # Get amount based on whether it's a special component
+        amount = row.amount
+        if comp.is_special_component and current_month:
+            special_amount = get_special_component_amount(row.salary_component, current_month)
+            if special_amount is not None:
+                amount = special_amount
+            else:
+                # Special component but no amount for this month - skip it
+                continue
 
         earnings.append({
             "salary_component": row.salary_component,
             "abbr": comp.salary_component_abbr,
-            "amount": row.amount,
-            "depends_on_payment_days": comp.depends_on_payment_days
+            "amount": amount,
+            "depends_on_payment_days": comp.depends_on_payment_days,
+            "is_special_component": comp.is_special_component
         })
+        added_earnings.add(row.salary_component)
 
+    # Process Deductions from Salary Structure
     for row in ssa_doc.deductions:
         comp = frappe.db.get_value(
             "Salary Component",
@@ -53,61 +115,75 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "employer_contribution",
                 "depends_on_payment_days",
                 "deduct_from_cash_in_hand_only",
-                "is_labour_welfare_fund"
+                "is_special_component",
+                "type"
             ],
             as_dict=True
         )
-
-        # Skip LWF components from salary structure
-        # They will be added conditionally based on month
-        if comp.is_labour_welfare_fund:
-            continue
+        
+        # Get amount based on whether it's a special component
+        amount = row.amount
+        if comp.is_special_component and current_month:
+            special_amount = get_special_component_amount(row.salary_component, current_month)
+            if special_amount is not None:
+                amount = special_amount
+            else:
+                # Special component but no amount for this month - skip it
+                continue
 
         deductions.append({
             "salary_component": row.salary_component,
             "abbr": comp.salary_component_abbr,
-            "amount": row.amount,
+            "amount": amount,
             "employer_contribution": comp.employer_contribution,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only
+            "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only,
+            "is_special_component": comp.is_special_component
         })
+        added_deductions.add(row.salary_component)
 
-    # Add Labour Welfare Fund components for June and December only
-    if start_date:
-        start_date_obj = getdate(start_date)
-        month = start_date_obj.month
+    # Add special components NOT in salary structure but have amount for current month
+    if current_month:
+        # Get all special components
+        all_special_components = frappe.get_all(
+            "Salary Component",
+            filters={"is_special_component": 1},
+            fields=[
+                "name",
+                "salary_component_abbr",
+                "type",
+                "depends_on_payment_days",
+                "employer_contribution",
+                "deduct_from_cash_in_hand_only"
+            ]
+        )
         
-        # Check if month is June (6) or December (12)
-        if month in [6, 12]:
-            # Get all LWF components
-            lwf_components = frappe.db.get_all(
-                "Salary Component",
-                filters={
-                    "is_labour_welfare_fund": 1,
-                    "type": "Deduction"
-                },
-                fields=[
-                    "name",
-                    "salary_component_abbr",
-                    "employer_contribution"
-                ]
-            )
+        for comp in all_special_components:
+            # Check if this component has an amount for current month
+            special_amount = get_special_component_amount(comp.name, current_month)
             
-            for lwf in lwf_components:
-                # Determine amount based on employer/employee
-                if lwf.employer_contribution:
-                    amount = 75  # Employer LWF
-                else:
-                    amount = 25  # Employee LWF
+            if special_amount is not None and special_amount > 0:
+                # Add to earnings if not already added
+                if comp.type == "Earning" and comp.name not in added_earnings:
+                    earnings.append({
+                        "salary_component": comp.name,
+                        "abbr": comp.salary_component_abbr,
+                        "amount": special_amount,
+                        "depends_on_payment_days": comp.depends_on_payment_days,
+                        "is_special_component": 1
+                    })
                 
-                deductions.append({
-                    "salary_component": lwf.name,
-                    "abbr": lwf.salary_component_abbr,
-                    "amount": amount,
-                    "employer_contribution": lwf.employer_contribution,
-                    "depends_on_payment_days": 0,
-                    "deduct_from_cash_in_hand_only": 0
-                })
+                # Add to deductions if not already added
+                elif comp.type == "Deduction" and comp.name not in added_deductions:
+                    deductions.append({
+                        "salary_component": comp.name,
+                        "abbr": comp.salary_component_abbr,
+                        "amount": special_amount,
+                        "employer_contribution": comp.employer_contribution,
+                        "depends_on_payment_days": comp.depends_on_payment_days,
+                        "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only,
+                        "is_special_component": 1
+                    })
 
     return {
         "salary_structure": ssa_doc.salary_structure,
@@ -117,15 +193,95 @@ def get_salary_structure_for_employee(employee, start_date=None):
     }
 
 
+def get_special_component_amount(component_name, month):
+    """
+    Get the amount for a special component for a specific month
+    Returns None if month not found or amount is 0 or negative
+    Returns the amount if it's greater than 0
+    """
+    component_doc = frappe.get_doc("Salary Component", component_name)
+    
+    if not component_doc.is_special_component:
+        return None
+    
+    for row in component_doc.enter_amount_according_to_months:
+        if row.month == month:
+            amount = flt(row.amount)
+            # Return None if amount is 0 or negative (skip this component for this month)
+            return amount if amount > 0 else None
+    
+    # If month not found in table, return None (skip this component)
+    return None
+
+
 @frappe.whitelist()
-def get_attendance_and_days(employee, start_date, working_days_calculation_method="Exclude Weekly Offs"):
+def get_variable_pay_percentage(employee, start_date):
+    """
+    Get variable pay percentage for employee's division for given month/year
+    Returns: percentage value (0-100) or None
+    """
+    if not employee or not start_date:
+        return None
+    
+    # Get employee's division
+    division = frappe.db.get_value("Company Link", employee, "division")
+    if not division:
+        return None
+    
+    # Parse start_date to get year and month
+    date_obj = getdate(start_date)
+    year = str(date_obj.year)
+    month_names = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    month = month_names[date_obj.month - 1]
+    
+    # Find Variable Pay Assignment for this year and month
+    vpa_name = f"{year} - {month}"
+    
+    if not frappe.db.exists("Variable Pay Assignment", vpa_name):
+        return None
+    
+    vpa_doc = frappe.get_doc("Variable Pay Assignment", vpa_name)
+    
+    # Find the division's percentage
+    for row in vpa_doc.variable_pay:
+        if row.division == division:
+            return flt(row.percentage)
+    
+    return None
+
+
+@frappe.whitelist()
+def get_attendance_and_days(employee, start_date, working_days_calculation_method=None):
+    """
+    Calculate working days, payment days, and attendance
+    Updated to properly handle both calculation methods
+    """
     start_date = getdate(start_date)
     end_date = get_last_day(start_date)
+
+    # Get calculation method from employee's company if not provided
+    if not working_days_calculation_method:
+        working_days_calculation_method = frappe.db.get_value(
+            "Company Link", 
+            employee, 
+            "salary_calculation_based_on"
+        )
+    
+    # Map the company setting to the expected format
+    # Company setting: "Working days in a month" or "No. of days in a month"
+    # Expected format: "Exclude Weekly Offs" or "Include Weekly Offs"
+    if working_days_calculation_method == "No. of days in a month":
+        calculation_method = "Include Weekly Offs"
+    else:
+        calculation_method = "Exclude Weekly Offs"
 
     weekly_off = frappe.db.get_value("Company Link", employee, "weekly_off")
     total_days = calendar.monthrange(start_date.year, start_date.month)[1]
 
-    # Weekly offs
+    # Calculate weekly offs
     weekly_off_count = 0
     day_map = {
         "Monday": 0, "Tuesday": 1, "Wednesday": 2,
@@ -134,13 +290,14 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
     if weekly_off:
         off_day = day_map.get(weekly_off)
-        current = start_date
-        while current <= end_date:
-            if current.weekday() == off_day:
-                weekly_off_count += 1
-            current += timedelta(days=1)
+        if off_day is not None:
+            current = start_date
+            while current <= end_date:
+                if current.weekday() == off_day:
+                    weekly_off_count += 1
+                current += timedelta(days=1)
 
-    # Attendance records
+    # Get attendance records
     attendance = frappe.db.get_all(
         "Attendance",
         filters={
@@ -162,13 +319,17 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         elif a.status == "Absent":
             absent_days += 1
 
-    # Calculate working days based on the method
-    if working_days_calculation_method == "Include Weekly Offs":
+    # Calculate working days based on method
+    if calculation_method == "Include Weekly Offs":
+        # Working days = Total calendar days
         working_days = total_days
+        # Payment days = Total days - Absent days
+        payment_days = total_days - absent_days
     else:  # "Exclude Weekly Offs"
+        # Working days = Total days - Weekly offs
         working_days = total_days - weekly_off_count
-
-    payment_days = working_days - absent_days
+        # Payment days = Working days - Absent days
+        payment_days = working_days - absent_days
 
     return {
         "total_days": total_days,
@@ -176,5 +337,6 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "working_days": working_days,
         "payment_days": payment_days,
         "present_days": present_days,
-        "absent_days": absent_days
+        "absent_days": absent_days,
+        "calculation_method": calculation_method
     }
