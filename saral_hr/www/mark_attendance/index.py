@@ -41,7 +41,6 @@ def get_attendance_between_dates(employee, start_date, end_date):
     start_date = getdate(start_date)
     end_date = getdate(end_date)
 
-    # Debug log
     frappe.logger().info(f"Fetching attendance for {employee} from {start_date} to {end_date}")
 
     attendance_records = frappe.db.get_all(
@@ -53,7 +52,6 @@ def get_attendance_between_dates(employee, start_date, end_date):
         fields=["attendance_date", "status"]
     )
 
-    # Debug log
     frappe.logger().info(f"Found {len(attendance_records)} records")
     
     result = {}
@@ -67,20 +65,19 @@ def get_attendance_between_dates(employee, start_date, end_date):
 
 
 @frappe.whitelist()
-def save_attendance(employee, attendance_date, status, override_weekly_off=0):
+def save_attendance(employee, attendance_date, status):
+    """
+    Save attendance - now supports Holiday status
+    """
     user = frappe.session.user
     attendance_date = getdate(attendance_date)
-    
-    # Convert override_weekly_off to boolean
-    override_weekly_off = int(override_weekly_off) == 1
     
     frappe.logger().info(f"=== SAVE ATTENDANCE ===")
     frappe.logger().info(f"Employee: {employee}")
     frappe.logger().info(f"Date: {attendance_date}")
     frappe.logger().info(f"Status: {status}")
-    frappe.logger().info(f"Override Weekly Off: {override_weekly_off}")
 
-    # company restriction check (dynamic)
+    # Company restriction check
     companies = frappe.get_all(
         "User Permission",
         filters={
@@ -102,25 +99,7 @@ def save_attendance(employee, attendance_date, status, override_weekly_off=0):
         if not allowed:
             frappe.throw("Not permitted to mark attendance for this employee")
 
-    # Weekly off check - ONLY block if override is NOT enabled
-    if not override_weekly_off:
-        weekly_off = frappe.db.get_value(
-            "Company Link",
-            {"employee": employee},
-            "weekly_off"
-        )
-
-        if weekly_off:
-            weekly_off_days = [d.strip().lower() for d in weekly_off.split(",")]
-            day_name = attendance_date.strftime("%A").lower()
-            frappe.logger().info(f"Day: {day_name}, Weekly offs: {weekly_off_days}")
-            
-            if day_name in weekly_off_days:
-                frappe.logger().info(f"Skipping - this is a weekly off and override is disabled")
-                return "skipped_weekly_off"
-    else:
-        frappe.logger().info(f"Override enabled - allowing attendance on weekly off")
-
+    # Check for existing attendance
     existing_attendance = frappe.db.get_value(
         "Attendance",
         {"employee": employee, "attendance_date": attendance_date},
@@ -150,7 +129,39 @@ def save_attendance(employee, attendance_date, status, override_weekly_off=0):
 
 
 @frappe.whitelist()
+def get_holidays_between_dates(company, start_date, end_date):
+    """
+    Fetch holidays from company's default holiday list
+    Returns list of date strings in YYYY-MM-DD format
+    """
+    if not company:
+        return []
+
+    holiday_list = frappe.db.get_value("Company", company, "default_holiday_list")
+    if not holiday_list:
+        frappe.logger().info(f"No holiday list found for company: {company}")
+        return []
+
+    holidays = frappe.db.get_all(
+        "Holiday",
+        filters={
+            "parent": holiday_list,
+            "holiday_date": ["between", [start_date, end_date]]
+        },
+        pluck="holiday_date"
+    )
+
+    frappe.logger().info(f"Found {len(holidays)} holidays for {company} from {start_date} to {end_date}")
+    
+    # Return as YYYY-MM-DD strings
+    return [str(h) for h in holidays]
+
+
+@frappe.whitelist()
 def get_employee_attendance_for_year(employee, year):
+    """
+    Get full year attendance (used by calendar modal)
+    """
     if not employee or not year:
         return {}
 
@@ -159,7 +170,7 @@ def get_employee_attendance_for_year(employee, year):
         filters={
             "employee": employee,
             "attendance_date": ["between", [f"{year}-01-01", f"{year}-12-31"]],
-            "status": ["in", ["Present", "Absent", "Half Day"]]
+            "status": ["in", ["Present", "Absent", "Half Day", "Holiday"]]
         },
         fields=["attendance_date", "status"]
     )
@@ -167,7 +178,6 @@ def get_employee_attendance_for_year(employee, year):
     attendance_map = {}
 
     for r in records:
-        # ONLY dates which actually have attendance
         attendance_map[str(r.attendance_date)] = r.status
 
     return attendance_map

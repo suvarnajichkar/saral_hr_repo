@@ -11,10 +11,11 @@
   "employee_name",
   "working_hours",
   "aadhar_number",
-  "column_break_gchh",
+  "column_break_jxld",
   "status",
-  "attendance_date",
   "company",
+  "attendance_date",
+  "holiday",
   "details_section",
   "shift",
   "in_time",
@@ -110,10 +111,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_gchh",
-   "fieldtype": "Column Break"
-  },
-  {
    "bold": 1,
    "fetch_from": "employee.company",
    "fieldname": "company",
@@ -127,11 +124,22 @@
    "fieldname": "aadhar_number",
    "fieldtype": "Data",
    "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "column_break_jxld",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.holiday_list",
+   "fieldname": "holiday",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Holiday"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-04 17:43:22.974073",
+ "modified": "2026-02-05 14:19:09.910942",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",

@@ -197,18 +197,27 @@ frappe.ready(function () {
     // ================================
     window.attendanceTableData = {};
     window.originalAttendanceData = {};
-    window.weeklyOffOverrides = {}; // Track which weekly offs are enabled for attendance
+    window.holidayDates = {}; // NEW: Track holidays
 
     function updateCounts() {
-        let p = 0, a = 0, h = 0;
+        let p = 0, a = 0, h = 0, w = 0, hol = 0;
         Object.values(window.attendanceTableData).forEach(s => {
             if (s === "Present") p++;
             else if (s === "Absent") a++;
             else if (s === "Half Day") h++;
+            else if (s === "Weekly Off") w++;
+            else if (s === "Holiday") hol++;
         });
         present_count.textContent = p;
         absent_count.textContent = a;
         halfday_count.textContent = h;
+
+        if (document.getElementById('weeklyoff_count')) {
+            document.getElementById('weeklyoff_count').textContent = w;
+        }
+        if (document.getElementById('holiday_count')) {
+            document.getElementById('holiday_count').textContent = hol;
+        }
     }
 
     function generateTable() {
@@ -219,124 +228,200 @@ frappe.ready(function () {
 
         const weeklyOffDays = window.employeeWeeklyOffMap[employee];
         const clId = window.employeeCLMap[employee];
+        const company = window.employeeCompanyMap[employee];
 
         const tbody = document.getElementById("attendance_table_body");
         document.getElementById("attendance_table").style.display = "table";
         tbody.innerHTML = "";
 
+        // STEP 1: Fetch holidays
         frappe.call({
-            method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
-            args: { employee: clId, start_date: startDate, end_date: endDate },
-            callback: function (res) {
+            method: "saral_hr.www.mark_attendance.index.get_holidays_between_dates",
+            args: { company: company, start_date: startDate, end_date: endDate },
+            callback: function (holidayRes) {
+                const holidays = holidayRes.message || [];
+                window.holidayDates = {};
+                holidays.forEach(h => {
+                    window.holidayDates[h] = true;
+                });
 
-                const attendanceMap = res.message || {};
-                window.attendanceTableData = {};
-                window.originalAttendanceData = {};
-                window.weeklyOffOverrides = {};
+                // STEP 2: Fetch attendance
+                frappe.call({
+                    method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
+                    args: { employee: clId, start_date: startDate, end_date: endDate },
+                    callback: function (res) {
 
-                let current = new Date(startDate);
-                const end = new Date(endDate);
+                        const attendanceMap = res.message || {};
+                        window.attendanceTableData = {};
+                        window.originalAttendanceData = {};
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                        let current = new Date(startDate);
+                        const end = new Date(endDate);
 
-                while (current <= end) {
-                    let currentDate = new Date(current);
-                    currentDate.setHours(0, 0, 0, 0);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
 
-                    const dayName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
-                    const dateKey =
-                        currentDate.getFullYear() + "-" +
-                        String(currentDate.getMonth() + 1).padStart(2, "0") + "-" +
-                        String(currentDate.getDate()).padStart(2, "0");
+                        while (current <= end) {
+                            let currentDate = new Date(current);
+                            currentDate.setHours(0, 0, 0, 0);
 
-                    const isWeeklyOff = weeklyOffDays.includes(dayName.toLowerCase());
-                    const isFuture = currentDate > today;
+                            const dayName = currentDate.toLocaleDateString("en-US", { weekday: "long" });
+                            const dateKey =
+                                currentDate.getFullYear() + "-" +
+                                String(currentDate.getMonth() + 1).padStart(2, "0") + "-" +
+                                String(currentDate.getDate()).padStart(2, "0");
 
-                    const savedStatus = attendanceMap[dateKey] || "";
-                    window.attendanceTableData[dateKey] = savedStatus;
-                    if (savedStatus) {
-                        window.originalAttendanceData[dateKey] = savedStatus;
-                        // If there's saved attendance on a weekly off, enable the toggle
-                        if (isWeeklyOff) {
-                            window.weeklyOffOverrides[dateKey] = true;
-                        }
-                    }
+                            const isDefaultWeeklyOff = weeklyOffDays.includes(dayName.toLowerCase());
+                            const isHoliday = window.holidayDates[dateKey] === true;
+                            const isFuture = currentDate > today;
 
-                    const row = document.createElement("tr");
-                    if (isWeeklyOff && !window.weeklyOffOverrides[dateKey]) {
-                        row.classList.add("weekly-off-row");
-                    }
-                    if (isFuture) row.classList.add("future-date-row");
+                            let savedStatus = attendanceMap[dateKey] || "";
 
-                    // Add toggle column for weekly off days
-                    const toggleColumn = isWeeklyOff && !isFuture ? `
-                        <td class="text-center" style="padding: 8px;">
-                            <label class="toggle-switch" title="Enable attendance marking for this weekly off">
-                                <input type="checkbox" class="weekly-off-toggle" data-date="${dateKey}" 
-                                    ${window.weeklyOffOverrides[dateKey] ? 'checked' : ''}>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </td>
-                    ` : '<td></td>';
-
-                    row.innerHTML = `
-                    <td>${dayName}</td>
-                    <td>${currentDate.getDate()} ${currentDate.toLocaleDateString("en-US", { month: "long" })} ${currentDate.getFullYear()}</td>
-                    ${toggleColumn}
-                    ${["Present", "Absent", "Half Day"].map(s => `
-                        <td class="text-center">
-                            <input type="radio" name="status_${dateKey}" value="${s}"
-                                ${savedStatus === s ? "checked" : ""}
-                                ${(isWeeklyOff && !window.weeklyOffOverrides[dateKey]) || isFuture ? "disabled" : ""}>
-                        </td>
-                    `).join("")}
-                `;
-
-                    // Add toggle event listener for weekly off days
-                    if (isWeeklyOff && !isFuture) {
-                        const toggleInput = row.querySelector('.weekly-off-toggle');
-                        if (toggleInput) {
-                            toggleInput.addEventListener('change', function() {
-                                const date = this.dataset.date;
-                                window.weeklyOffOverrides[date] = this.checked;
-                                
-                                // Enable/disable radio buttons
-                                const radios = row.querySelectorAll(`input[name="status_${date}"]`);
-                                radios.forEach(radio => {
-                                    radio.disabled = !this.checked;
-                                    if (!this.checked) {
-                                        radio.checked = false;
-                                        window.attendanceTableData[date] = "";
-                                    }
-                                });
-                                
-                                // Update row styling
-                                if (this.checked) {
-                                    row.classList.remove("weekly-off-row");
-                                } else {
-                                    row.classList.add("weekly-off-row");
+                            // AUTO-ASSIGN LOGIC:
+                            // 1. If Holiday → auto-assign "Holiday" (even if weekly off too)
+                            // 2. Else if Weekly Off and no attendance → auto-assign "Weekly Off"
+                            if (!savedStatus) {
+                                if (isHoliday) {
+                                    savedStatus = "Holiday";
+                                } else if (isDefaultWeeklyOff) {
+                                    savedStatus = "Weekly Off";
                                 }
-                                
-                                updateCounts();
-                            });
+                            }
+
+                            window.attendanceTableData[dateKey] = savedStatus;
+
+                            if (savedStatus) {
+                                window.originalAttendanceData[dateKey] = savedStatus;
+                            }
+
+                            const row = document.createElement("tr");
+
+                            // ROW STYLING:
+                            // Holiday (with or without weekly off) → holiday-row
+                            // Weekly Off only → weekly-off-row
+                            if (isHoliday) {
+                                row.classList.add("holiday-row");
+                            } else if (savedStatus === "Weekly Off" || (isDefaultWeeklyOff && savedStatus === "")) {
+                                row.classList.add("weekly-off-row");
+                            }
+
+                            if (isFuture) row.classList.add("future-date-row");
+
+                            // TOGGLE LOGIC:
+                            // Check ON when:
+                            // - Saved as "Weekly Off" OR
+                            // - Default weekly off with no attendance OR
+                            // - Holiday (with or without saved status)
+                            const toggleChecked = savedStatus === "Weekly Off" ||
+                                savedStatus === "Holiday" ||
+                                (isDefaultWeeklyOff && savedStatus === "") ||
+                                isHoliday;
+
+                            // DISABLE RADIOS:
+                            // Disable when:
+                            // - Saved as "Weekly Off" OR
+                            // - Default weekly off with no attendance OR
+                            // - Holiday (user can toggle to enable) OR
+                            // - Future date
+                            const disableRadios = savedStatus === "Weekly Off" ||
+                                (isDefaultWeeklyOff && savedStatus === "") ||
+                                savedStatus === "Holiday" ||
+                                isHoliday ||
+                                isFuture;
+
+                            // Toggle available for ALL non-future rows
+                            const toggleColumn = !isFuture ? `
+                                <td class="text-center" style="padding: 8px;">
+                                    <label class="toggle-switch" title="${toggleChecked ? 'Mark attendance' : 'Mark as weekly off'}">
+                                        <input type="checkbox" class="weekly-off-toggle" 
+                                            data-date="${dateKey}"
+                                            ${toggleChecked ? 'checked' : ''}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </td>
+                            ` : '<td class="text-center">—</td>';
+
+                            row.innerHTML = `
+                            <td>${dayName}</td>
+                            <td>${currentDate.getDate()} ${currentDate.toLocaleDateString("en-US", { month: "long" })} ${currentDate.getFullYear()}</td>
+                            ${toggleColumn}
+                            ${["Present", "Absent", "Half Day"].map(s => `
+                                <td class="text-center">
+                                    <input type="radio" name="status_${dateKey}" value="${s}"
+                                        ${savedStatus === s ? "checked" : ""}
+                                        ${disableRadios ? "disabled" : ""}>
+                                </td>
+                            `).join("")}
+                        `;
+
+                            // TOGGLE EVENT
+                            if (!isFuture) {
+                                const toggleInput = row.querySelector('.weekly-off-toggle');
+                                if (toggleInput) {
+                                    toggleInput.addEventListener('change', function () {
+                                        const date = this.dataset.date;
+                                        const isChecked = this.checked;
+
+                                        const radios = row.querySelectorAll(`input[name="status_${date}"]`);
+
+                                        if (isChecked) {
+                                            // Toggle ON
+                                            const isHol = window.holidayDates[date];
+                                            if (isHol) {
+                                                row.classList.add("holiday-row");
+                                                row.classList.remove("weekly-off-row");
+                                                window.attendanceTableData[date] = "Holiday";
+                                            } else {
+                                                row.classList.add("weekly-off-row");
+                                                row.classList.remove("holiday-row");
+                                                window.attendanceTableData[date] = "Weekly Off";
+                                            }
+                                            radios.forEach(radio => {
+                                                radio.disabled = true;
+                                                radio.checked = false;
+                                            });
+                                        } else {
+                                            // Toggle OFF
+                                            row.classList.remove("weekly-off-row");
+                                            row.classList.remove("holiday-row");
+
+                                            radios.forEach(radio => {
+                                                radio.disabled = false;
+                                            });
+
+                                            // Attach radio listeners
+                                            row.querySelectorAll(`input[name="status_${date}"]`).forEach(radio => {
+                                                radio.addEventListener("change", function () {
+                                                    window.attendanceTableData[date] = this.value;
+                                                    updateCounts();
+                                                });
+                                            });
+
+                                            window.attendanceTableData[date] = "";
+                                        }
+
+                                        updateCounts();
+                                    });
+                                }
+                            }
+
+                            // RADIO EVENTS (if enabled)
+                            if (!isFuture && !disableRadios) {
+                                row.querySelectorAll("input[type='radio']").forEach(i => {
+                                    i.addEventListener("change", function () {
+                                        window.attendanceTableData[dateKey] = this.value;
+                                        updateCounts();
+                                    });
+                                });
+                            }
+
+                            tbody.appendChild(row);
+                            current.setDate(current.getDate() + 1);
                         }
+
+                        updateCounts();
                     }
-
-                    if (!isFuture && (!isWeeklyOff || window.weeklyOffOverrides[dateKey])) {
-                        row.querySelectorAll("input[type='radio']").forEach(i => {
-                            i.addEventListener("change", () => {
-                                window.attendanceTableData[dateKey] = i.value;
-                                updateCounts();
-                            });
-                        });
-                    }
-
-                    tbody.appendChild(row);
-                    current.setDate(current.getDate() + 1);
-                }
-
-                updateCounts();
+                });
             }
         });
     }
@@ -346,9 +431,16 @@ frappe.ready(function () {
     // ================================
     function bulkMark(status) {
         Object.keys(window.attendanceTableData).forEach(date => {
+            // Skip already saved attendance
             if (window.originalAttendanceData[date]) return;
+
+            // Skip Weekly Off/Holiday marked rows
+            if (window.attendanceTableData[date] === "Weekly Off") return;
+            if (window.attendanceTableData[date] === "Holiday") return;
+
             const radios = document.querySelectorAll(`input[name="status_${date}"]`);
             if (!radios.length || radios[0].disabled) return;
+
             radios.forEach(r => r.checked = (r.value === status));
             window.attendanceTableData[date] = status;
         });
@@ -370,23 +462,14 @@ frappe.ready(function () {
         const calls = [];
 
         Object.entries(window.attendanceTableData).forEach(([date, status]) => {
-            if (status) {
-                const isOverride = window.weeklyOffOverrides[date] ? 1 : 0;
-                console.log(`Saving ${date}: ${status}, override: ${isOverride}`);
-                
+            // Save ALL statuses including "Weekly Off" and "Holiday"
+            if (status && status.trim() !== "") {
                 calls.push(frappe.call({
                     method: "saral_hr.www.mark_attendance.index.save_attendance",
-                    args: { 
-                        employee: clId, 
-                        attendance_date: date, 
-                        status: status,
-                        override_weekly_off: isOverride
-                    },
-                    callback: function(r) {
-                        console.log(`Save response for ${date}:`, r.message);
-                    },
-                    error: function(r) {
-                        console.error(`Error saving ${date}:`, r);
+                    args: {
+                        employee: clId,
+                        attendance_date: date,
+                        status: status
                     }
                 }));
             }
@@ -411,8 +494,8 @@ frappe.ready(function () {
     // ================================
     let currentCalendarYear = 2025;
     let yearAttendanceData = {};
+    let yearHolidayData = {};
 
-    // Helper function to normalize date formats
     function normalizeDateKey(dateStr) {
         if (!dateStr) return null;
 
@@ -461,6 +544,7 @@ frappe.ready(function () {
     function loadYearAttendance() {
         const employee = employeeSelect.value;
         const clId = window.employeeCLMap[employee];
+        const company = window.employeeCompanyMap[employee];
 
         if (!clId) {
             console.error('No Company Link ID found');
@@ -470,33 +554,38 @@ frappe.ready(function () {
         const startDate = `${currentCalendarYear}-01-01`;
         const endDate = `${currentCalendarYear}-12-31`;
 
-        console.log('Loading attendance for:', clId, 'Year:', currentCalendarYear);
-
+        // Fetch holidays first
         frappe.call({
-            method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
-            args: {
-                employee: clId,
-                start_date: startDate,
-                end_date: endDate
-            },
-            callback: function (res) {
-                const rawData = res.message || {};
-
-                // Normalize all date keys
-                yearAttendanceData = {};
-                Object.entries(rawData).forEach(([dateKey, status]) => {
-                    const normalized = normalizeDateKey(dateKey);
+            method: "saral_hr.www.mark_attendance.index.get_holidays_between_dates",
+            args: { company: company, start_date: startDate, end_date: endDate },
+            callback: function (holidayRes) {
+                yearHolidayData = {};
+                const holidays = holidayRes.message || [];
+                holidays.forEach(h => {
+                    const normalized = normalizeDateKey(h);
                     if (normalized) {
-                        yearAttendanceData[normalized] = status;
+                        yearHolidayData[normalized] = true;
                     }
                 });
 
-                console.log('✅ Loaded attendance data:', Object.keys(yearAttendanceData).length, 'records');
+                // Then fetch attendance
+                frappe.call({
+                    method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
+                    args: { employee: clId, start_date: startDate, end_date: endDate },
+                    callback: function (res) {
+                        const rawData = res.message || {};
 
-                renderMonthsGrid();
-            },
-            error: function (err) {
-                console.error('❌ Error loading attendance:', err);
+                        yearAttendanceData = {};
+                        Object.entries(rawData).forEach(([dateKey, status]) => {
+                            const normalized = normalizeDateKey(dateKey);
+                            if (normalized) {
+                                yearAttendanceData[normalized] = status;
+                            }
+                        });
+
+                        renderMonthsGrid();
+                    }
+                });
             }
         });
     }
@@ -513,7 +602,6 @@ frappe.ready(function () {
         const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
         monthsGrid.innerHTML = '';
-        let totalColoredDays = 0;
 
         monthNames.forEach((monthName, monthIndex) => {
             const monthCard = document.createElement('div');
@@ -527,17 +615,14 @@ frappe.ready(function () {
 
             let miniCalendarHTML = `<div class="month-name">${monthName}</div><div class="mini-calendar">`;
 
-            // Day headers
             dayNames.forEach(day => {
                 miniCalendarHTML += `<div class="mini-calendar-header">${day}</div>`;
             });
 
-            // Empty cells
             for (let i = 0; i < startDay; i++) {
                 miniCalendarHTML += `<div class="mini-calendar-day empty"></div>`;
             }
 
-            // Days of the month
             const today = new Date();
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(currentCalendarYear, monthIndex, day);
@@ -547,25 +632,28 @@ frappe.ready(function () {
                     .toLocaleDateString("en-US", { weekday: "long" })
                     .toLowerCase();
 
-                const isWeeklyOff = weeklyOffDays.includes(dayName);
+                const isDefaultWeeklyOff = weeklyOffDays.includes(dayName);
+                const isHoliday = yearHolidayData[dateKey] === true;
 
                 let dayClass = 'mini-calendar-day';
                 if (isToday) dayClass += ' today';
 
-                // attendance has highest priority
                 const status = yearAttendanceData[dateKey];
 
-                if (status === 'Present') {
+                // COLOR PRIORITY:
+                // 1. Holiday (even if weekly off) → holiday
+                // 2. Present/Absent/Half Day → their colors
+                // 3. Weekly Off only → weekend
+                if (isHoliday || status === 'Holiday') {
+                    dayClass += ' holiday';
+                } else if (status === 'Present') {
                     dayClass += ' present';
-                    totalColoredDays++;
                 } else if (status === 'Absent') {
                     dayClass += ' absent';
-                    totalColoredDays++;
                 } else if (status === 'Half Day') {
                     dayClass += ' halfday';
-                    totalColoredDays++;
-                } else if (isWeeklyOff) {
-                    dayClass += ' weekend'; // blue weekly off
+                } else if (status === 'Weekly Off' || isDefaultWeeklyOff) {
+                    dayClass += ' weekend';
                 }
 
                 miniCalendarHTML += `<div class="${dayClass}">${day}</div>`;
@@ -575,8 +663,6 @@ frappe.ready(function () {
             monthCard.innerHTML = miniCalendarHTML;
             monthsGrid.appendChild(monthCard);
         });
-
-        console.log(`✅ Rendered ${totalColoredDays} colored days in calendar`);
     }
 
     function selectMonth(monthIndex) {
@@ -589,7 +675,6 @@ frappe.ready(function () {
         window.closeCalendarModal();
     }
 
-    // Event listeners
     document.getElementById('get_attendance_info').onclick = function () {
         window.openCalendarModal();
     };
