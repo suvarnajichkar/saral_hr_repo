@@ -1,28 +1,29 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
- "autoname": "field:salary_component_name",
- "creation": "2026-01-10 15:30:00.000000",
+ "autoname": "field:salary_component",
+ "creation": "2026-01-10 14:31:43.076920",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "salary_component_name",
+  "salary_component",
   "salary_component_abbr",
-  "column_break_basic",
+  "description",
+  "column_break_phkq",
   "type",
   "depends_on_payment_days",
   "employer_contribution",
-  "section_break_details",
-  "description"
+  "deduct_from_cash_in_hand_only",
+  "is_special_component",
+  "enter_amount_according_to_months"
  ],
  "fields": [
   {
-   "bold": 1,
-   "fieldname": "salary_component_name",
+   "fieldname": "salary_component",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Salary Component Name",
+   "label": "Name",
    "reqd": 1,
    "unique": 1
   },
@@ -30,51 +31,72 @@
    "fieldname": "salary_component_abbr",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Abbreviation",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_basic",
-   "fieldtype": "Column Break"
+   "label": "Abbr",
+   "print_width": "120px",
+   "reqd": 1,
+   "width": "120px"
   },
   {
    "fieldname": "type",
    "fieldtype": "Select",
-   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "\nEarning\nDeduction",
-   "reqd": 1,
-   "search_index": 1
+   "options": "Earning\nDeduction"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "depends_on": "eval:doc.is_special_component == 1",
+   "fieldname": "enter_amount_according_to_months",
+   "fieldtype": "Table",
+   "label": "Enter Amount according to months",
+   "options": "Special Salary Component"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.type == 'Deduction'",
+   "fieldname": "employer_contribution",
+   "fieldtype": "Check",
+   "label": "Employer Contribution"
+  },
+  {
+   "fieldname": "column_break_phkq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.type == 'Deduction'",
+   "fieldname": "deduct_from_cash_in_hand_only",
+   "fieldtype": "Check",
+   "label": "Deduct from Cash in Hand Only"
+  },
+  {
+   "depends_on": "eval:doc.is_special_component == 1",
+   "fieldname": "enter_amount_according_to_months",
+   "fieldtype": "Table",
+   "label": "Enter Amount according to months",
+   "options": "Special Salary Component"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_special_component",
+   "fieldtype": "Check",
+   "label": "Is Special Component?"
   },
   {
    "default": "0",
    "fieldname": "depends_on_payment_days",
    "fieldtype": "Check",
-   "label": "Depends on Payment Days",
-   "search_index": 0
-  },
-  {
-   "default": "0",
-   "fieldname": "employer_contribution",
-   "fieldtype": "Check",
-   "label": "Employer Contribution",
-   "search_index": 1
-  },
-  {
-   "fieldname": "section_break_details",
-   "fieldtype": "Section Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Text Editor",
-   "label": "Description"
+   "label": "Depends on Payment Days"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-05 12:00:00.000000",
+ "modified": "2026-02-05 11:58:14.418226",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Component",
@@ -90,18 +112,6 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR User",
    "share": 1,
    "write": 1
   }

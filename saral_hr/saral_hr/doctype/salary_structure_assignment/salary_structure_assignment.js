@@ -48,11 +48,16 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
 frappe.ui.form.on("Salary Details", {
 
-    amount(frm) {
+    amount(frm, cdt, cdn) {
+        // Allow manual editing of amounts
         calculate_salary(frm);
     },
 
-    salary_details_remove(frm) {
+    earnings_remove(frm) {
+        calculate_salary(frm);
+    },
+
+    deductions_remove(frm) {
         calculate_salary(frm);
     }
 });
@@ -96,9 +101,9 @@ function calculate_salary(frm) {
             });
 
             // Initialize variables inside callback
-            let employee_deductions = 0;  // ESIC (0.75%) + PF (12%) + PT
-            let employer_contribution = 0; // ESIC (3.25%) + PF (12%) + Bonus + Gratuity
-            let retention = 0;             // Retention - NOT part of total deductions
+            let employee_deductions = 0;  // Employee PF + Employee ESIC + PT + Employee LWF
+            let employer_contribution = 0; // Employer PF + Employer ESIC + Employer LWF + Bonus + Gratuity
+            let cash_in_hand_deductions = 0; // Advance + Retention
 
             // 3️⃣ Categorize each deduction based on flags
             deductions.forEach(d => {
@@ -115,28 +120,21 @@ function calculate_salary(frm) {
                 let is_cash_only = parseInt(comp.deduct_from_cash_in_hand_only) || 0;
                 let is_employer = parseInt(comp.employer_contribution) || 0;
 
-                // CRITICAL PRIORITY ORDER:
-                // 1. Check if component name is exactly "Retention"
-                //    → Retention (NOT in total deductions, only deducted from cash in hand)
-                // 2. THEN check "employer_contribution"
-                //    → Employer contribution (doesn't affect employee)
-                // 3. Otherwise → Regular employee deduction (part of total deductions)
-                //    Note: Employee PF, PT, ESIC have "deduct_from_cash_in_hand_only" = 1
-                //    but they ARE still part of total deductions
+                // PRIORITY ORDER:
+                // 1. employer_contribution = 1 → Employer contribution (Employer PF, Employer ESIC, Employer LWF, Bonus, Gratuity)
+                // 2. deduct_from_cash_in_hand_only = 1 → Cash in hand deduction (Advance, Retention)
+                // 3. Otherwise → Regular employee deduction (Employee PF, Employee ESIC, PT, Employee LWF)
 
-                if (is_cash_only === 1 && d.salary_component === 'Retention') {
-                    // ONLY Retention component: NOT part of total deductions
-                    // Only deducted from cash in hand
-                    retention += amount;
-                }
-                else if (is_employer === 1) {
-                    // Employer contribution: ESIC (3.25%), PF (12%), Bonus, Gratuity
+                if (is_employer === 1) {
+                    // Employer contribution: Employer PF, Employer ESIC, Employer LWF, Bonus, Gratuity
                     employer_contribution += amount;
                 }
+                else if (is_cash_only === 1) {
+                    // Cash in hand deductions: Advance, Retention
+                    cash_in_hand_deductions += amount;
+                }
                 else {
-                    // Regular employee deduction: ESIC (0.75%), PF (12%), PT
-                    // These ARE part of total deductions
-                    // (Even if deduct_from_cash_in_hand_only = 1)
+                    // Regular employee deduction: Employee PF, Employee ESIC, PT, Employee LWF
                     employee_deductions += amount;
                 }
             });
@@ -147,59 +145,56 @@ function calculate_salary(frm) {
                 gross_salary,
                 employee_deductions,
                 employer_contribution,
-                retention
+                cash_in_hand_deductions
             );
         }
     });
 }
 
-function set_salary_totals(frm, gross, employee_deductions, employer, retention) {
+function set_salary_totals(frm, gross, employee_deductions, employer, cash_in_hand_deductions) {
 
     // ============================================================
     // FINAL FORMULAS:
     // ============================================================
-    // GROSS SALARY = Basic + DA + HRA + Conveyance + Medical + Education + Other Allowance + Variable Pay
+    // GROSS SALARY = Basic + DA + HRA + Conveyance + Medical + Education + Other Allowance + Variable Pay + Arrears
     //
-    // TOTAL DEDUCTIONS = ESIC (0.75%) + PF (12%) + PT
-    //                    Does NOT include retention
+    // TOTAL DEDUCTIONS = Employee PF + Employee ESIC + PT + Employee LWF
     //
     // NET SALARY = Gross Salary - Total Deductions
     //
-    // RETENTION = Tracked separately
-    //             (Only the "Retention" component)
+    // CASH IN HAND DEDUCTIONS = Advance + Retention
     //
-    // CASH IN HAND = Net Salary - Retention
-    //              = Gross - Total Deductions - Retention
+    // CASH IN HAND = Net Salary - Cash in Hand Deductions
     //
-    // TOTAL EMPLOYER CONTRIBUTION = ESIC (3.25%) + PF (12%) + Bonus + Gratuity
+    // TOTAL EMPLOYER CONTRIBUTION = Employer PF + Employer ESIC + Employer LWF + Bonus + Gratuity
     //
-    // ANNUAL CTC = (Gross Salary × 12) + (Total Employer Contribution × 12)
+    // MONTHLY CTC = Gross Salary + Employer Contribution
     //
-    // MONTHLY CTC = Annual CTC ÷ 12
+    // ANNUAL CTC = Monthly CTC × 12
     // ============================================================
 
-    // Total Deductions = ONLY employee deductions (NOT including retention)
-    let total_deductions = employee_deductions;  // ✅ NO RETENTION HERE
+    // Total Deductions = Employee deductions only
+    let total_deductions = employee_deductions;
 
     // Net Salary = Gross - Total Deductions
     let net_salary = gross - total_deductions;
 
-    // Cash in Hand = Net Salary - Retention
-    let cash_in_hand = net_salary - retention;
+    // Cash in Hand = Net Salary - Cash in Hand Deductions
+    let cash_in_hand = net_salary - cash_in_hand_deductions;
 
-    // Annual CTC = (Gross × 12) + (Employer Contribution × 12)
-    let annual_ctc = (gross * 12) + (employer * 12);
+    // Monthly CTC = Gross + Employer Contribution
+    let monthly_ctc = gross + employer;
 
-    // Monthly CTC = Annual CTC ÷ 12
-    let monthly_ctc = annual_ctc / 12;
+    // Annual CTC = Monthly CTC × 12
+    let annual_ctc = monthly_ctc * 12;
 
     frm.set_value({
         gross_salary: gross,
-        total_deductions: total_deductions,          // ✅ ONLY employee deductions (NO retention)
-        total_employer_contribution: employer,        // Employer ESIC + PF + Bonus + Gratuity
-        retention: retention,                         // Tracked separately
-        net_salary: net_salary,                       // Gross - Total Deductions
-        cash_in_hand: cash_in_hand,                   // Net Salary - Retention
+        total_deductions: total_deductions,
+        total_employer_contribution: employer,
+        retention: cash_in_hand_deductions, // For backward compatibility
+        net_salary: net_salary,
+        cash_in_hand: cash_in_hand,
         monthly_ctc: monthly_ctc,
         annual_ctc: annual_ctc
     });
