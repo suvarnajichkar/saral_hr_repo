@@ -1,3 +1,6 @@
+// Copyright (c) 2026, sj and contributors
+// For license information, please see license.txt
+
 frappe.ui.form.on("Company Link", {
 
 	setup(frm) {
@@ -13,12 +16,14 @@ frappe.ui.form.on("Company Link", {
 	},
 
 	refresh(frm) {
+		// Set status indicator
 		if (frm.doc.is_active) {
 			frm.page.set_indicator(__("Active"), "green");
 		} else {
 			frm.page.set_indicator(__("Inactive"), "gray");
 		}
 
+		// Add custom button to view all records
 		if (frm.doc.employee && !frm.is_new()) {
 			frm.add_custom_button(__("View All Records"), function () {
 				frappe.set_route("List", "Company Link", {
@@ -26,22 +31,14 @@ frappe.ui.form.on("Company Link", {
 				});
 			});
 		}
+		
+		// Refresh company-related fields from master
+		refresh_company_fields(frm);
 	},
 
 	company(frm) {
-		// Auto-fetch holiday list when company changes
-		if (frm.doc.company) {
-			frappe.db.get_value(
-				"Company",
-				frm.doc.company,
-				"default_holiday_list",
-				(r) => {
-					if (r && r.default_holiday_list) {
-						frm.set_value("holiday_list", r.default_holiday_list);
-					}
-				}
-			);
-		}
+		// Auto-fetch fields when company changes
+		refresh_company_fields(frm);
 	},
 
 	employee(frm) {
@@ -64,6 +61,54 @@ frappe.ui.form.on("Company Link", {
 	}
 });
 
+/**
+ * Refresh company-related fields from Company master
+ * Fetches latest values and AUTO-SAVES if fields have changed
+ */
+function refresh_company_fields(frm) {
+	if (frm.doc.company && !frm.is_new()) {
+		frappe.db.get_value(
+			"Company",
+			frm.doc.company,
+			["salary_calculation_based_on", "default_holiday_list"],
+			(r) => {
+				if (r) {
+					let fields_changed = false;
+					
+					// Check and update salary calculation field
+					if (r.salary_calculation_based_on && 
+						r.salary_calculation_based_on !== frm.doc.salary_calculation_based_on) {
+						frm.set_value("salary_calculation_based_on", r.salary_calculation_based_on);
+						fields_changed = true;
+					}
+					
+					// Check and update holiday list field
+					if (r.default_holiday_list && 
+						r.default_holiday_list !== frm.doc.holiday_list) {
+						frm.set_value("holiday_list", r.default_holiday_list);
+						fields_changed = true;
+					}
+					
+					// Auto-save if any field changed
+					if (fields_changed && !frm.is_dirty()) {
+						setTimeout(() => {
+							frm.save().then(() => {
+								frappe.show_alert({
+									message: __('Company Link updated with latest Company settings'),
+									indicator: 'green'
+								}, 3);
+							});
+						}, 500);
+					}
+				}
+			}
+		);
+	}
+}
+
+/**
+ * Check if employee already has an active record in another company
+ */
 function check_existing_active_employee(frm) {
 	frappe.call({
 		method: "frappe.client.get_list",
@@ -82,8 +127,8 @@ function check_existing_active_employee(frm) {
 					title: __("Warning"),
 					indicator: "orange",
 					message: __(
-						"Employee is already active in company {0} (Record: {1}). "
-						+ "Please deactivate that record first.",
+						"Employee is already active in company {0} (Record: {1}). " +
+						"Please deactivate that record first.",
 						[r.message[0].company, r.message[0].name]
 					)
 				});
