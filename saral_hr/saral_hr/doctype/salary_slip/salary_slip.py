@@ -257,7 +257,7 @@ def get_variable_pay_percentage(employee, start_date):
 def get_attendance_and_days(employee, start_date, working_days_calculation_method=None):
     """
     Calculate working days, payment days, and attendance
-    Updated to properly handle both calculation methods
+    Updated to properly handle both calculation methods and half days
     """
     start_date = getdate(start_date)
     end_date = get_last_day(start_date)
@@ -309,15 +309,21 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
     present_days = 0
     absent_days = 0
+    half_day_count = 0  # NEW: Track number of half days
 
     for a in attendance:
         if a.status in ["Present", "On Leave"]:
             present_days += 1
         elif a.status == "Half Day":
+            half_day_count += 1  # NEW: Count half days
             present_days += 0.5
             absent_days += 0.5
         elif a.status == "Absent":
             absent_days += 1
+
+    # Calculate total half days in decimal format
+    # 1 half day = 0.5, 2 half days = 1.0, 3 half days = 1.5, etc.
+    total_half_days = flt(half_day_count * 0.5, 2)  # NEW
 
     # Calculate working days based on method
     if calculation_method == "Include Weekly Offs":
@@ -338,5 +344,6 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "payment_days": payment_days,
         "present_days": present_days,
         "absent_days": absent_days,
+        "total_half_days": total_half_days,  # NEW: Return total half days
         "calculation_method": calculation_method
     }
