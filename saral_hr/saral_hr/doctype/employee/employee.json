@@ -17,18 +17,18 @@
   "salutation",
   "pan_number",
   "aadhar_number",
-  "lin_number",
   "column_break_ngyj",
   "status",
   "employee_image",
+  "statutory_account_details_tab",
   "bank_details_section",
   "bank_name",
   "ifsc_code",
   "account_number",
+  "esic_number",
   "column_break_pxbz",
   "employee_pf_account",
-  "pf_account_ifsc_code",
-  "pf_account_number",
+  "lin_number",
   "contact_details",
   "cell_number",
   "column_break_kwfk",
@@ -205,7 +205,7 @@
   {
    "fieldname": "bank_details_section",
    "fieldtype": "Section Break",
-   "label": "Bank Details"
+   "label": "Statutory"
   },
   {
    "fieldname": "bank_name",
@@ -228,19 +228,19 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "pf_account_ifsc_code",
-   "fieldtype": "Data",
-   "label": "PF Account IFSC Code"
+   "fieldname": "statutory_account_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Statutory Account Details"
   },
   {
-   "fieldname": "pf_account_number",
+   "fieldname": "esic_number",
    "fieldtype": "Data",
-   "label": "PF Account Number"
+   "label": "ESIC Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 18:07:08.965584",
+ "modified": "2026-02-04 17:42:39.665401",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",

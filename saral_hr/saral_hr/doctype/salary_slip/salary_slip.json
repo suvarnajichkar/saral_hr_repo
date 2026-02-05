@@ -35,10 +35,9 @@
   "column_break_zrdn",
   "deductions",
   "totals_section",
-  "total_earnings",
   "total_deductions",
   "total_employer_contribution",
-  "retention",
+  "cash_in_hand_deductions",
   "column_break_snfl",
   "gross_salary",
   "net_salary",
@@ -46,6 +45,11 @@
   "column_break_orch",
   "cash_in_hand",
   "annual_ctc",
+  "rounding_section",
+  "brought_forward",
+  "carried_forward",
+  "column_break_round",
+  "previous_carry_forward",
   "amended_from"
  ],
  "fields": [
@@ -214,9 +218,9 @@
    "precision": "2"
   },
   {
-   "fieldname": "retention",
+   "fieldname": "cash_in_hand_deductions",
    "fieldtype": "Float",
-   "label": "Retention",
+   "label": "Cash in Hand Deductions",
    "precision": "2",
    "read_only": 1
   },
@@ -244,13 +248,6 @@
   {
    "fieldname": "column_break_snfl",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total_earnings",
-   "fieldtype": "Float",
-   "label": "Total Earnings",
-   "precision": "2",
-   "read_only": 1
   },
   {
    "fieldname": "employee_company_details_section",
@@ -302,12 +299,46 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Salary Calculation Based on"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "rounding_section",
+   "fieldtype": "Section Break",
+   "label": "Rounding Adjustments"
+  },
+  {
+   "description": "Rounding difference carried from previous month",
+   "fieldname": "brought_forward",
+   "fieldtype": "Float",
+   "label": "Brought Forward (from previous month)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "description": "Rounding difference to be added to next month",
+   "fieldname": "carried_forward",
+   "fieldtype": "Float",
+   "label": "Carried Forward (to next month)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_round",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Internal field - stores last month's carried forward amount",
+   "fieldname": "previous_carry_forward",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Previous Carry Forward",
+   "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-03 14:39:37.479862",
+ "modified": "2026-02-04 17:25:08.349084",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
