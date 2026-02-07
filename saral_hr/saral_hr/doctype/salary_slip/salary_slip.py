@@ -597,3 +597,136 @@ def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage):
     salary_slip.total_basic_da = flt(total_basic_da, 2)
     salary_slip.total_employer_contribution = flt(total_employer_contribution, 2)
     salary_slip.retention = flt(retention, 2)
+
+
+
+@frappe.whitelist()
+def get_submitted_salary_slips(year, month):
+    """
+    Get list of submitted salary slips for a given year and month
+    """
+    # Convert month name to number
+    month_map = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+    }
+    month_num = month_map.get(month)
+    
+    if not month_num:
+        frappe.throw("Invalid month")
+    
+    # Create start_date for the period
+    start_date = f"{year}-{month_num:02d}-01"
+    
+    # Get all submitted salary slips for this period
+    salary_slips = frappe.db.sql("""
+        SELECT
+            ss.name,
+            ss.employee,
+            ss.employee_name,
+            ss.department,
+            ss.designation,
+            ss.net_salary,
+            ss.start_date,
+            ss.end_date
+        FROM
+            `tabSalary Slip` ss
+        WHERE
+            ss.docstatus = 1
+            AND ss.start_date = %(start_date)s
+        ORDER BY
+            ss.employee_name
+    """, {"start_date": start_date}, as_dict=1)
+    
+    return salary_slips
+
+
+@frappe.whitelist()
+def bulk_print_salary_slips(salary_slip_names):
+    """
+    Generate a combined PDF for multiple salary slips
+    """
+    import json
+    from PyPDF2 import PdfMerger
+    import os
+    from frappe.utils.pdf import get_pdf
+    
+    if isinstance(salary_slip_names, str):
+        salary_slip_names = json.loads(salary_slip_names)
+    
+    if not salary_slip_names:
+        frappe.throw("No salary slips selected")
+    
+    # Create a PDF merger object
+    merger = PdfMerger()
+    
+    # Get the print format (you can customize this)
+    print_format = frappe.db.get_value("Property Setter", 
+        {"doc_type": "Salary Slip", "property": "default_print_format"}, 
+        "value") or "Standard"
+    
+    temp_files = []
+    
+    try:
+        # Generate PDF for each salary slip and add to merger
+        for slip_name in salary_slip_names:
+            # Get the HTML for the salary slip
+            html = frappe.get_print("Salary Slip", slip_name, print_format)
+            
+            # Convert HTML to PDF
+            pdf_data = get_pdf(html)
+            
+            # Create a temporary file for this PDF
+            temp_file = frappe.utils.get_files_path(f"temp_slip_{slip_name}.pdf", is_private=1)
+            temp_files.append(temp_file)
+            
+            # Write PDF data to temp file
+            with open(temp_file, "wb") as f:
+                f.write(pdf_data)
+            
+            # Add to merger
+            merger.append(temp_file)
+        
+        # Create final merged PDF
+        timestamp = frappe.utils.now_datetime().strftime("%Y%m%d_%H%M%S")
+        final_filename = f"Salary_Slips_{timestamp}.pdf"
+        final_filepath = frappe.utils.get_files_path(final_filename, is_private=1)
+        
+        # Write merged PDF
+        with open(final_filepath, "wb") as f:
+            merger.write(f)
+        
+        merger.close()
+        
+        # Create File document
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": final_filename,
+            "is_private": 1,
+            "file_url": f"/private/files/{final_filename}"
+        })
+        file_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+        
+        # Clean up temporary files
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        
+        return {
+            "pdf_url": file_doc.file_url,
+            "file_name": final_filename
+        }
+        
+    except Exception as e:
+        # Clean up temporary files in case of error
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except:
+                    pass
+        
+        frappe.log_error(f"Error in bulk print: {str(e)}", "Bulk Print Salary Slips")
+        frappe.throw(f"Error generating PDF: {str(e)}")
