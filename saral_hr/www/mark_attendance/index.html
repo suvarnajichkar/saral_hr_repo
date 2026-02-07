@@ -81,6 +81,7 @@
             <button id="mark_present" class="btn btn-frappe btn-sm">Present</button>
             <button id="mark_absent" class="btn btn-frappe btn-sm">Absent</button>
             <button id="mark_halfday" class="btn btn-frappe btn-sm">Half Day</button>
+            <button id="mark_lwp" class="btn btn-frappe btn-sm">LWP</button>
             <button id="get_attendance_info" class="btn btn-frappe btn-sm">Get Attendance Info</button>
         </div>
     </div>
@@ -102,6 +103,9 @@
                     </th>
                     <th class="text-center">
                         Half Day - <span class="count-text" id="halfday_count">0</span>
+                    </th>
+                    <th class="text-center">
+                        LWP - <span class="count-text" id="lwp_count">0</span>
                     </th>
                 </tr>
             </thead>
@@ -127,7 +131,7 @@
                 <button class="year-nav-btn" onclick="changeYear(1)">›</button>
             </div>
 
-            <!-- UPDATED LEGEND WITH HOLIDAY -->
+            <!-- UPDATED LEGEND WITH LWP (PURPLE) -->
             <div class="calendar-legend">
                 <div class="legend-item">
                     <span class="legend-color present"></span>
@@ -140,6 +144,10 @@
                 <div class="legend-item">
                     <span class="legend-color halfday"></span>
                     <span>Half Day</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color lwp"></span>
+                    <span>LWP</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-color holiday"></span>
@@ -609,7 +617,7 @@
         font-weight: 600;
     }
 
-    /* ⭐ CALENDAR ATTENDANCE COLORS - WITH HOLIDAY */
+    /* ⭐ CALENDAR ATTENDANCE COLORS - WITH PURPLE LWP */
     .mini-calendar-day.present {
         background-color: #98eeb8 !important;   /* green */
         color: #ffffff !important;
@@ -628,6 +636,13 @@
         font-weight: 600;
     }
 
+    /* ⭐ LWP - PURPLE (INDUSTRY STANDARD) */
+    .mini-calendar-day.lwp {
+        background-color: #9c27b0 !important;   /* purple */
+        color: #ffffff !important;              /* white text */
+        font-weight: 600;
+    }
+
     /* ⭐ HOLIDAY - ORANGE */
     .mini-calendar-day.holiday {
         background-color: #ff9800 !important;   /* orange */
@@ -642,13 +657,14 @@
         font-weight: 600;
     }
 
-    /* ⭐ LEGEND COLORS - WITH HOLIDAY */
+    /* ⭐ LEGEND COLORS - WITH PURPLE LWP */
     .calendar-legend {
         display: flex;
         gap: 16px;
         justify-content: center;
         margin: 12px 0 18px;
         font-size: 13px;
+        flex-wrap: wrap;
     }
 
     .legend-item {
@@ -675,6 +691,11 @@
 
     .legend-color.halfday {
         background-color: rgb(238, 225, 105);
+    }
+
+    /* ⭐ LWP LEGEND COLOR - PURPLE */
+    .legend-color.lwp {
+        background-color: #9c27b0;
     }
 
     /* ⭐ HOLIDAY LEGEND COLOR */

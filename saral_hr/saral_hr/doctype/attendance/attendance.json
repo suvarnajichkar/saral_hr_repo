@@ -64,7 +64,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "\nPresent\nAbsent\nHalf Day\nHoliday\nWeekly Off",
+   "options": "\nPresent\nAbsent\nHalf Day\nHoliday\nWeekly Off\nLWP",
    "reqd": 1,
    "search_index": 1
   },
@@ -139,7 +139,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-05 14:19:09.910942",
+ "modified": "2026-02-07 11:27:54.324626",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",
