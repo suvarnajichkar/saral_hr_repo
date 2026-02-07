@@ -10,30 +10,6 @@ class SalarySlip(Document):
     def validate(self):
         if self.start_date:
             self.end_date = get_last_day(getdate(self.start_date))
-            
-        # Auto-fetch previous month's carried forward
-        if self.employee and self.start_date and not self.previous_carry_forward:
-            prev_slip = self.get_previous_salary_slip()
-            if prev_slip:
-                self.previous_carry_forward = prev_slip.carried_forward
-
-    def get_previous_salary_slip(self):
-        """Get previous month's salary slip for this employee"""
-        current_date = getdate(self.start_date)
-        prev_month_start = current_date - relativedelta(months=1)
-        
-        prev_slip = frappe.db.get_value(
-            "Salary Slip",
-            filters={
-                "employee": self.employee,
-                "start_date": prev_month_start.replace(day=1),
-                "docstatus": 1  # Only submitted slips
-            },
-            fieldname=["name", "carried_forward"],
-            as_dict=True
-        )
-        
-        return prev_slip
 
 
 @frappe.whitelist()
@@ -81,7 +57,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "salary_component_abbr",
                 "depends_on_payment_days",
                 "is_special_component",
-                "type"
+                "type",
+                "is_part_of_pf_wages"
             ],
             as_dict=True
         )
@@ -101,7 +78,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "abbr": comp.salary_component_abbr,
             "amount": amount,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "is_special_component": comp.is_special_component
+            "is_special_component": comp.is_special_component,
+            "is_part_of_pf_wages": comp.is_part_of_pf_wages
         })
         added_earnings.add(row.salary_component)
 
@@ -114,9 +92,11 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "salary_component_abbr",
                 "employer_contribution",
                 "depends_on_payment_days",
-                "deduct_from_cash_in_hand_only",
                 "is_special_component",
-                "type"
+                "type",
+                "is_pf_component",
+                "pf_percentage",
+                "calculate_on_pf_wages"
             ],
             as_dict=True
         )
@@ -137,8 +117,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "amount": amount,
             "employer_contribution": comp.employer_contribution,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only,
-            "is_special_component": comp.is_special_component
+            "is_special_component": comp.is_special_component,
+            "is_pf_component": comp.is_pf_component,
+            "pf_percentage": comp.pf_percentage,
+            "calculate_on_pf_wages": comp.calculate_on_pf_wages
         })
         added_deductions.add(row.salary_component)
 
@@ -154,7 +136,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "type",
                 "depends_on_payment_days",
                 "employer_contribution",
-                "deduct_from_cash_in_hand_only"
+                "is_part_of_pf_wages",
+                "is_pf_component",
+                "pf_percentage",
+                "calculate_on_pf_wages"
             ]
         )
         
@@ -170,7 +155,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "abbr": comp.salary_component_abbr,
                         "amount": special_amount,
                         "depends_on_payment_days": comp.depends_on_payment_days,
-                        "is_special_component": 1
+                        "is_special_component": 1,
+                        "is_part_of_pf_wages": comp.is_part_of_pf_wages
                     })
                 
                 # Add to deductions if not already added
@@ -181,8 +167,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "amount": special_amount,
                         "employer_contribution": comp.employer_contribution,
                         "depends_on_payment_days": comp.depends_on_payment_days,
-                        "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only,
-                        "is_special_component": 1
+                        "is_special_component": 1,
+                        "is_pf_component": comp.is_pf_component,
+                        "pf_percentage": comp.pf_percentage,
+                        "calculate_on_pf_wages": comp.calculate_on_pf_wages
                     })
 
     return {
@@ -257,7 +245,7 @@ def get_variable_pay_percentage(employee, start_date):
 def get_attendance_and_days(employee, start_date, working_days_calculation_method=None):
     """
     Calculate working days, payment days, and attendance
-    Updated to properly handle both calculation methods and half days
+    FIXED: Proper handling of half days in payment_days calculation
     """
     start_date = getdate(start_date)
     end_date = get_last_day(start_date)
@@ -309,33 +297,30 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
     present_days = 0
     absent_days = 0
-    half_day_count = 0  # NEW: Track number of half days
+    half_day_count = 0
 
     for a in attendance:
         if a.status in ["Present", "On Leave"]:
             present_days += 1
         elif a.status == "Half Day":
-            half_day_count += 1  # NEW: Count half days
-            present_days += 0.5
-            absent_days += 0.5
+            half_day_count += 1
+            present_days += 0.5  # Add 0.5 to present
+            absent_days += 0.5   # Add 0.5 to absent
         elif a.status == "Absent":
             absent_days += 1
 
-    # Calculate total half days in decimal format
-    # 1 half day = 0.5, 2 half days = 1.0, 3 half days = 1.5, etc.
-    total_half_days = flt(half_day_count * 0.5, 2)  # NEW
+    # Calculate total half days for display (count, not decimal)
+    total_half_days = flt(half_day_count * 0.5, 2)
 
-    # Calculate working days based on method
+    # Calculate working days and payment days based on method
     if calculation_method == "Include Weekly Offs":
-        # Working days = Total calendar days
         working_days = total_days
-        # Payment days = Total days - Absent days
-        payment_days = total_days - absent_days
+        # FIXED: Payment days should include half days properly
+        payment_days = flt(total_days - absent_days, 2)
     else:  # "Exclude Weekly Offs"
-        # Working days = Total days - Weekly offs
         working_days = total_days - weekly_off_count
-        # Payment days = Working days - Absent days
-        payment_days = working_days - absent_days
+        # FIXED: Payment days should include half days properly
+        payment_days = flt(working_days - absent_days, 2)
 
     return {
         "total_days": total_days,
@@ -344,6 +329,6 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "payment_days": payment_days,
         "present_days": present_days,
         "absent_days": absent_days,
-        "total_half_days": total_half_days,  # NEW: Return total half days
+        "total_half_days": total_half_days,
         "calculation_method": calculation_method
     }
