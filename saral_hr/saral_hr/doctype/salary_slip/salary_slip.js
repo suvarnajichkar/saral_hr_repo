@@ -198,61 +198,48 @@ function recalculate_salary(frm) {
 
         // ===== ESIC EMPLOYEE =====
         if (comp.includes("esic") && !comp.includes("employer")) {
-            // Only calculate if base amount is not zero (structure has it enabled)
             if (base > 0) {
-                // Employee ESIC = 0.75% of (Gross - Conveyance) if Gross < 21000
                 if (total_earnings < 21000) {
                     amount = flt((total_earnings - conveyance_amount) * 0.0075, 2);
                 } else {
                     amount = 0;
                 }
             } else {
-                amount = 0;  // Keep zero if structure has zero
+                amount = 0;
             }
         }
         // ===== ESIC EMPLOYER =====
         else if (comp.includes("esic") && comp.includes("employer")) {
-            // Only calculate if base amount is not zero (structure has it enabled)
             if (base > 0) {
-                // Employer ESIC = 3.25% of (Gross - Conveyance) if Gross < 21000
                 if (total_earnings < 21000) {
                     amount = flt((total_earnings - conveyance_amount) * 0.0325, 2);
                 } else {
                     amount = 0;
                 }
             } else {
-                amount = 0;  // Keep zero if structure has zero
+                amount = 0;
             }
         }
         // ===== PF (Both Employee and Employer) =====
         else if (comp.includes("pf") || comp.includes("provident")) {
-            // Only calculate if base amount is not zero (structure has it enabled)
             if (base > 0) {
                 if (pd === wd) {
-                    // Full month - use base amount
                     amount = base;
                 } else {
-                    // Partial month - calculate on pro-rated Basic + DA with ₹15,000 ceiling
                     let prorated_basic_da = basic_amount + da_amount;
-                    
-                    // Apply PF wage ceiling of ₹15,000
                     let pf_wages = Math.min(prorated_basic_da, 15000);
-                    
-                    // Calculate 12% of PF wages
                     amount = flt(pf_wages * 0.12, 2);
                 }
             } else {
-                amount = 0;  // Keep zero if structure has zero
+                amount = 0;
             }
         }
         // ===== Other Deductions (PT, LWF, etc.) =====
         else {
-            // For other deductions, keep salary structure values as-is
-            // Don't pro-rate special components or zero values
             if (row.depends_on_payment_days && wd > 0 && base > 0) {
                 amount = (base / wd) * pd;
             } else {
-                amount = base;  // Keep original value (including zero)
+                amount = base;
             }
         }
 
