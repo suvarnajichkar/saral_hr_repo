@@ -10,30 +10,6 @@ class SalarySlip(Document):
     def validate(self):
         if self.start_date:
             self.end_date = get_last_day(getdate(self.start_date))
-            
-        # Auto-fetch previous month's carried forward
-        if self.employee and self.start_date and not self.previous_carry_forward:
-            prev_slip = self.get_previous_salary_slip()
-            if prev_slip:
-                self.previous_carry_forward = prev_slip.carried_forward
-
-    def get_previous_salary_slip(self):
-        """Get previous month's salary slip for this employee"""
-        current_date = getdate(self.start_date)
-        prev_month_start = current_date - relativedelta(months=1)
-        
-        prev_slip = frappe.db.get_value(
-            "Salary Slip",
-            filters={
-                "employee": self.employee,
-                "start_date": prev_month_start.replace(day=1),
-                "docstatus": 1  # Only submitted slips
-            },
-            fieldname=["name", "carried_forward"],
-            as_dict=True
-        )
-        
-        return prev_slip
 
 
 @frappe.whitelist()
@@ -81,7 +57,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "salary_component_abbr",
                 "depends_on_payment_days",
                 "is_special_component",
-                "type"
+                "type",
+                "is_part_of_pf_wages"
             ],
             as_dict=True
         )
@@ -101,7 +78,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "abbr": comp.salary_component_abbr,
             "amount": amount,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "is_special_component": comp.is_special_component
+            "is_special_component": comp.is_special_component,
+            "is_part_of_pf_wages": comp.is_part_of_pf_wages
         })
         added_earnings.add(row.salary_component)
 
@@ -114,9 +92,11 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "salary_component_abbr",
                 "employer_contribution",
                 "depends_on_payment_days",
-                "deduct_from_cash_in_hand_only",
                 "is_special_component",
-                "type"
+                "type",
+                "is_pf_component",
+                "pf_percentage",
+                "calculate_on_pf_wages"
             ],
             as_dict=True
         )
@@ -137,8 +117,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "amount": amount,
             "employer_contribution": comp.employer_contribution,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only,
-            "is_special_component": comp.is_special_component
+            "is_special_component": comp.is_special_component,
+            "is_pf_component": comp.is_pf_component,
+            "pf_percentage": comp.pf_percentage,
+            "calculate_on_pf_wages": comp.calculate_on_pf_wages
         })
         added_deductions.add(row.salary_component)
 
@@ -154,7 +136,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "type",
                 "depends_on_payment_days",
                 "employer_contribution",
-                "deduct_from_cash_in_hand_only"
+                "is_part_of_pf_wages",
+                "is_pf_component",
+                "pf_percentage",
+                "calculate_on_pf_wages"
             ]
         )
         
@@ -170,7 +155,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "abbr": comp.salary_component_abbr,
                         "amount": special_amount,
                         "depends_on_payment_days": comp.depends_on_payment_days,
-                        "is_special_component": 1
+                        "is_special_component": 1,
+                        "is_part_of_pf_wages": comp.is_part_of_pf_wages
                     })
                 
                 # Add to deductions if not already added
@@ -181,8 +167,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "amount": special_amount,
                         "employer_contribution": comp.employer_contribution,
                         "depends_on_payment_days": comp.depends_on_payment_days,
-                        "deduct_from_cash_in_hand_only": comp.deduct_from_cash_in_hand_only,
-                        "is_special_component": 1
+                        "is_special_component": 1,
+                        "is_pf_component": comp.is_pf_component,
+                        "pf_percentage": comp.pf_percentage,
+                        "calculate_on_pf_wages": comp.calculate_on_pf_wages
                     })
 
     return {
@@ -257,7 +245,7 @@ def get_variable_pay_percentage(employee, start_date):
 def get_attendance_and_days(employee, start_date, working_days_calculation_method=None):
     """
     Calculate working days, payment days, and attendance
-    Updated to properly handle both calculation methods and half days
+    FIXED: Proper handling of half days in payment_days calculation
     """
     start_date = getdate(start_date)
     end_date = get_last_day(start_date)
@@ -309,33 +297,30 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
     present_days = 0
     absent_days = 0
-    half_day_count = 0  # NEW: Track number of half days
+    half_day_count = 0
 
     for a in attendance:
         if a.status in ["Present", "On Leave"]:
             present_days += 1
         elif a.status == "Half Day":
-            half_day_count += 1  # NEW: Count half days
-            present_days += 0.5
-            absent_days += 0.5
+            half_day_count += 1
+            present_days += 0.5  # Add 0.5 to present
+            absent_days += 0.5   # Add 0.5 to absent
         elif a.status == "Absent":
             absent_days += 1
 
-    # Calculate total half days in decimal format
-    # 1 half day = 0.5, 2 half days = 1.0, 3 half days = 1.5, etc.
-    total_half_days = flt(half_day_count * 0.5, 2)  # NEW
+    # Calculate total half days for display (count, not decimal)
+    total_half_days = flt(half_day_count * 0.5, 2)
 
-    # Calculate working days based on method
+    # Calculate working days and payment days based on method
     if calculation_method == "Include Weekly Offs":
-        # Working days = Total calendar days
         working_days = total_days
-        # Payment days = Total days - Absent days
-        payment_days = total_days - absent_days
+        # FIXED: Payment days should include half days properly
+        payment_days = flt(total_days - absent_days, 2)
     else:  # "Exclude Weekly Offs"
-        # Working days = Total days - Weekly offs
         working_days = total_days - weekly_off_count
-        # Payment days = Working days - Absent days
-        payment_days = working_days - absent_days
+        # FIXED: Payment days should include half days properly
+        payment_days = flt(working_days - absent_days, 2)
 
     return {
         "total_days": total_days,
@@ -344,6 +329,404 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "payment_days": payment_days,
         "present_days": present_days,
         "absent_days": absent_days,
-        "total_half_days": total_half_days,  # NEW: Return total half days
+        "total_half_days": total_half_days,
         "calculation_method": calculation_method
     }
+
+@frappe.whitelist()
+def get_eligible_employees_for_salary_slip(year, month):
+    """
+    Get list of employees eligible for salary slip generation
+    Excludes employees who already have salary slip for the period
+    Only includes employees with attendance > 0 for the month
+    """
+    from datetime import datetime
+    
+    # Convert month name to number
+    month_map = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+    }
+    month_num = month_map.get(month)
+    
+    if not month_num:
+        frappe.throw("Invalid month")
+    
+    # Create start_date for the period
+    start_date = f"{year}-{month_num:02d}-01"
+    start_date_obj = getdate(start_date)
+    end_date = get_last_day(start_date_obj)
+    
+    # Get all active employees with salary structure assignments
+    employees = frappe.db.sql("""
+        SELECT DISTINCT
+            cl.name,
+            cl.full_name as employee_name,
+            cl.department,
+            cl.designation,
+            cl.company
+        FROM
+            `tabCompany Link` cl
+        INNER JOIN
+            `tabSalary Structure Assignment` ssa ON ssa.employee = cl.name
+        WHERE
+            cl.is_active = 1
+            AND (
+                (ssa.from_date <= %(start_date)s AND ssa.to_date IS NULL)
+                OR (ssa.from_date <= %(start_date)s AND ssa.to_date >= %(start_date)s)
+            )
+    """, {"start_date": start_date}, as_dict=1)
+    
+    eligible_employees = []
+    
+    for emp in employees:
+        # Check if salary slip already exists for this period
+        existing_slip = frappe.db.exists("Salary Slip", {
+            "employee": emp.name,
+            "start_date": start_date
+        })
+        
+        if existing_slip:
+            continue
+        
+        # Check if employee has attendance > 0 for the month
+        attendance_count = frappe.db.count("Attendance", {
+            "employee": emp.name,
+            "attendance_date": ["between", [start_date_obj, end_date]]
+        })
+        
+        if attendance_count > 0:
+            eligible_employees.append(emp)
+    
+    return eligible_employees
+
+
+@frappe.whitelist()
+def bulk_generate_salary_slips(employees, year, month):
+    """
+    Generate salary slips for multiple employees
+    """
+    import json
+    from datetime import datetime
+    
+    if isinstance(employees, str):
+        employees = json.loads(employees)
+    
+    # Convert month name to number
+    month_map = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+    }
+    month_num = month_map.get(month)
+    
+    if not month_num:
+        return {"success": 0, "failed": len(employees), "errors": ["Invalid month"]}
+    
+    start_date = f"{year}-{month_num:02d}-01"
+    
+    success_count = 0
+    failed_count = 0
+    errors = []
+    
+    for emp_data in employees:
+        try:
+            employee = emp_data.get('employee')
+            
+            # Get salary structure data
+            salary_data = get_salary_structure_for_employee(employee, start_date)
+            
+            if not salary_data:
+                errors.append(f"{emp_data.get('employee_name', employee)}: No salary structure found")
+                failed_count += 1
+                continue
+            
+            # Get attendance data
+            attendance_data = get_attendance_and_days(employee, start_date)
+            
+            if not attendance_data:
+                errors.append(f"{emp_data.get('employee_name', employee)}: Could not fetch attendance")
+                failed_count += 1
+                continue
+            
+            # Get variable pay percentage
+            variable_pay = get_variable_pay_percentage(employee, start_date) or 0
+            
+            # Create salary slip
+            salary_slip = frappe.new_doc("Salary Slip")
+            salary_slip.employee = employee
+            salary_slip.start_date = start_date
+            salary_slip.end_date = get_last_day(getdate(start_date))
+            salary_slip.currency = "INR"
+            salary_slip.salary_structure = salary_data.get('salary_structure')
+            
+            # Set attendance data
+            salary_slip.total_working_days = attendance_data.get('working_days')
+            salary_slip.payment_days = attendance_data.get('payment_days')
+            salary_slip.present_days = attendance_data.get('present_days')
+            salary_slip.absent_days = attendance_data.get('absent_days')
+            salary_slip.weekly_offs_count = attendance_data.get('weekly_offs')
+            salary_slip.total_half_days = attendance_data.get('total_half_days')
+            
+            # Add earnings
+            for earning in salary_data.get('earnings', []):
+                salary_slip.append('earnings', earning)
+            
+            # Add deductions
+            for deduction in salary_data.get('deductions', []):
+                salary_slip.append('deductions', deduction)
+            
+            # Calculate amounts (this will be done by the form calculations but we set base amounts)
+            calculate_salary_slip_amounts(salary_slip, variable_pay / 100 if variable_pay else 0)
+            
+            salary_slip.insert(ignore_permissions=True)
+            success_count += 1
+            
+        except Exception as e:
+            errors.append(f"{emp_data.get('employee_name', employee)}: {str(e)}")
+            failed_count += 1
+            frappe.log_error(f"Error generating salary slip for {employee}: {str(e)}", "Bulk Salary Slip Generation")
+    
+    frappe.db.commit()
+    
+    return {
+        "success": success_count,
+        "failed": failed_count,
+        "errors": errors
+    }
+
+
+def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage):
+    """
+    Calculate salary slip amounts (earnings, deductions, totals)
+    This replicates the JS calculation logic
+    """
+    total_earnings = 0
+    total_deductions = 0
+    total_basic_da = 0
+    total_employer_contribution = 0
+    retention = 0
+    
+    wd = flt(salary_slip.total_working_days)
+    pd = flt(salary_slip.payment_days)
+    
+    basic_amount = 0
+    da_amount = 0
+    conveyance_amount = 0
+    
+    # Calculate Earnings
+    for row in salary_slip.earnings:
+        base = flt(row.amount or 0)
+        row.base_amount = base
+        
+        if row.salary_component and 'variable' in row.salary_component.lower():
+            if wd > 0 and row.depends_on_payment_days:
+                row.amount = flt((base / wd) * pd * variable_pay_percentage, 2)
+            else:
+                row.amount = flt(base * variable_pay_percentage, 2)
+        else:
+            if row.depends_on_payment_days and wd > 0:
+                row.amount = flt((base / wd) * pd, 2)
+            else:
+                row.amount = flt(base, 2)
+        
+        total_earnings += row.amount
+        
+        comp_lower = row.salary_component.lower()
+        if 'basic' in comp_lower:
+            basic_amount = row.amount
+        if 'da' in comp_lower or 'dearness' in comp_lower:
+            da_amount = row.amount
+        if 'conveyance' in comp_lower:
+            conveyance_amount = row.amount
+    
+    total_basic_da = basic_amount + da_amount
+    
+    # Calculate Deductions
+    for row in salary_slip.deductions:
+        base = flt(row.amount or 0)
+        row.base_amount = base
+        comp_lower = row.salary_component.lower()
+        
+        # ESIC Employee
+        if 'esic' in comp_lower and 'employer' not in comp_lower:
+            if base > 0 and total_earnings < 21000:
+                row.amount = flt((total_earnings - conveyance_amount) * 0.0075, 2)
+            else:
+                row.amount = 0
+        
+        # ESIC Employer
+        elif 'esic' in comp_lower and 'employer' in comp_lower:
+            if base > 0 and total_earnings < 21000:
+                row.amount = flt((total_earnings - conveyance_amount) * 0.0325, 2)
+            else:
+                row.amount = 0
+        
+        # PF
+        elif 'pf' in comp_lower or 'provident' in comp_lower:
+            if base > 0:
+                if pd == wd:
+                    row.amount = flt(base, 2)
+                else:
+                    prorated_basic_da = basic_amount + da_amount
+                    pf_wages = min(prorated_basic_da, 15000)
+                    row.amount = flt(pf_wages * 0.12, 2)
+            else:
+                row.amount = 0
+        
+        # Other Deductions
+        else:
+            if row.depends_on_payment_days and wd > 0 and base > 0:
+                row.amount = flt((base / wd) * pd, 2)
+            else:
+                row.amount = flt(base, 2)
+        
+        if row.employer_contribution:
+            total_employer_contribution += row.amount
+        else:
+            total_deductions += row.amount
+        
+        if 'retention' in comp_lower:
+            retention += row.amount
+    
+    # Set totals
+    salary_slip.total_earnings = flt(total_earnings, 2)
+    salary_slip.total_deductions = flt(total_deductions, 2)
+    salary_slip.net_salary = flt(total_earnings - total_deductions, 2)
+    salary_slip.total_basic_da = flt(total_basic_da, 2)
+    salary_slip.total_employer_contribution = flt(total_employer_contribution, 2)
+    salary_slip.retention = flt(retention, 2)
+
+
+
+@frappe.whitelist()
+def get_submitted_salary_slips(year, month):
+    """
+    Get list of submitted salary slips for a given year and month
+    """
+    # Convert month name to number
+    month_map = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+    }
+    month_num = month_map.get(month)
+    
+    if not month_num:
+        frappe.throw("Invalid month")
+    
+    # Create start_date for the period
+    start_date = f"{year}-{month_num:02d}-01"
+    
+    # Get all submitted salary slips for this period
+    salary_slips = frappe.db.sql("""
+        SELECT
+            ss.name,
+            ss.employee,
+            ss.employee_name,
+            ss.department,
+            ss.designation,
+            ss.net_salary,
+            ss.start_date,
+            ss.end_date
+        FROM
+            `tabSalary Slip` ss
+        WHERE
+            ss.docstatus = 1
+            AND ss.start_date = %(start_date)s
+        ORDER BY
+            ss.employee_name
+    """, {"start_date": start_date}, as_dict=1)
+    
+    return salary_slips
+
+
+@frappe.whitelist()
+def bulk_print_salary_slips(salary_slip_names):
+    """
+    Generate a combined PDF for multiple salary slips
+    """
+    import json
+    from PyPDF2 import PdfMerger
+    import os
+    from frappe.utils.pdf import get_pdf
+    
+    if isinstance(salary_slip_names, str):
+        salary_slip_names = json.loads(salary_slip_names)
+    
+    if not salary_slip_names:
+        frappe.throw("No salary slips selected")
+    
+    # Create a PDF merger object
+    merger = PdfMerger()
+    
+    # Get the print format (you can customize this)
+    print_format = frappe.db.get_value("Property Setter", 
+        {"doc_type": "Salary Slip", "property": "default_print_format"}, 
+        "value") or "Standard"
+    
+    temp_files = []
+    
+    try:
+        # Generate PDF for each salary slip and add to merger
+        for slip_name in salary_slip_names:
+            # Get the HTML for the salary slip
+            html = frappe.get_print("Salary Slip", slip_name, print_format)
+            
+            # Convert HTML to PDF
+            pdf_data = get_pdf(html)
+            
+            # Create a temporary file for this PDF
+            temp_file = frappe.utils.get_files_path(f"temp_slip_{slip_name}.pdf", is_private=1)
+            temp_files.append(temp_file)
+            
+            # Write PDF data to temp file
+            with open(temp_file, "wb") as f:
+                f.write(pdf_data)
+            
+            # Add to merger
+            merger.append(temp_file)
+        
+        # Create final merged PDF
+        timestamp = frappe.utils.now_datetime().strftime("%Y%m%d_%H%M%S")
+        final_filename = f"Salary_Slips_{timestamp}.pdf"
+        final_filepath = frappe.utils.get_files_path(final_filename, is_private=1)
+        
+        # Write merged PDF
+        with open(final_filepath, "wb") as f:
+            merger.write(f)
+        
+        merger.close()
+        
+        # Create File document
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": final_filename,
+            "is_private": 1,
+            "file_url": f"/private/files/{final_filename}"
+        })
+        file_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+        
+        # Clean up temporary files
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        
+        return {
+            "pdf_url": file_doc.file_url,
+            "file_name": final_filename
+        }
+        
+    except Exception as e:
+        # Clean up temporary files in case of error
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except:
+                    pass
+        
+        frappe.log_error(f"Error in bulk print: {str(e)}", "Bulk Print Salary Slips")
+        frappe.throw(f"Error generating PDF: {str(e)}")

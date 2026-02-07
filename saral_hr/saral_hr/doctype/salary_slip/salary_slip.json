@@ -36,21 +36,13 @@
   "column_break_zrdn",
   "deductions",
   "totals_section",
-  "total_deductions",
-  "total_employer_contribution",
-  "cash_in_hand_deductions",
-  "column_break_snfl",
-  "gross_salary",
   "net_salary",
-  "monthly_ctc",
-  "column_break_orch",
-  "cash_in_hand",
-  "annual_ctc",
-  "rounding_section",
-  "brought_forward",
-  "carried_forward",
-  "column_break_round",
-  "previous_carry_forward",
+  "total_earnings",
+  "total_deductions",
+  "column_break_totals",
+  "total_basic_da",
+  "total_employer_contribution",
+  "retention",
   "amended_from"
  ],
  "fields": [
@@ -59,6 +51,7 @@
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee Name"
   },
   {
@@ -140,36 +133,8 @@
    "reqd": 1
   },
   {
-   "fieldname": "total_deductions",
-   "fieldtype": "Float",
-   "label": "Total Deductions",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "gross_salary",
-   "fieldtype": "Float",
-   "label": "Gross Salary",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_zrdn",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total_employer_contribution",
-   "fieldtype": "Float",
-   "label": "Total Employer Contribution",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "net_salary",
-   "fieldtype": "Float",
-   "label": "Net Salary",
-   "precision": "2",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_jxct",
@@ -179,10 +144,6 @@
    "fieldname": "totals_section",
    "fieldtype": "Section Break",
    "label": "Totals"
-  },
-  {
-   "fieldname": "column_break_orch",
-   "fieldtype": "Column Break"
   },
   {
    "fetch_from": "employee.company",
@@ -217,38 +178,6 @@
    "fieldtype": "Float",
    "label": "Weekly Offs Count",
    "precision": "2"
-  },
-  {
-   "fieldname": "cash_in_hand_deductions",
-   "fieldtype": "Float",
-   "label": "Cash in Hand Deductions",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "cash_in_hand",
-   "fieldtype": "Float",
-   "label": "Cash in Hand",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "monthly_ctc",
-   "fieldtype": "Float",
-   "label": "Monthly CTC",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "annual_ctc",
-   "fieldtype": "Float",
-   "label": "Annual CTC",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_snfl",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "employee_company_details_section",
@@ -302,50 +231,69 @@
    "label": "Salary Calculation Based on"
   },
   {
-   "collapsible": 1,
-   "fieldname": "rounding_section",
-   "fieldtype": "Section Break",
-   "label": "Rounding Adjustments"
-  },
-  {
-   "description": "Rounding difference carried from previous month",
-   "fieldname": "brought_forward",
-   "fieldtype": "Float",
-   "label": "Brought Forward (from previous month)",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "description": "Rounding difference to be added to next month",
-   "fieldname": "carried_forward",
-   "fieldtype": "Float",
-   "label": "Carried Forward (to next month)",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_round",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "Internal field - stores last month's carried forward amount",
-   "fieldname": "previous_carry_forward",
-   "fieldtype": "Float",
-   "hidden": 1,
-   "label": "Previous Carry Forward",
-   "precision": "2"
-  },
-  {
    "fieldname": "total_half_days",
    "fieldtype": "Float",
    "label": "Total Half Days",
    "precision": "2"
+  },
+  {
+   "bold": 1,
+   "fieldname": "net_salary",
+   "fieldtype": "Currency",
+   "label": "Net Salary",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Currency",
+   "label": "Total Earnings",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Deductions",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_basic_da",
+   "fieldtype": "Currency",
+   "label": "Total (Basic + DA)",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_employer_contribution",
+   "fieldtype": "Currency",
+   "label": "Total Employer Contribution",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "retention",
+   "fieldtype": "Currency",
+   "label": "Retention",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-05 15:05:31.166597",
+ "modified": "2026-02-07 15:25:47.277570",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
