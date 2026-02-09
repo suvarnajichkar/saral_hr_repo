@@ -405,6 +405,10 @@ function print_selected_salary_slips(dialog) {
         function() {
             dialog.hide();
             
+            // FREEZE THE SCREEN with progress message
+            frappe.freeze_screen = true;
+            frappe.dom.freeze(__('Generating PDF for {0} salary slip(s)... Please wait...', [selected_slips.length]));
+            
             // Call backend to generate combined PDF
             frappe.call({
                 method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.bulk_print_salary_slips',
@@ -412,8 +416,12 @@ function print_selected_salary_slips(dialog) {
                     salary_slip_names: selected_slips
                 },
                 callback: function(r) {
+                    // UNFREEZE THE SCREEN
+                    frappe.dom.unfreeze();
+                    frappe.freeze_screen = false;
+                    
                     if (r.message) {
-                        // Open the PDF in a new window
+                        // Open the PDF in a new window (SINGLE WINDOW)
                         window.open(r.message.pdf_url, '_blank');
                         
                         frappe.msgprint({
@@ -422,6 +430,17 @@ function print_selected_salary_slips(dialog) {
                             indicator: 'green'
                         });
                     }
+                },
+                error: function(r) {
+                    // UNFREEZE THE SCREEN even on error
+                    frappe.dom.unfreeze();
+                    frappe.freeze_screen = false;
+                    
+                    frappe.msgprint({
+                        title: __('Error'),
+                        message: __('Failed to generate PDF. Please try again.'),
+                        indicator: 'red'
+                    });
                 }
             });
         }

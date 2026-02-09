@@ -4,6 +4,10 @@ from frappe.utils import getdate, get_last_day, flt
 import calendar
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
+import json
+from PyPDF2 import PdfMerger
+import os
+from frappe.utils.pdf import get_pdf
 
 
 class SalarySlip(Document):
@@ -647,10 +651,7 @@ def bulk_print_salary_slips(salary_slip_names):
     """
     Generate a combined PDF for multiple salary slips using A4 Portrait format with TABLE LAYOUT
     """
-    import json
-    from PyPDF2 import PdfMerger
-    import os
-    from frappe.utils.pdf import get_pdf
+    
     
     if isinstance(salary_slip_names, str):
         salary_slip_names = json.loads(salary_slip_names)

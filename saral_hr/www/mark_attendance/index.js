@@ -200,13 +200,14 @@ frappe.ready(function () {
     window.holidayDates = {}; // NEW: Track holidays
 
     function updateCounts() {
-        let p = 0, a = 0, h = 0, w = 0, hol = 0;
+        let p = 0, a = 0, h = 0, w = 0, hol = 0, lwp = 0;
         Object.values(window.attendanceTableData).forEach(s => {
             if (s === "Present") p++;
             else if (s === "Absent") a++;
             else if (s === "Half Day") h++;
             else if (s === "Weekly Off") w++;
             else if (s === "Holiday") hol++;
+            else if (s === "LWP") lwp++;
         });
         present_count.textContent = p;
         absent_count.textContent = a;
@@ -217,6 +218,9 @@ frappe.ready(function () {
         }
         if (document.getElementById('holiday_count')) {
             document.getElementById('holiday_count').textContent = hol;
+        }
+        if (document.getElementById('lwp_count')) {
+            document.getElementById('lwp_count').textContent = lwp;
         }
     }
 
@@ -345,7 +349,7 @@ frappe.ready(function () {
                             <td>${dayName}</td>
                             <td>${currentDate.getDate()} ${currentDate.toLocaleDateString("en-US", { month: "long" })} ${currentDate.getFullYear()}</td>
                             ${toggleColumn}
-                            ${["Present", "Absent", "Half Day"].map(s => `
+                            ${["Present", "Absent", "Half Day", "LWP"].map(s => `
                                 <td class="text-center">
                                     <input type="radio" name="status_${dateKey}" value="${s}"
                                         ${savedStatus === s ? "checked" : ""}
@@ -451,6 +455,11 @@ frappe.ready(function () {
     mark_absent.onclick = () => bulkMark("Absent");
     mark_halfday.onclick = () => bulkMark("Half Day");
 
+    // Add bulk mark for LWP if button exists
+    if (document.getElementById('mark_lwp')) {
+        mark_lwp.onclick = () => bulkMark("LWP");
+    }
+
     save_attendance.onclick = function () {
         const employee = employeeSelect.value;
         if (!employee) {
@@ -462,7 +471,7 @@ frappe.ready(function () {
         const calls = [];
 
         Object.entries(window.attendanceTableData).forEach(([date, status]) => {
-            // Save ALL statuses including "Weekly Off" and "Holiday"
+            // Save ALL statuses including "Weekly Off", "Holiday", and "LWP"
             if (status && status.trim() !== "") {
                 calls.push(frappe.call({
                     method: "saral_hr.www.mark_attendance.index.save_attendance",
@@ -642,7 +651,7 @@ frappe.ready(function () {
 
                 // COLOR PRIORITY:
                 // 1. Holiday (even if weekly off) → holiday
-                // 2. Present/Absent/Half Day → their colors
+                // 2. Present/Absent/Half Day/LWP → their colors
                 // 3. Weekly Off only → weekend
                 if (isHoliday || status === 'Holiday') {
                     dayClass += ' holiday';
@@ -652,6 +661,8 @@ frappe.ready(function () {
                     dayClass += ' absent';
                 } else if (status === 'Half Day') {
                     dayClass += ' halfday';
+                } else if (status === 'LWP') {
+                    dayClass += ' lwp';
                 } else if (status === 'Weekly Off' || isDefaultWeeklyOff) {
                     dayClass += ' weekend';
                 }
