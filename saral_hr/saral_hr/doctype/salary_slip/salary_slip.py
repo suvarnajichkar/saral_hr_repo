@@ -645,7 +645,7 @@ def get_submitted_salary_slips(year, month):
 @frappe.whitelist()
 def bulk_print_salary_slips(salary_slip_names):
     """
-    Generate a combined PDF for multiple salary slips
+    Generate a combined PDF for multiple salary slips using A4 Portrait format with TABLE LAYOUT
     """
     import json
     from PyPDF2 import PdfMerger
@@ -661,21 +661,31 @@ def bulk_print_salary_slips(salary_slip_names):
     # Create a PDF merger object
     merger = PdfMerger()
     
-    # Get the print format (you can customize this)
-    print_format = frappe.db.get_value("Property Setter", 
-        {"doc_type": "Salary Slip", "property": "default_print_format"}, 
-        "value") or "Standard"
-    
     temp_files = []
     
     try:
         # Generate PDF for each salary slip and add to merger
         for slip_name in salary_slip_names:
-            # Get the HTML for the salary slip
-            html = frappe.get_print("Salary Slip", slip_name, print_format)
+            # Get the salary slip document
+            slip_doc = frappe.get_doc("Salary Slip", slip_name)
             
-            # Convert HTML to PDF
-            pdf_data = get_pdf(html)
+            # Generate HTML for bulk print (A4 portrait with table layout)
+            html = generate_bulk_print_html(slip_doc)
+            
+            # Convert HTML to PDF with A4 Portrait options
+            pdf_options = {
+                "page-size": "A4",
+                "orientation": "Portrait",
+                "margin-top": "10mm",
+                "margin-right": "10mm",
+                "margin-bottom": "10mm",
+                "margin-left": "10mm",
+                "encoding": "UTF-8",
+                "no-outline": None,
+                "enable-local-file-access": None
+            }
+            
+            pdf_data = get_pdf(html, options=pdf_options)
             
             # Create a temporary file for this PDF
             temp_file = frappe.utils.get_files_path(f"temp_slip_{slip_name}.pdf", is_private=1)
@@ -730,3 +740,388 @@ def bulk_print_salary_slips(salary_slip_names):
         
         frappe.log_error(f"Error in bulk print: {str(e)}", "Bulk Print Salary Slips")
         frappe.throw(f"Error generating PDF: {str(e)}")
+
+
+def generate_bulk_print_html(doc):
+    """
+    Generate HTML for salary slip using TABLE-BASED LAYOUT for better PDF rendering
+    """
+    from frappe.utils import fmt_money, formatdate, money_in_words
+    
+    # Get company address
+    company_address = frappe.db.get_value("Company", doc.company, "address") if doc.company else ""
+    
+    # Get employee details from Company Link
+    company_link_details = frappe.db.get_value(
+        "Company Link",
+        doc.employee,
+        ["employee", "date_of_joining", "designation", "department", "branch", "category", "division"],
+        as_dict=1
+    ) if doc.employee else {}
+    
+    doj = company_link_details.get('date_of_joining') if company_link_details else None
+    employee_link = company_link_details.get('employee') if company_link_details else None
+    designation = company_link_details.get('designation') if company_link_details else None
+    department = company_link_details.get('department') if company_link_details else None
+    branch = company_link_details.get('branch') if company_link_details else None
+    category = company_link_details.get('category') if company_link_details else None
+    division = company_link_details.get('division') if company_link_details else None
+    
+    # Get Employee statutory details from Employee doctype
+    employee_details = frappe.db.get_value(
+        "Employee",
+        employee_link,
+        ["employee_pf_account", "esic_number", "lin_number", "bank_name", "account_number", "ifsc_code", "gender"],
+        as_dict=1
+    ) if employee_link else {}
+    
+    present_days = (doc.total_working_days or 0) - (doc.absent_days or 0)
+    
+    # Fetch Salary Structure Assignment for this employee and date range
+    salary_assignment = frappe.db.sql("""
+        SELECT name, from_date, to_date 
+        FROM `tabSalary Structure Assignment`
+        WHERE employee = %s
+        AND from_date <= %s
+        AND (to_date IS NULL OR to_date >= %s)
+        ORDER BY from_date DESC
+        LIMIT 1
+    """, (doc.employee, doc.end_date, doc.start_date), as_dict=1)
+    
+    assignment_name = salary_assignment[0].name if salary_assignment else None
+    
+    # Fetch earnings from Salary Structure Assignment
+    assignment_earnings = []
+    assignment_earnings_total = 0
+    if assignment_name:
+        assignment_earnings = frappe.db.sql("""
+            SELECT salary_component, amount
+            FROM `tabSalary Details`
+            WHERE parent = %s
+            AND parenttype = 'Salary Structure Assignment'
+            AND parentfield = 'earnings'
+            AND amount > 0
+            ORDER BY idx ASC
+        """, (assignment_name,), as_dict=1)
+        
+        for ae in assignment_earnings:
+            assignment_earnings_total += (ae.amount or 0)
+    
+    # Calculate computed earnings total
+    computed_earnings_total = 0
+    computed_items = []
+    for e in doc.earnings:
+        if e.amount and e.amount > 0:
+            computed_items.append(e)
+            computed_earnings_total += e.amount
+    
+    # Calculate deductions total (excluding employer contributions)
+    deductions_total = 0
+    deduction_items = []
+    for d in doc.deductions:
+        # Get salary component details to check employer_contribution
+        component_details = frappe.db.get_value(
+            "Salary Component",
+            d.salary_component,
+            ["employer_contribution", "deduct_from_cash_in_hand_only"],
+            as_dict=1
+        )
+        if d.amount and d.amount > 0 and component_details and not component_details.employer_contribution and not component_details.deduct_from_cash_in_hand_only:
+            deduction_items.append(d)
+            deductions_total += d.amount
+    
+    # Find max rows needed for the three columns
+    max_rows = max(len(assignment_earnings), len(computed_items), len(deduction_items))
+    
+    # Build the three-column table rows
+    earnings_deductions_rows = ""
+    for i in range(max_rows):
+        earnings_deductions_rows += "<tr>"
+        
+        # Earnings column
+        if i < len(assignment_earnings):
+            ae = assignment_earnings[i]
+            earnings_deductions_rows += f"""
+                <td style="padding: 6px; border: 1px solid #ddd; font-size: 11px;">{ae.salary_component}</td>
+                <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-size: 11px;">{fmt_money(ae.amount, currency=doc.currency)}</td>
+            """
+        else:
+            earnings_deductions_rows += """
+                <td style="padding: 6px; border: 1px solid #ddd;">&nbsp;</td>
+                <td style="padding: 6px; border: 1px solid #ddd;">&nbsp;</td>
+            """
+        
+        # Computed Earnings column
+        if i < len(computed_items):
+            e = computed_items[i]
+            earnings_deductions_rows += f"""
+                <td style="padding: 6px; border: 1px solid #ddd; font-size: 11px;">{e.salary_component}</td>
+                <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-size: 11px;">{fmt_money(e.amount, currency=doc.currency)}</td>
+            """
+        else:
+            earnings_deductions_rows += """
+                <td style="padding: 6px; border: 1px solid #ddd;">&nbsp;</td>
+                <td style="padding: 6px; border: 1px solid #ddd;">&nbsp;</td>
+            """
+        
+        # Deductions column
+        if i < len(deduction_items):
+            d = deduction_items[i]
+            earnings_deductions_rows += f"""
+                <td style="padding: 6px; border: 1px solid #ddd; font-size: 11px;">{d.salary_component}</td>
+                <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-size: 11px;">{fmt_money(d.amount, currency=doc.currency)}</td>
+            """
+        else:
+            earnings_deductions_rows += """
+                <td style="padding: 6px; border: 1px solid #ddd;">&nbsp;</td>
+                <td style="padding: 6px; border: 1px solid #ddd;">&nbsp;</td>
+            """
+        
+        earnings_deductions_rows += "</tr>"
+    
+    # Generate HTML
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+        }}
+        
+        .container {{
+            border: 2px solid #000;
+            padding: 15px;
+            max-width: 100%;
+        }}
+        
+        .header {{
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+        }}
+        
+        .header h2 {{
+            font-size: 16px;
+            margin-bottom: 5px;
+        }}
+        
+        .header p {{
+            font-size: 11px;
+            margin: 2px 0;
+        }}
+        
+        .payslip-title {{
+            background-color: #f2f2f2;
+            text-align: center;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+        }}
+        
+        .payslip-title h3 {{
+            font-size: 14px;
+            margin: 0;
+        }}
+        
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        
+        .summary-table {{
+            margin-bottom: 10px;
+        }}
+        
+        .summary-table th {{
+            background-color: #e8e8e8;
+            padding: 6px;
+            text-align: left;
+            border: 1px solid #ccc;
+            font-size: 12px;
+        }}
+        
+        .summary-table td {{
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            font-size: 11px;
+        }}
+        
+        .summary-table .label {{
+            font-weight: 600;
+            background-color: #f5f5f5;
+            width: 16%;
+        }}
+        
+        .summary-table .value {{
+            width: 17%;
+        }}
+        
+        .earnings-table {{
+            margin-bottom: 10px;
+        }}
+        
+        .earnings-table th {{
+            background-color: #f8f8f8;
+            padding: 8px;
+            border: 2px solid #000;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }}
+        
+        .earnings-table .total-row {{
+            background-color: #e8f4f8;
+            font-weight: bold;
+        }}
+        
+        .net-payable {{
+            background-color: #f9f9f9;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #000;
+            margin-top: 10px;
+        }}
+        
+        .net-payable .amount {{
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }}
+        
+        .net-payable .words {{
+            font-size: 11px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h2><strong>{doc.company}</strong></h2>
+            <p>
+    """
+    
+    if company_address:
+        html += f"<strong>Address:</strong> {company_address}"
+    else:
+        html += """<strong>Head Office Address:</strong> Bajaj Steel Industries Limited, C-108, M.I.D.C. Industrial Area, Hingna Road, Nagpur, Maharashtra - 440016"""
+    
+    html += f"""
+            </p>
+        </div>
+        
+        <!-- Payslip Title -->
+        <div class="payslip-title">
+            <h3>Payslip for the Month of {formatdate(doc.start_date, "MMMM yyyy")}</h3>
+        </div>
+        
+        <!-- Employee Summary -->
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th colspan="6">Employee Pay Summary</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="label">Employee Name</td>
+                    <td class="value">{doc.employee_name}</td>
+                    <td class="label">Gender</td>
+                    <td class="value">{employee_details.get('gender') or '-'}</td>
+                    <td class="label">Date of Joining</td>
+                    <td class="value">{formatdate(doj, "dd-MM-yyyy") if doj else '-'}</td>
+                </tr>
+                <tr>
+                    <td class="label">Designation</td>
+                    <td class="value">{designation or '-'}</td>
+                    <td class="label">Department</td>
+                    <td class="value">{department or '-'}</td>
+                    <td class="label">Branch</td>
+                    <td class="value">{branch or '-'}</td>
+                </tr>
+                <tr>
+                    <td class="label">Category</td>
+                    <td class="value">{category or '-'}</td>
+                    <td class="label">Division</td>
+                    <td class="value">{division or '-'}</td>
+                    <td class="label">Payment Days</td>
+                    <td class="value">{doc.payment_days or 0}</td>
+                </tr>
+                <tr>
+                    <td class="label">PF Account No</td>
+                    <td class="value">{employee_details.get('employee_pf_account') or '-'}</td>
+                    <td class="label">ESI Number</td>
+                    <td class="value">{employee_details.get('esic_number') or '-'}</td>
+                    <td class="label">LIN Number</td>
+                    <td class="value">{employee_details.get('lin_number') or '-'}</td>
+                </tr>
+                <tr>
+                    <td class="label">Bank Name</td>
+                    <td class="value">{employee_details.get('bank_name') or '-'}</td>
+                    <td class="label">Account Number</td>
+                    <td class="value">{employee_details.get('account_number') or '-'}</td>
+                    <td class="label">IFSC Code</td>
+                    <td class="value">{employee_details.get('ifsc_code') or '-'}</td>
+                </tr>
+                <tr>
+                    <td class="label">Working Days</td>
+                    <td class="value">{doc.total_working_days or 0}</td>
+                    <td class="label">Present Days</td>
+                    <td class="value">{present_days}</td>
+                    <td class="label">Absent Days</td>
+                    <td class="value">{doc.absent_days or 0}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Earnings and Deductions Table -->
+        <table class="earnings-table">
+            <thead>
+                <tr>
+                    <th colspan="2">Earnings</th>
+                    <th colspan="2">Computed Earnings</th>
+                    <th colspan="2">Deductions</th>
+                </tr>
+                <tr>
+                    <th style="width: 16.66%; text-align: left; font-size: 10px; font-weight: normal;">Component</th>
+                    <th style="width: 16.66%; text-align: right; font-size: 10px; font-weight: normal;">Amount</th>
+                    <th style="width: 16.66%; text-align: left; font-size: 10px; font-weight: normal;">Component</th>
+                    <th style="width: 16.66%; text-align: right; font-size: 10px; font-weight: normal;">Amount</th>
+                    <th style="width: 16.66%; text-align: left; font-size: 10px; font-weight: normal;">Component</th>
+                    <th style="width: 16.66%; text-align: right; font-size: 10px; font-weight: normal;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {earnings_deductions_rows}
+                <tr class="total-row">
+                    <td style="padding: 8px; border: 1px solid #000; font-size: 12px;">Total</td>
+                    <td style="padding: 8px; border: 1px solid #000; text-align: right; font-size: 12px;">{fmt_money(assignment_earnings_total, currency=doc.currency)}</td>
+                    <td style="padding: 8px; border: 1px solid #000; font-size: 12px;">Total</td>
+                    <td style="padding: 8px; border: 1px solid #000; text-align: right; font-size: 12px;">{fmt_money(computed_earnings_total, currency=doc.currency)}</td>
+                    <td style="padding: 8px; border: 1px solid #000; font-size: 12px;">Total</td>
+                    <td style="padding: 8px; border: 1px solid #000; text-align: right; font-size: 12px;">{fmt_money(deductions_total, currency=doc.currency)}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Net Payable -->
+        <div class="net-payable">
+            <div class="amount">Total Net Payable: {fmt_money(flt(doc.net_salary, 2), currency=doc.currency)}</div>
+            <div class="words">({money_in_words(flt(doc.net_salary, 2), doc.currency)})</div>
+        </div>
+    </div>
+</body>
+</html>
+    """
+    
+    return html
