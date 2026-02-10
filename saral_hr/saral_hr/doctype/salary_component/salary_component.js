@@ -1,49 +1,61 @@
 frappe.ui.form.on('Salary Component', {
-	refresh(frm) {
-		if (frm.doc.is_special_component) {
-			lock_month_table(frm);
-		}
-	},
+    refresh(frm) {
+        if (frm.doc.is_special_component) {
+            lock_month_table(frm);
+        }
+    },
 
-	is_special_component(frm) {
-		if (frm.doc.is_special_component) {
-			populate_all_months(frm);
-			lock_month_table(frm);
-		} else {
-			frm.clear_table('enter_amount_according_to_months');
-			frm.refresh_field('enter_amount_according_to_months');
-		}
-	}
+    is_special_component(frm) {
+        if (frm.doc.is_special_component) {
+            populate_all_months(frm);
+            lock_month_table(frm);
+        } else {
+            frm.clear_table('enter_amount_according_to_months');
+            frm.refresh_field('enter_amount_according_to_months');
+        }
+    }
 });
 
+const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
 function populate_all_months(frm) {
-	const months = [
-		"January", "February", "March", "April", "May", "June",
-		"July", "August", "September", "October", "November", "December"
-	];
+    // Build a map of existing amounts so we don't lose entered data
+    let existing = {};
+    (frm.doc.enter_amount_according_to_months || []).forEach(r => {
+        if (r.month) existing[r.month] = r.amount;
+    });
 
-	let existing_months = (frm.doc.enter_amount_according_to_months || [])
-		.map(r => r.month);
+    // Clear and rebuild with exactly 12 rows, sorted Jan–Dec
+    frm.clear_table('enter_amount_according_to_months');
 
-	months.forEach(month => {
-		if (!existing_months.includes(month)) {
-			let row = frm.add_child('enter_amount_according_to_months');
-			row.month = month;
-			row.amount = 0;
-		}
-	});
+    MONTHS.forEach(month => {
+        let row = frm.add_child('enter_amount_according_to_months');
+        row.month = month;
+        row.amount = existing[month] || 0;
+    });
 
-	frm.refresh_field('enter_amount_according_to_months');
+    frm.refresh_field('enter_amount_according_to_months');
 }
 
 function lock_month_table(frm) {
-	const grid = frm.get_field('enter_amount_according_to_months').grid;
+    // Wait for DOM to be ready before hiding buttons
+    frappe.after_ajax(() => {
+        const field = frm.get_field('enter_amount_according_to_months');
+        if (!field || !field.grid) return;
 
-	// 🔒 stop add row
-	grid.cannot_add_rows = true;
+        const grid = field.grid;
 
-	// 🔒 hide UI buttons
-	grid.wrapper.find('.grid-add-row').hide();
-	grid.wrapper.find('.grid-remove-rows').hide();
-	grid.wrapper.find('.grid-row-check').hide();
+        // Prevent adding or deleting rows
+        grid.cannot_add_rows = true;
+        grid.cannot_delete_rows = true;
+
+        // Hide add/remove/checkbox UI elements
+        grid.wrapper.find('.grid-add-row').hide();
+        grid.wrapper.find('.grid-remove-rows').hide();
+        grid.wrapper.find('.grid-row-check').hide();
+        grid.wrapper.find('.grid-delete-row').hide();
+    });
 }
