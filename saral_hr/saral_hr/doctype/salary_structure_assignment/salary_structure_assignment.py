@@ -10,7 +10,6 @@ class SalaryStructureAssignment(Document):
         """
         Allow users to manually enter amounts for all components.
         Do not auto-clear Variable Pay or any other component amounts.
+        The client-side JS handles all calculations.
         """
-        # Just let the user enter whatever they want
-        # The client-side JS will handle calculations
         pass

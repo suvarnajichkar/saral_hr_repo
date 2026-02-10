@@ -5,25 +5,24 @@ frappe.ui.form.on("Salary Structure Assignment", {
     },
 
     setup(frm) {
-    // Filter active employees
-    frm.set_query("employee", () => ({
-        filters: { is_active: 1 }
-    }));
+        // Filter active employees
+        frm.set_query("employee", () => ({
+            filters: { is_active: 1 }
+        }));
 
-    // Filter Salary Structure by Company
-    frm.set_query("salary_structure", () => {
-        if (!frm.doc.company) {
-            return {};
-        }
-        return {
-            filters: {
-                company: frm.doc.company,
-                is_active: "Yes"
+        // Filter Salary Structure by Company
+        frm.set_query("salary_structure", () => {
+            if (!frm.doc.company) {
+                return {};
             }
-        };
-    });
-},
-
+            return {
+                filters: {
+                    company: frm.doc.company,
+                    is_active: "Yes"
+                }
+            };
+        });
+    },
 
     salary_structure(frm) {
         if (!frm.doc.salary_structure) {
@@ -74,22 +73,31 @@ frappe.ui.form.on("Salary Details", {
 
 function calculate_salary(frm) {
 
-    let gross_salary = 0;
+    // ── 1. Total Earnings + Basic/DA = sum of all earning rows (no proration) ─
+    let total_earnings  = 0;
+    let basic_amount    = 0;
+    let da_amount       = 0;
 
-    // 1️⃣ Gross Salary = Sum of all Earnings
     (frm.doc.earnings || []).forEach(row => {
-        gross_salary += flt(row.amount);
+        let amount = flt(row.amount);
+        total_earnings += amount;
+
+        let comp = (row.salary_component || "").toLowerCase();
+        if (comp.includes("basic"))                          basic_amount = amount;
+        if (comp.includes(" da") || comp.includes("dearness") || comp === "da") da_amount = amount;
     });
 
+    let total_basic_da = basic_amount + da_amount;
+
     let deductions = frm.doc.deductions || [];
-    
-    // If no deductions, set totals and return
+
+    // If no deductions, set totals and return early
     if (!deductions.length) {
-        set_salary_totals(frm, gross_salary, 0, 0, 0);
+        set_salary_totals(frm, total_earnings, total_basic_da, 0, 0, 0);
         return;
     }
 
-    // 2️⃣ Fetch component flags from Salary Component master
+    // ── 2. Fetch component flags from Salary Component master ─────────────────
     frappe.call({
         method: "frappe.client.get_list",
         args: {
@@ -110,56 +118,41 @@ function calculate_salary(frm) {
                 component_map[c.name] = c;
             });
 
-            // Initialize variables inside callback
-            let employee_deductions = 0;  // ESIC (0.75%) + PF (12%) + PT
-            let employer_contribution = 0; // ESIC (3.25%) + PF (12%) + Bonus + Gratuity
-            let retention = 0;             // Retention - NOT part of total deductions
+            let employee_deductions   = 0;   // ESIC (0.75%) + PF (12%) + PT
+            let employer_contribution = 0;   // ESIC (3.25%) + PF (12%) + Bonus + Gratuity
+            let retention             = 0;   // Retention component (tracked separately)
 
-            // 3️⃣ Categorize each deduction based on flags
+            // ── 3. Categorise each deduction row ─────────────────────────────
             deductions.forEach(d => {
-                let comp = component_map[d.salary_component];
+                let comp   = component_map[d.salary_component];
                 let amount = flt(d.amount);
 
                 if (!comp) {
-                    // If component not found, treat as regular employee deduction
+                    // Unknown component → treat as regular employee deduction
                     employee_deductions += amount;
                     return;
                 }
 
-                // Convert to integer to handle both 0/1 and "0"/"1"
                 let is_cash_only = parseInt(comp.deduct_from_cash_in_hand_only) || 0;
-                let is_employer = parseInt(comp.employer_contribution) || 0;
+                let is_employer  = parseInt(comp.employer_contribution) || 0;
 
-                // CRITICAL PRIORITY ORDER:
-                // 1. Check if component name is exactly "Retention"
-                //    → Retention (NOT in total deductions, only deducted from cash in hand)
-                // 2. THEN check "employer_contribution"
-                //    → Employer contribution (doesn't affect employee)
-                // 3. Otherwise → Regular employee deduction (part of total deductions)
-                //    Note: Employee PF, PT, ESIC have "deduct_from_cash_in_hand_only" = 1
-                //    but they ARE still part of total deductions
-
-                if (is_cash_only === 1 && d.salary_component === 'Retention') {
-                    // ONLY Retention component: NOT part of total deductions
-                    // Only deducted from cash in hand
+                if (is_cash_only === 1 && d.salary_component === "Retention") {
+                    // Retention: NOT part of Total Deductions, tracked separately
                     retention += amount;
-                }
-                else if (is_employer === 1) {
-                    // Employer contribution: ESIC (3.25%), PF (12%), Bonus, Gratuity
+                } else if (is_employer === 1) {
+                    // Employer contribution
                     employer_contribution += amount;
-                }
-                else {
-                    // Regular employee deduction: ESIC (0.75%), PF (12%), PT
-                    // These ARE part of total deductions
-                    // (Even if deduct_from_cash_in_hand_only = 1)
+                } else {
+                    // Regular employee deduction (ESIC, PF, PT …)
                     employee_deductions += amount;
                 }
             });
 
-            // 4️⃣ Calculate and set all totals
+            // ── 4. Set all totals ─────────────────────────────────────────────
             set_salary_totals(
                 frm,
-                gross_salary,
+                total_earnings,
+                total_basic_da,
                 employee_deductions,
                 employer_contribution,
                 retention
@@ -168,55 +161,36 @@ function calculate_salary(frm) {
     });
 }
 
-function set_salary_totals(frm, gross, employee_deductions, employer, retention) {
+function set_salary_totals(frm, total_earnings, total_basic_da, employee_deductions, employer_contribution, retention) {
 
     // ============================================================
-    // FINAL FORMULAS:
+    // FORMULAS (mirrors Salary Slip — no proration on SSA)
     // ============================================================
-    // GROSS SALARY = Basic + DA + HRA + Conveyance + Medical + Education + Other Allowance + Variable Pay
-    //
-    // TOTAL DEDUCTIONS = ESIC (0.75%) + PF (12%) + PT
-    //                    Does NOT include retention
-    //
-    // NET SALARY = Gross Salary - Total Deductions
-    //
-    // RETENTION = Tracked separately
-    //             (Only the "Retention" component)
-    //
-    // CASH IN HAND = Net Salary - Retention
-    //              = Gross - Total Deductions - Retention
-    //
-    // TOTAL EMPLOYER CONTRIBUTION = ESIC (3.25%) + PF (12%) + Bonus + Gratuity
-    //
-    // ANNUAL CTC = (Gross Salary × 12) + (Total Employer Contribution × 12)
-    //
-    // MONTHLY CTC = Annual CTC ÷ 12
+    // TOTAL EARNINGS           = Sum of all earning rows
+    // TOTAL (BASIC + DA)       = Basic amount + DA amount from earnings
+    // TOTAL DEDUCTIONS         = Employee deductions (ESIC 0.75% + PF 12% + PT)
+    //                            Does NOT include Retention or Employer Contributions
+    // NET SALARY               = Total Earnings − Total Deductions
+    // RETENTION                = Tracked separately (Retention component only)
+    // TOTAL EMPLOYER CONTRIB   = ESIC 3.25% + PF 12% + Bonus + Gratuity
+    // MONTHLY CTC              = Total Earnings + Total Employer Contribution
+    // ANNUAL CTC               = Monthly CTC × 12
     // ============================================================
 
-    // Total Deductions = ONLY employee deductions (NOT including retention)
-    let total_deductions = employee_deductions;  // ✅ NO RETENTION HERE
-
-    // Net Salary = Gross - Total Deductions
-    let net_salary = gross - total_deductions;
-
-    // Cash in Hand = Net Salary - Retention
-    let cash_in_hand = net_salary - retention;
-
-    // Annual CTC = (Gross × 12) + (Employer Contribution × 12)
-    let annual_ctc = (gross * 12) + (employer * 12);
-
-    // Monthly CTC = Annual CTC ÷ 12
-    let monthly_ctc = annual_ctc / 12;
+    let total_deductions = employee_deductions;                       // no retention here
+    let net_salary       = total_earnings - total_deductions;
+    let monthly_ctc      = total_earnings + employer_contribution;
+    let annual_ctc       = monthly_ctc * 12;
 
     frm.set_value({
-        gross_salary: gross,
-        total_deductions: total_deductions,          // ✅ ONLY employee deductions (NO retention)
-        total_employer_contribution: employer,        // Employer ESIC + PF + Bonus + Gratuity
-        retention: retention,                         // Tracked separately
-        net_salary: net_salary,                       // Gross - Total Deductions
-        cash_in_hand: cash_in_hand,                   // Net Salary - Retention
-        monthly_ctc: monthly_ctc,
-        annual_ctc: annual_ctc
+        total_earnings:              total_earnings,
+        total_basic_da:              total_basic_da,
+        total_deductions:            total_deductions,
+        net_salary:                  net_salary,
+        total_employer_contribution: employer_contribution,
+        retention:                   retention,
+        monthly_ctc:                 monthly_ctc,
+        annual_ctc:                  annual_ctc
     });
 
     frm.refresh_fields();
@@ -228,14 +202,14 @@ function clear_salary_tables(frm) {
     frm.clear_table("deductions");
 
     frm.set_value({
-        gross_salary: 0,
-        total_deductions: 0,
+        total_earnings:              0,
+        total_basic_da:              0,
+        total_deductions:            0,
+        net_salary:                  0,
         total_employer_contribution: 0,
-        retention: 0,
-        net_salary: 0,
-        cash_in_hand: 0,
-        monthly_ctc: 0,
-        annual_ctc: 0
+        retention:                   0,
+        monthly_ctc:                 0,
+        annual_ctc:                  0
     });
 
     frm.refresh_fields();

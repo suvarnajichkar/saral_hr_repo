@@ -25,14 +25,16 @@
   "column_break_oeow",
   "deductions",
   "calculations_section",
+  "total_earnings",
   "total_deductions",
-  "total_employer_contribution",
-  "monthly_ctc",
-  "column_break_nlti",
-  "retention",
-  "gross_salary",
   "net_salary",
-  "cash_in_hand",
+  "column_break_nlti",
+  "total_basic_da",
+  "total_employer_contribution",
+  "retention",
+  "ctc_section",
+  "monthly_ctc",
+  "column_break_ctc",
   "annual_ctc"
  ],
  "fields": [
@@ -148,51 +150,27 @@
    "label": "Calculations"
   },
   {
+   "fieldname": "total_earnings",
+   "fieldtype": "Currency",
+   "label": "Total Earnings",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
    "fieldname": "total_deductions",
-   "fieldtype": "Float",
+   "fieldtype": "Currency",
    "label": "Total Deductions",
+   "options": "currency",
    "precision": "2",
    "read_only": 1
   },
   {
-   "fieldname": "total_employer_contribution",
-   "fieldtype": "Float",
-   "label": "Total Employer Contribution",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "gross_salary",
-   "fieldtype": "Float",
-   "label": "Gross Salary",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
+   "bold": 1,
    "fieldname": "net_salary",
-   "fieldtype": "Float",
+   "fieldtype": "Currency",
    "label": "Net Salary",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "cash_in_hand",
-   "fieldtype": "Float",
-   "label": "Cash in Hand",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "monthly_ctc",
-   "fieldtype": "Float",
-   "label": "Monthly CTC",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "annual_ctc",
-   "fieldtype": "Float",
-   "label": "Annual CTC",
+   "options": "currency",
    "precision": "2",
    "read_only": 1
   },
@@ -201,16 +179,58 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "total_basic_da",
+   "fieldtype": "Currency",
+   "label": "Total (Basic + DA)",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_employer_contribution",
+   "fieldtype": "Currency",
+   "label": "Total Employer Contribution",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
    "fieldname": "retention",
-   "fieldtype": "Float",
+   "fieldtype": "Currency",
    "label": "Retention",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ctc_section",
+   "fieldtype": "Section Break",
+   "label": "CTC"
+  },
+  {
+   "fieldname": "monthly_ctc",
+   "fieldtype": "Currency",
+   "label": "Monthly CTC",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ctc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "annual_ctc",
+   "fieldtype": "Currency",
+   "label": "Annual CTC",
+   "options": "currency",
    "precision": "2",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-01 00:47:57.224257",
+ "modified": "2026-02-10 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
