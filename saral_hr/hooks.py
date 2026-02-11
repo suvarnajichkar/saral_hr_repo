@@ -90,6 +90,12 @@ fixtures = [
     }
 ]
 
+fixtures = [
+    {
+        "doctype": "Salary Component"
+    }
+]
+
 
 # Generators
 # ----------
