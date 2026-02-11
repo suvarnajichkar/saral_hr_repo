@@ -132,6 +132,28 @@ function fetch_days_and_attendance(frm) {
     });
 }
 
+/**
+ * Professional Tax February hardcoded rule (mirrors Python logic).
+ * - Only applies to the "Professional Tax" component (case-insensitive).
+ * - Only applies when the SSA base_amount > 0.
+ * - If the slip month is February (month index 1), returns 300.
+ * - Otherwise returns base_amount unchanged.
+ */
+function apply_professional_tax_february_rule(component_name, base_amount, start_date) {
+    if (!component_name) return base_amount;
+    if (!component_name.toLowerCase().includes("professional tax")) return base_amount;
+    if (flt(base_amount) <= 0) return base_amount;  // SSA amount is 0 — no change
+
+    if (start_date) {
+        let date_obj = frappe.datetime.str_to_obj(start_date);
+        if (date_obj.getMonth() === 1) {  // January=0, February=1
+            return 300;
+        }
+    }
+
+    return base_amount;
+}
+
 function recalculate_salary(frm) {
     let total_earnings = 0;
     let total_deductions = 0;
@@ -196,8 +218,14 @@ function recalculate_salary(frm) {
         let amount = 0;
         let comp = (row.salary_component || "").toLowerCase();
 
+        // ===== PROFESSIONAL TAX - February hardcoded rule =====
+        if (comp.includes("professional tax")) {
+            amount = apply_professional_tax_february_rule(
+                row.salary_component, base, frm.doc.start_date
+            );
+        }
         // ===== ESIC EMPLOYEE =====
-        if (comp.includes("esic") && !comp.includes("employer")) {
+        else if (comp.includes("esic") && !comp.includes("employer")) {
             if (base > 0) {
                 if (total_earnings < 21000) {
                     amount = flt((total_earnings - conveyance_amount) * 0.0075, 2);
