@@ -133,16 +133,51 @@ function fetch_days_and_attendance(frm) {
 }
 
 /**
+ * Check if component name matches Professional Tax pattern.
+ * Handles variations like: PT, P.T, P T, Professional Tax, Prof Tax, Profess Tax, etc.
+ */
+function is_professional_tax(component_name) {
+    if (!component_name) return false;
+    
+    // Normalize: lowercase, remove extra spaces, dots, underscores, hyphens
+    let normalized = component_name.toLowerCase()
+        .replace(/[.\s_-]+/g, ' ')
+        .trim();
+    
+    // Pattern matches:
+    // - "pt" or "p t"
+    // - "professional tax" or "professionaltax"
+    // - "prof tax" or "proftax"
+    // - "profess tax" or "professtax"
+    // - Any variation with spaces/dots/underscores/hyphens
+    const patterns = [
+        /^p\s*t$/,                          // PT, P T, P.T, etc.
+        /^professional\s*tax$/,             // Professional Tax
+        /^prof\s*tax$/,                     // Prof Tax
+        /^profess\s*tax$/,                  // Profess Tax
+        /^profession\s*tax$/,               // Profession Tax
+        /^prof\s*t$/,                       // Prof T
+        /^profess\s*t$/                     // Profess T
+    ];
+    
+    return patterns.some(pattern => pattern.test(normalized));
+}
+
+/**
  * Professional Tax February hardcoded rule (mirrors Python logic).
- * - Only applies to the "Professional Tax" component (case-insensitive).
+ * - Only applies to components matching Professional Tax pattern.
  * - Only applies when the SSA base_amount > 0.
  * - If the slip month is February (month index 1), returns 300.
  * - Otherwise returns base_amount unchanged.
  */
 function apply_professional_tax_february_rule(component_name, base_amount, start_date) {
-    if (!component_name) return base_amount;
-    if (!component_name.toLowerCase().includes("professional tax")) return base_amount;
-    if (flt(base_amount) <= 0) return base_amount;  // SSA amount is 0 — no change
+    if (!is_professional_tax(component_name)) {
+        return base_amount;
+    }
+    
+    if (flt(base_amount) <= 0) {
+        return base_amount;  // SSA amount is 0 — no change
+    }
 
     if (start_date) {
         let date_obj = frappe.datetime.str_to_obj(start_date);
@@ -219,7 +254,7 @@ function recalculate_salary(frm) {
         let comp = (row.salary_component || "").toLowerCase();
 
         // ===== PROFESSIONAL TAX - February hardcoded rule =====
-        if (comp.includes("professional tax")) {
+        if (is_professional_tax(row.salary_component)) {
             amount = apply_professional_tax_february_rule(
                 row.salary_component, base, frm.doc.start_date
             );
@@ -262,7 +297,7 @@ function recalculate_salary(frm) {
                 amount = 0;
             }
         }
-        // ===== Other Deductions (PT, LWF, etc.) =====
+        // ===== Other Deductions (LWF, etc.) =====
         else {
             if (row.depends_on_payment_days && wd > 0 && base > 0) {
                 amount = (base / wd) * pd;

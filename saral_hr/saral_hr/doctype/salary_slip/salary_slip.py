@@ -8,6 +8,7 @@ import json
 from PyPDF2 import PdfMerger
 import os
 from frappe.utils.pdf import get_pdf
+import re
 
 
 class SalarySlip(Document):
@@ -16,19 +17,52 @@ class SalarySlip(Document):
             self.end_date = get_last_day(getdate(self.start_date))
 
 
+def is_professional_tax(component_name):
+    """
+    Check if component name matches Professional Tax pattern.
+    Handles variations like: PT, P.T, P T, Professional Tax, Prof Tax, Profess Tax, etc.
+    
+    Args:
+        component_name: The salary component name to check
+        
+    Returns:
+        bool: True if it matches PT pattern, False otherwise
+    """
+    if not component_name:
+        return False
+    
+    # Normalize: lowercase, remove extra spaces, dots, underscores, hyphens
+    normalized = re.sub(r'[.\s_-]+', ' ', component_name.lower()).strip()
+    
+    # Pattern matches:
+    # - "pt" or "p t"
+    # - "professional tax" or "professionaltax"
+    # - "prof tax" or "proftax"
+    # - "profess tax" or "professtax"
+    # - Any variation with spaces/dots/underscores/hyphens
+    patterns = [
+        r'^p\s*t$',                          # PT, P T, P.T, etc.
+        r'^professional\s*tax$',             # Professional Tax
+        r'^prof\s*tax$',                     # Prof Tax
+        r'^profess\s*tax$',                  # Profess Tax
+        r'^profession\s*tax$',               # Profession Tax
+        r'^prof\s*t$',                       # Prof T
+        r'^profess\s*t$'                     # Profess T
+    ]
+    
+    return any(re.match(pattern, normalized) for pattern in patterns)
+
+
 def apply_professional_tax_february_rule(component_name, base_amount, start_date):
     """
     Hardcoded rule for Professional Tax:
-      - Only activates when component name contains "professional tax" (case-insensitive)
+      - Only activates when component name matches Professional Tax pattern
       - Only activates when the SSA base_amount > 0 (employee has PT in their structure)
       - If the salary slip month is February -> override final amount to 300
       - All other months -> return base_amount unchanged
       - If SSA amount is 0 -> return 0 unchanged (rule does not apply)
     """
-    if not component_name:
-        return base_amount
-
-    if "professional tax" not in component_name.lower():
+    if not is_professional_tax(component_name):
         return base_amount
 
     # Rule only kicks in when SSA has a non-zero PT amount
@@ -549,7 +583,7 @@ def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage):
         # get_salary_structure_for_employee already set the correct amount (300 or unchanged)
         # on the row.amount when it built the deductions list. However base_amount still holds
         # the SSA original value. We reapply the rule here to be safe during calculation.
-        if "professional tax" in comp_lower:
+        if is_professional_tax(row.salary_component):
             row.amount = flt(
                 apply_professional_tax_february_rule(
                     row.salary_component, base, salary_slip.start_date
@@ -798,10 +832,10 @@ def generate_bulk_print_html(doc):
         component_details = frappe.db.get_value(
             "Salary Component",
             d.salary_component,
-            ["employer_contribution", "deduct_from_cash_in_hand_only"],
+            ["employer_contribution"],
             as_dict=1
         )
-        if d.amount and d.amount > 0 and component_details and not component_details.employer_contribution and not component_details.deduct_from_cash_in_hand_only:
+        if d.amount and d.amount > 0 and component_details and not component_details.employer_contribution:
             deduction_items.append(d)
             deductions_total += d.amount
     
