@@ -74,7 +74,21 @@ permission_query_conditions = {
 
 
 
-
+# Document fixtures to be exported/imported
+fixtures = [
+    {
+        "dt": "Workspace",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Saral Hr"
+                ]
+            ]
+        ]
+    }
+]
 
 
 # Generators
