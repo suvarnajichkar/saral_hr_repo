@@ -1,0 +1,163 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Salary Summary") }}{% endblock %}
+
+{% block page_content %}
+
+<div class="salary-summary-wrapper">
+
+    <div class="header-section">
+        <h1 class="page-title">Salary Summary</h1>
+    </div>
+
+    <div class="filter-section">
+
+        <div class="filter-row">
+            <div class="filter-field">
+                <label>Company</label>
+                <select id="company" class="form-control">
+                    <option value="">Select Company</option>
+                    {% for c in companies %}
+                        <option value="{{ c.name }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label>Start Date</label>
+                <input type="date" id="start_date" class="form-control">
+            </div>
+
+            <div class="filter-field">
+                <label>End Date</label>
+                <input type="date" id="end_date" class="form-control">
+            </div>
+
+            <div class="filter-field button-field">
+                <button id="get-data" class="btn btn-frappe">
+                    Get Data
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="result-container" class="result-container">
+        <table class="result-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Net Salary</th>
+                </tr>
+            </thead>
+            <tbody id="result-body">
+            </tbody>
+        </table>
+    </div>
+
+    <div id="no-data" class="no-data-message">
+        <p>No salary records found.</p>
+    </div>
+
+</div>
+
+<style>
+
+.salary-summary-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 30px;
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+.header-section {
+    margin-bottom: 40px;
+}
+
+.page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1f272e;
+    margin: 0;
+}
+
+.filter-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.filter-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+.filter-field label {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    padding: 12px;
+    border-radius: 6px;
+    border: 1.5px solid #d1d8dd;
+}
+
+.button-field {
+    justify-content: flex-end;
+}
+
+.btn-frappe {
+    background: #000;
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 12px 24px;
+    cursor: pointer;
+}
+
+.btn-frappe:hover {
+    background: #2d2d2d;
+}
+
+.result-container {
+    display: none;
+    background: #fff;
+    border-radius: 8px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.result-table th,
+.result-table td {
+    padding: 14px;
+    border-bottom: 1px solid #e9ecef;
+    text-align: left;
+}
+
+.no-data-message {
+    display: none;
+    background: #fff;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+}
+
+</style>
+{% endblock %}
