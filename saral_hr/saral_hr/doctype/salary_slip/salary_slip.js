@@ -220,21 +220,45 @@ function recalculate_salary(frm) {
                 amount = 0;
             }
         }
-        // ===== PF (Both Employee and Employer) =====
+        // ===== PF - CORRECTED LOGIC =====
+        // Formula: 1800 if (Basic + DA) >= 15000 else (Basic + DA) * 0.12
         else if (comp.includes("pf") || comp.includes("provident")) {
             if (base > 0) {
-                if (pd === wd) {
-                    amount = base;
+                let basic_da_total = basic_amount + da_amount;
+                if (basic_da_total >= 15000) {
+                    amount = 1800;
                 } else {
-                    let prorated_basic_da = basic_amount + da_amount;
-                    let pf_wages = Math.min(prorated_basic_da, 15000);
-                    amount = flt(pf_wages * 0.12, 2);
+                    amount = flt(basic_da_total * 0.12, 2);
                 }
             } else {
                 amount = 0;
             }
         }
-        // ===== Other Deductions (PT, LWF, etc.) =====
+        // ===== PT (Professional Tax) - SPECIAL LOGIC =====
+        // Logic:
+        // - Agar Salary Structure Assignment me PT = 0 (base = 0), to Salary Slip me bhi PT = 0 rahega
+        // - Agar PT > 0 hai Salary Structure me, to:
+        //   - February month (month = 2) me: PT = 300
+        //   - Other months me: PT = 200
+        // - Start date se month nikalta hai jo user ne Salary Slip me dala hai
+        else if (comp.includes("pt") || comp.includes("professional tax")) {
+            if (base > 0) {
+                // Get month from start_date (1-12, where 1=January, 2=February, etc.)
+                let start_date = frappe.datetime.str_to_obj(frm.doc.start_date);
+                let month = start_date.getMonth() + 1; // getMonth() returns 0-11, so +1 for 1-12
+                
+                // February month me PT = 300, baaki sab months me PT = 200
+                if (month === 2) {
+                    amount = 300;
+                } else {
+                    amount = 200;
+                }
+            } else {
+                // Agar Salary Structure me PT ka base amount 0 hai, to PT = 0
+                amount = 0;
+            }
+        }
+        // ===== Other Deductions (LWF, etc.) =====
         else {
             if (row.depends_on_payment_days && wd > 0 && base > 0) {
                 amount = (base / wd) * pd;

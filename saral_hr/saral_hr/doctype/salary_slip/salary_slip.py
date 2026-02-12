@@ -61,8 +61,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "salary_component_abbr",
                 "depends_on_payment_days",
                 "is_special_component",
-                "type",
-                "is_part_of_pf_wages"
+                "type"
             ],
             as_dict=True
         )
@@ -82,8 +81,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "abbr": comp.salary_component_abbr,
             "amount": amount,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "is_special_component": comp.is_special_component,
-            "is_part_of_pf_wages": comp.is_part_of_pf_wages
+            "is_special_component": comp.is_special_component
         })
         added_earnings.add(row.salary_component)
 
@@ -97,10 +95,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "employer_contribution",
                 "depends_on_payment_days",
                 "is_special_component",
-                "type",
-                "is_pf_component",
-                "pf_percentage",
-                "calculate_on_pf_wages"
+                "type"
             ],
             as_dict=True
         )
@@ -121,10 +116,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "amount": amount,
             "employer_contribution": comp.employer_contribution,
             "depends_on_payment_days": comp.depends_on_payment_days,
-            "is_special_component": comp.is_special_component,
-            "is_pf_component": comp.is_pf_component,
-            "pf_percentage": comp.pf_percentage,
-            "calculate_on_pf_wages": comp.calculate_on_pf_wages
+            "is_special_component": comp.is_special_component
         })
         added_deductions.add(row.salary_component)
 
@@ -139,11 +131,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 "salary_component_abbr",
                 "type",
                 "depends_on_payment_days",
-                "employer_contribution",
-                "is_part_of_pf_wages",
-                "is_pf_component",
-                "pf_percentage",
-                "calculate_on_pf_wages"
+                "employer_contribution"
             ]
         )
         
@@ -159,8 +147,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "abbr": comp.salary_component_abbr,
                         "amount": special_amount,
                         "depends_on_payment_days": comp.depends_on_payment_days,
-                        "is_special_component": 1,
-                        "is_part_of_pf_wages": comp.is_part_of_pf_wages
+                        "is_special_component": 1
                     })
                 
                 # Add to deductions if not already added
@@ -171,10 +158,7 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "amount": special_amount,
                         "employer_contribution": comp.employer_contribution,
                         "depends_on_payment_days": comp.depends_on_payment_days,
-                        "is_special_component": 1,
-                        "is_pf_component": comp.is_pf_component,
-                        "pf_percentage": comp.pf_percentage,
-                        "calculate_on_pf_wages": comp.calculate_on_pf_wages
+                        "is_special_component": 1
                     })
 
     return {
@@ -504,7 +488,7 @@ def bulk_generate_salary_slips(employees, year, month):
 def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage):
     """
     Calculate salary slip amounts (earnings, deductions, totals)
-    This replicates the JS calculation logic
+    This replicates the JS calculation logic with HARDCODED PF LOGIC
     """
     total_earnings = 0
     total_deductions = 0
@@ -567,19 +551,41 @@ def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage):
             else:
                 row.amount = 0
         
-        # PF
+        # PF - CORRECTED LOGIC
+        # Formula: 1800 if (Basic + DA) >= 15000 else (Basic + DA) * 0.12
         elif 'pf' in comp_lower or 'provident' in comp_lower:
             if base > 0:
-                if pd == wd:
-                    row.amount = flt(base, 2)
+                basic_da_total = basic_amount + da_amount
+                if basic_da_total >= 15000:
+                    row.amount = 1800
                 else:
-                    prorated_basic_da = basic_amount + da_amount
-                    pf_wages = min(prorated_basic_da, 15000)
-                    row.amount = flt(pf_wages * 0.12, 2)
+                    row.amount = flt(basic_da_total * 0.12, 2)
             else:
                 row.amount = 0
         
-        # Other Deductions
+        # PT (Professional Tax) - SPECIAL LOGIC
+        # Logic:
+        # - Agar Salary Structure Assignment me PT ka base amount = 0 hai, to Salary Slip me bhi PT = 0 rahega
+        # - Agar PT > 0 hai Salary Structure me, to:
+        #   - February month (month == 2) me: PT = 300
+        #   - Other months me: PT = 200
+        # - Start date se month extract hota hai (1-12, where 1=January, 2=February, etc.)
+        elif 'pt' in comp_lower or 'professional tax' in comp_lower:
+            if base > 0:
+                # Get month from start_date (1-12)
+                start_date_obj = getdate(salary_slip.start_date)
+                month = start_date_obj.month  # Returns 1-12
+                
+                # February month me PT = 300, baaki sab months me PT = 200
+                if month == 2:
+                    row.amount = 300
+                else:
+                    row.amount = 200
+            else:
+                # Agar Salary Structure me PT ka base amount 0 hai, to PT = 0
+                row.amount = 0
+        
+        # Other Deductions (LWF, etc.)
         else:
             if row.depends_on_payment_days and wd > 0 and base > 0:
                 row.amount = flt((base / wd) * pd, 2)
