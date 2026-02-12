@@ -88,18 +88,16 @@ frappe.ui.form.on("Salary Details", {
 // ── Overlap checker ──────────────────────────────────────────────────────────
 
 function check_overlap(frm) {
-    // Need employee + from_date — to_date is optional for the check
-    if (!frm.doc.employee || !frm.doc.from_date) return;
+    // Need at least from_date to check — global check, not per employee
+    if (!frm.doc.from_date) return;
 
     frappe.call({
         method: "saral_hr.saral_hr.doctype.salary_structure_assignment.salary_structure_assignment.check_overlap",
         args: {
-            employee:      frm.doc.employee,
+            employee:      frm.doc.employee || null,
             from_date:     frm.doc.from_date,
             to_date:       frm.doc.to_date || null,
             employee_name: frm.doc.employee_name || frm.doc.employee,
-            // For new unsaved docs, __islocal is true and name is a temp placeholder
-            // — pass null so we don't accidentally exclude a non-existent DB record
             current_name:  frm.doc.__islocal ? null : frm.doc.name,
         },
         callback(r) {
@@ -108,16 +106,15 @@ function check_overlap(frm) {
                 let to_lbl = rec.to_date || "Ongoing";
 
                 frappe.msgprint({
-                    title:     __("Duplicate Salary Structure Assignment"),
+                    title:     __("Date Range Already in Use"),
                     indicator: "red",
                     message:   `
-                        A Salary Structure Assignment already exists for employee
-                        <b>${frm.doc.employee_name || frm.doc.employee}</b>
-                        that overlaps with the selected date range.<br><br>
+                        This date range overlaps with an existing Salary Structure Assignment.<br><br>
                         Existing Record:
                         <a href="/app/salary-structure-assignment/${rec.name}" target="_blank">
                             <b>${rec.name}</b>
-                        </a><br>
+                        </a>
+                        (${rec.employee_name})<br>
                         Period: <b>${rec.from_date}</b> to <b>${to_lbl}</b>
                     `
                 });
