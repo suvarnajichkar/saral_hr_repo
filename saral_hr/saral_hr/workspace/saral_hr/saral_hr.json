@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"PPFPGWh4nt\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}},{\"id\":\"u-VN2Ky00U\",\"type\":\"card\",\"data\":{\"card_name\":\"Transaction\",\"col\":4}},{\"id\":\"0MqLGizEW-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Pages</b></span>\",\"col\":12}},{\"id\":\"arnKF3gblc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Timeline\",\"col\":3}},{\"id\":\"aDJvloajAw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Mark Attendance\",\"col\":3}},{\"id\":\"XbxZgsy5F-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}}]",
- "creation": "2026-01-09 18:32:47.100898",
+ "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"PPFPGWh4nt\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}},{\"id\":\"u-VN2Ky00U\",\"type\":\"card\",\"data\":{\"card_name\":\"Transaction\",\"col\":4}},{\"id\":\"0MqLGizEW-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Pages</b></span>\",\"col\":12}},{\"id\":\"arnKF3gblc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Timeline\",\"col\":3}},{\"id\":\"aDJvloajAw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Mark Attendance\",\"col\":3}},{\"id\":\"YgeXikqSbq\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Salary Summary\",\"col\":3}},{\"id\":\"XbxZgsy5F-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}}]",
+ "creation": "2026-02-12 14:23:22.307202",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -221,7 +221,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-02-02 16:27:05.909168",
+ "modified": "2026-02-12 14:47:59.352658",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",
@@ -239,6 +239,13 @@
    "label": "Employee Timeline",
    "type": "URL",
    "url": "/employee_timeline"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Salary Summary",
+   "type": "URL",
+   "url": "/salary_summary"
   },
   {
    "color": "Grey",

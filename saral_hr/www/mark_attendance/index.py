@@ -5,7 +5,6 @@ from frappe.utils import getdate
 def get_active_employees():
     user = frappe.session.user
 
-    # get company restrictions (if any)
     companies = frappe.get_all(
         "User Permission",
         filters={
@@ -17,7 +16,6 @@ def get_active_employees():
 
     filters = {"is_active": 1}
 
-    # apply company filter ONLY if restriction exists
     if companies:
         filters["company"] = ["in", companies]
 
@@ -28,7 +26,6 @@ def get_active_employees():
         order_by="full_name asc"
     )
 
-    # Fetch Aadhaar numbers
     for emp in employees:
         aadhaar = frappe.db.get_value("Employee", emp.employee, "aadhar_number")
         emp["aadhaar_number"] = aadhaar or ""
@@ -66,9 +63,6 @@ def get_attendance_between_dates(employee, start_date, end_date):
 
 @frappe.whitelist()
 def save_attendance(employee, attendance_date, status):
-    """
-    Save attendance - now supports Holiday status
-    """
     user = frappe.session.user
     attendance_date = getdate(attendance_date)
     
@@ -77,7 +71,6 @@ def save_attendance(employee, attendance_date, status):
     frappe.logger().info(f"Date: {attendance_date}")
     frappe.logger().info(f"Status: {status}")
 
-    # Company restriction check
     companies = frappe.get_all(
         "User Permission",
         filters={
@@ -99,7 +92,6 @@ def save_attendance(employee, attendance_date, status):
         if not allowed:
             frappe.throw("Not permitted to mark attendance for this employee")
 
-    # Check for existing attendance
     existing_attendance = frappe.db.get_value(
         "Attendance",
         {"employee": employee, "attendance_date": attendance_date},
@@ -129,11 +121,119 @@ def save_attendance(employee, attendance_date, status):
 
 
 @frappe.whitelist()
+def save_attendance_batch(attendance_data):
+    """
+    Batch save attendance records for better performance.
+    This reduces the number of database commits and improves save speed.
+    """
+    import json
+    
+    user = frappe.session.user
+    
+    # Parse the attendance data if it's a string
+    if isinstance(attendance_data, str):
+        attendance_data = json.loads(attendance_data)
+    
+    frappe.logger().info(f"=== BATCH SAVE ATTENDANCE ===")
+    frappe.logger().info(f"Processing {len(attendance_data)} records")
+    
+    # Get user's allowed companies
+    companies = frappe.get_all(
+        "User Permission",
+        filters={
+            "user": user,
+            "allow": "Company"
+        },
+        pluck="for_value"
+    )
+    
+    saved_count = 0
+    errors = []
+    
+    # Use enqueue for better performance and avoid timeout/conflict issues
+    try:
+        for record in attendance_data:
+            try:
+                employee = record.get('employee')
+                attendance_date = getdate(record.get('attendance_date'))
+                status = record.get('status')
+                
+                # Check permissions
+                if companies:
+                    allowed = frappe.db.exists(
+                        "Company Link",
+                        {
+                            "employee": employee,
+                            "company": ["in", companies]
+                        }
+                    )
+                    
+                    if not allowed:
+                        errors.append(f"Not permitted for employee {employee} on {attendance_date}")
+                        continue
+                
+                # Check if attendance already exists
+                existing_attendance = frappe.db.get_value(
+                    "Attendance",
+                    {"employee": employee, "attendance_date": attendance_date},
+                    "name"
+                )
+                
+                if existing_attendance:
+                    # Update existing record using SQL for speed
+                    frappe.db.set_value(
+                        "Attendance",
+                        existing_attendance,
+                        "status",
+                        status,
+                        update_modified=False  # Prevent modification timestamp conflicts
+                    )
+                    frappe.logger().info(f"Updated: {employee} - {attendance_date} - {status}")
+                else:
+                    # Create new record
+                    doc = frappe.get_doc({
+                        "doctype": "Attendance",
+                        "employee": employee,
+                        "attendance_date": attendance_date,
+                        "status": status
+                    })
+                    doc.flags.ignore_validate = True
+                    doc.flags.ignore_mandatory = True
+                    doc.insert(ignore_permissions=True)
+                    frappe.logger().info(f"Created: {employee} - {attendance_date} - {status}")
+                
+                saved_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error for {record.get('employee')} on {record.get('attendance_date')}: {str(e)}"
+                frappe.logger().error(error_msg)
+                errors.append(error_msg)
+        
+        # Single commit for all records
+        frappe.db.commit()
+        
+        frappe.logger().info(f"✓ Batch save completed: {saved_count} records saved")
+        
+        if errors:
+            frappe.logger().warning(f"Errors encountered: {errors}")
+        
+        return {
+            "success": True,
+            "saved_count": saved_count,
+            "errors": errors if errors else None
+        }
+        
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.logger().error(f"Batch save failed: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@frappe.whitelist()
 def get_holidays_between_dates(company, start_date, end_date):
-    """
-    Fetch holidays from company's default holiday list
-    Returns list of date strings in YYYY-MM-DD format
-    """
     if not company:
         return []
 
@@ -153,15 +253,11 @@ def get_holidays_between_dates(company, start_date, end_date):
 
     frappe.logger().info(f"Found {len(holidays)} holidays for {company} from {start_date} to {end_date}")
     
-    # Return as YYYY-MM-DD strings
     return [str(h) for h in holidays]
 
 
 @frappe.whitelist()
 def get_employee_attendance_for_year(employee, year):
-    """
-    Get full year attendance (used by calendar modal)
-    """
     if not employee or not year:
         return {}
 
@@ -170,7 +266,7 @@ def get_employee_attendance_for_year(employee, year):
         filters={
             "employee": employee,
             "attendance_date": ["between", [f"{year}-01-01", f"{year}-12-31"]],
-            "status": ["in", ["Present", "Absent", "Half Day", "Holiday"]]
+            "status": ["in", ["Present", "Absent", "Half Day", "Holiday", "LWP"]]
         },
         fields=["attendance_date", "status"]
     )

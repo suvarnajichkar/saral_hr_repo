@@ -30,6 +30,7 @@
   "absent_days",
   "weekly_offs_count",
   "total_half_days",
+  "total_lwp",
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
@@ -288,12 +289,17 @@
    "options": "currency",
    "precision": "2",
    "read_only": 1
+  },
+  {
+   "fieldname": "total_lwp",
+   "fieldtype": "Float",
+   "label": "Total LWP"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-07 15:25:47.277570",
+ "modified": "2026-02-12 17:24:51.226913",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

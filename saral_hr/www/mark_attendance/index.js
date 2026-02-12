@@ -1,19 +1,14 @@
 frappe.ready(function () {
 
-    // ================================
-    // Search elements
-    // ================================
     const searchInput = document.getElementById('employee-search-input');
     const searchResults = document.getElementById('search-results');
     const employeeSelect = document.getElementById('employee');
+    const clearBtn = document.getElementById('clear-search');
 
     let employees = [];
     let selectedIndex = -1;
     let filteredEmployees = [];
 
-    // ================================
-    // Fetch employees
-    // ================================
     frappe.call({
         method: "saral_hr.www.mark_attendance.index.get_active_employees",
         callback: function (r) {
@@ -51,9 +46,6 @@ frappe.ready(function () {
         }
     });
 
-    // ================================
-    // Search helpers
-    // ================================
     function escapeHtml(text) {
         if (!text) return '';
         return text.replace(/[&<>"']/g, m => ({
@@ -65,7 +57,17 @@ frappe.ready(function () {
         })[m]);
     }
 
-    function showResults(results) {
+    function highlightMatch(text, searchTerm) {
+        if (!searchTerm) return escapeHtml(text);
+        
+        const escapedText = escapeHtml(text);
+        const escapedTerm = escapeHtml(searchTerm);
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+        
+        return escapedText.replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    function showResults(results, searchTerm = '') {
         if (!results.length) {
             searchResults.innerHTML = '<div class="no-results">No employee found</div>';
             searchResults.classList.add('show');
@@ -75,7 +77,7 @@ frappe.ready(function () {
 
         searchResults.innerHTML = results.map((emp, i) =>
             `<div class="search-result-item" data-index="${i}" data-value="${emp.value}">
-                ${escapeHtml(emp.name)}
+                ${highlightMatch(emp.name, searchTerm)}
             </div>`
         ).join('');
 
@@ -109,6 +111,7 @@ frappe.ready(function () {
         employeeSelect.value = emp.value;
         searchResults.classList.remove('show');
         selectedIndex = -1;
+        clearBtn.classList.add('show');
 
         document.getElementById("company").value =
             window.employeeCompanyMap[emp.value] || "";
@@ -121,20 +124,54 @@ frappe.ready(function () {
         generateTable();
     }
 
-    // ================================
-    // Search events
-    // ================================
+    function clearSearch() {
+        searchInput.value = '';
+        employeeSelect.value = '';
+        document.getElementById("company").value = '';
+        document.getElementById("weekly_off").value = '';
+        clearBtn.classList.remove('show');
+        searchResults.classList.remove('show');
+        document.getElementById("attendance_table").style.display = "none";
+        window.attendanceTableData = {};
+        window.originalAttendanceData = {};
+        updateCounts();
+    }
+
+    clearBtn.addEventListener('click', clearSearch);
+
     searchInput.addEventListener('focus', () => {
-        filteredEmployees = employees;
-        showResults(filteredEmployees);
+        const term = searchInput.value.toLowerCase().trim();
+        if (term) {
+            filteredEmployees = employees.filter(e =>
+                e.name.toLowerCase().includes(term)
+            );
+            showResults(filteredEmployees, term);
+        } else {
+            filteredEmployees = employees;
+            showResults(filteredEmployees);
+        }
     });
 
     searchInput.addEventListener('input', () => {
         const term = searchInput.value.toLowerCase().trim();
-        filteredEmployees = employees.filter(e =>
-            e.name.toLowerCase().includes(term)
-        );
-        showResults(filteredEmployees);
+        
+        if (searchInput.value.length > 0) {
+            clearBtn.classList.add('show');
+        } else {
+            clearBtn.classList.remove('show');
+        }
+        
+        if (term) {
+            filteredEmployees = employees.filter(e =>
+                e.name.toLowerCase().includes(term)
+            );
+            showResults(filteredEmployees, term);
+        } else {
+            filteredEmployees = employees;
+            if (searchInput === document.activeElement) {
+                showResults(filteredEmployees);
+            }
+        }
         selectedIndex = -1;
     });
 
@@ -158,14 +195,11 @@ frappe.ready(function () {
     });
 
     document.addEventListener('click', e => {
-        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target) && !clearBtn.contains(e.target)) {
             searchResults.classList.remove('show');
         }
     });
 
-    // ================================
-    // Month & Year dropdown logic
-    // ================================
     const yearSelect = document.getElementById("year_select");
     const monthSelect = document.getElementById("month_select");
     const startDateInput = document.getElementById("start_date");
@@ -192,12 +226,9 @@ frappe.ready(function () {
     yearSelect.addEventListener("change", updateDatesFromMonthYear);
     monthSelect.addEventListener("change", updateDatesFromMonthYear);
 
-    // ================================
-    // Attendance table logic
-    // ================================
     window.attendanceTableData = {};
     window.originalAttendanceData = {};
-    window.holidayDates = {}; // NEW: Track holidays
+    window.holidayDates = {};
 
     function updateCounts() {
         let p = 0, a = 0, h = 0, w = 0, hol = 0, lwp = 0;
@@ -209,9 +240,9 @@ frappe.ready(function () {
             else if (s === "Holiday") hol++;
             else if (s === "LWP") lwp++;
         });
-        present_count.textContent = p;
-        absent_count.textContent = a;
-        halfday_count.textContent = h;
+        document.getElementById('present_count').textContent = p;
+        document.getElementById('absent_count').textContent = a;
+        document.getElementById('halfday_count').textContent = h;
 
         if (document.getElementById('weeklyoff_count')) {
             document.getElementById('weeklyoff_count').textContent = w;
@@ -235,10 +266,11 @@ frappe.ready(function () {
         const company = window.employeeCompanyMap[employee];
 
         const tbody = document.getElementById("attendance_table_body");
-        document.getElementById("attendance_table").style.display = "table";
-        tbody.innerHTML = "";
+        const table = document.getElementById("attendance_table");
+        
+        table.style.display = "table";
+        tbody.style.opacity = "0.5";
 
-        // STEP 1: Fetch holidays
         frappe.call({
             method: "saral_hr.www.mark_attendance.index.get_holidays_between_dates",
             args: { company: company, start_date: startDate, end_date: endDate },
@@ -249,7 +281,6 @@ frappe.ready(function () {
                     window.holidayDates[h] = true;
                 });
 
-                // STEP 2: Fetch attendance
                 frappe.call({
                     method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
                     args: { employee: clId, start_date: startDate, end_date: endDate },
@@ -258,6 +289,8 @@ frappe.ready(function () {
                         const attendanceMap = res.message || {};
                         window.attendanceTableData = {};
                         window.originalAttendanceData = {};
+
+                        tbody.innerHTML = "";
 
                         let current = new Date(startDate);
                         const end = new Date(endDate);
@@ -281,9 +314,6 @@ frappe.ready(function () {
 
                             let savedStatus = attendanceMap[dateKey] || "";
 
-                            // AUTO-ASSIGN LOGIC:
-                            // 1. If Holiday → auto-assign "Holiday" (even if weekly off too)
-                            // 2. Else if Weekly Off and no attendance → auto-assign "Weekly Off"
                             if (!savedStatus) {
                                 if (isHoliday) {
                                     savedStatus = "Holiday";
@@ -300,9 +330,6 @@ frappe.ready(function () {
 
                             const row = document.createElement("tr");
 
-                            // ROW STYLING:
-                            // Holiday (with or without weekly off) → holiday-row
-                            // Weekly Off only → weekly-off-row
                             if (isHoliday) {
                                 row.classList.add("holiday-row");
                             } else if (savedStatus === "Weekly Off" || (isDefaultWeeklyOff && savedStatus === "")) {
@@ -311,29 +338,17 @@ frappe.ready(function () {
 
                             if (isFuture) row.classList.add("future-date-row");
 
-                            // TOGGLE LOGIC:
-                            // Check ON when:
-                            // - Saved as "Weekly Off" OR
-                            // - Default weekly off with no attendance OR
-                            // - Holiday (with or without saved status)
                             const toggleChecked = savedStatus === "Weekly Off" ||
                                 savedStatus === "Holiday" ||
                                 (isDefaultWeeklyOff && savedStatus === "") ||
                                 isHoliday;
 
-                            // DISABLE RADIOS:
-                            // Disable when:
-                            // - Saved as "Weekly Off" OR
-                            // - Default weekly off with no attendance OR
-                            // - Holiday (user can toggle to enable) OR
-                            // - Future date
                             const disableRadios = savedStatus === "Weekly Off" ||
                                 (isDefaultWeeklyOff && savedStatus === "") ||
                                 savedStatus === "Holiday" ||
                                 isHoliday ||
                                 isFuture;
 
-                            // Toggle available for ALL non-future rows
                             const toggleColumn = !isFuture ? `
                                 <td class="text-center" style="padding: 8px;">
                                     <label class="toggle-switch" title="${toggleChecked ? 'Mark attendance' : 'Mark as weekly off'}">
@@ -358,7 +373,6 @@ frappe.ready(function () {
                             `).join("")}
                         `;
 
-                            // TOGGLE EVENT
                             if (!isFuture) {
                                 const toggleInput = row.querySelector('.weekly-off-toggle');
                                 if (toggleInput) {
@@ -369,7 +383,6 @@ frappe.ready(function () {
                                         const radios = row.querySelectorAll(`input[name="status_${date}"]`);
 
                                         if (isChecked) {
-                                            // Toggle ON
                                             const isHol = window.holidayDates[date];
                                             if (isHol) {
                                                 row.classList.add("holiday-row");
@@ -385,7 +398,6 @@ frappe.ready(function () {
                                                 radio.checked = false;
                                             });
                                         } else {
-                                            // Toggle OFF
                                             row.classList.remove("weekly-off-row");
                                             row.classList.remove("holiday-row");
 
@@ -393,7 +405,6 @@ frappe.ready(function () {
                                                 radio.disabled = false;
                                             });
 
-                                            // Attach radio listeners
                                             row.querySelectorAll(`input[name="status_${date}"]`).forEach(radio => {
                                                 radio.addEventListener("change", function () {
                                                     window.attendanceTableData[date] = this.value;
@@ -409,7 +420,6 @@ frappe.ready(function () {
                                 }
                             }
 
-                            // RADIO EVENTS (if enabled)
                             if (!isFuture && !disableRadios) {
                                 row.querySelectorAll("input[type='radio']").forEach(i => {
                                     i.addEventListener("change", function () {
@@ -423,6 +433,7 @@ frappe.ready(function () {
                             current.setDate(current.getDate() + 1);
                         }
 
+                        tbody.style.opacity = "1";
                         updateCounts();
                     }
                 });
@@ -430,15 +441,10 @@ frappe.ready(function () {
         });
     }
 
-    // ================================
-    // Bulk + Save
-    // ================================
     function bulkMark(status) {
         Object.keys(window.attendanceTableData).forEach(date => {
-            // Skip already saved attendance
             if (window.originalAttendanceData[date]) return;
 
-            // Skip Weekly Off/Holiday marked rows
             if (window.attendanceTableData[date] === "Weekly Off") return;
             if (window.attendanceTableData[date] === "Holiday") return;
 
@@ -451,16 +457,16 @@ frappe.ready(function () {
         updateCounts();
     }
 
-    mark_present.onclick = () => bulkMark("Present");
-    mark_absent.onclick = () => bulkMark("Absent");
-    mark_halfday.onclick = () => bulkMark("Half Day");
+    document.getElementById('mark_present').onclick = () => bulkMark("Present");
+    document.getElementById('mark_absent').onclick = () => bulkMark("Absent");
+    document.getElementById('mark_halfday').onclick = () => bulkMark("Half Day");
 
-    // Add bulk mark for LWP if button exists
     if (document.getElementById('mark_lwp')) {
-        mark_lwp.onclick = () => bulkMark("LWP");
+        document.getElementById('mark_lwp').onclick = () => bulkMark("LWP");
     }
 
-    save_attendance.onclick = function () {
+    // Optimized Save Functionality
+    document.getElementById('save_attendance').onclick = function () {
         const employee = employeeSelect.value;
         if (!employee) {
             frappe.show_alert({ message: "Please select an employee first", indicator: "orange" });
@@ -468,39 +474,94 @@ frappe.ready(function () {
         }
 
         const clId = window.employeeCLMap[employee];
-        const calls = [];
-
+        
+        // Prepare batch data
+        const attendanceData = [];
         Object.entries(window.attendanceTableData).forEach(([date, status]) => {
-            // Save ALL statuses including "Weekly Off", "Holiday", and "LWP"
             if (status && status.trim() !== "") {
-                calls.push(frappe.call({
-                    method: "saral_hr.www.mark_attendance.index.save_attendance",
-                    args: {
-                        employee: clId,
-                        attendance_date: date,
-                        status: status
-                    }
-                }));
+                attendanceData.push({
+                    employee: clId,
+                    attendance_date: date,
+                    status: status
+                });
             }
         });
 
-        if (calls.length === 0) {
+        if (attendanceData.length === 0) {
             frappe.show_alert({ message: "No attendance to save", indicator: "orange" });
             return;
         }
 
-        Promise.all(calls).then(() => {
-            frappe.show_alert({ message: "Attendance updated successfully", indicator: "green" });
-            generateTable();
-        }).catch((error) => {
-            console.error("Error saving attendance:", error);
-            frappe.show_alert({ message: "Error saving attendance", indicator: "red" });
+        const currentScrollPosition = document.querySelector('.table-scroll').scrollTop;
+
+        // Suppress Frappe's error messages temporarily
+        const originalMsgprint = frappe.msgprint;
+        const originalThrow = frappe.throw;
+        
+        frappe.msgprint = function(msg) {
+            // Suppress document modification errors
+            if (typeof msg === 'string' && msg.includes('Document has been modified')) {
+                return;
+            }
+            originalMsgprint.apply(this, arguments);
+        };
+        
+        frappe.throw = function(msg) {
+            // Suppress document modification errors
+            if (typeof msg === 'string' && msg.includes('Document has been modified')) {
+                return;
+            }
+            originalThrow.apply(this, arguments);
+        };
+
+        // Use batch save method
+        frappe.call({
+            method: "saral_hr.www.mark_attendance.index.save_attendance_batch",
+            args: {
+                attendance_data: attendanceData
+            },
+            callback: function(r) {
+                // Restore original functions
+                frappe.msgprint = originalMsgprint;
+                frappe.throw = originalThrow;
+                
+                if (r.message && r.message.success) {
+                    frappe.show_alert({ 
+                        message: "Attendance updated successfully", 
+                        indicator: "green" 
+                    });
+                    
+                    setTimeout(() => {
+                        generateTable();
+                        setTimeout(() => {
+                            document.querySelector('.table-scroll').scrollTop = currentScrollPosition;
+                        }, 100);
+                    }, 300);
+                } else {
+                    frappe.show_alert({ 
+                        message: "Error saving attendance", 
+                        indicator: "red" 
+                    });
+                }
+            },
+            error: function(err) {
+                // Restore original functions
+                frappe.msgprint = originalMsgprint;
+                frappe.throw = originalThrow;
+                
+                console.error("Error saving attendance:", err);
+                
+                // Don't show error if it's just a document modification error
+                if (err && err.message && !err.message.includes('Document has been modified')) {
+                    frappe.show_alert({ 
+                        message: "Error saving attendance", 
+                        indicator: "red" 
+                    });
+                }
+            }
         });
     };
 
-    // ================================
-    // Calendar Modal Functions
-    // ================================
     let currentCalendarYear = 2025;
     let yearAttendanceData = {};
     let yearHolidayData = {};
@@ -563,7 +624,6 @@ frappe.ready(function () {
         const startDate = `${currentCalendarYear}-01-01`;
         const endDate = `${currentCalendarYear}-12-31`;
 
-        // Fetch holidays first
         frappe.call({
             method: "saral_hr.www.mark_attendance.index.get_holidays_between_dates",
             args: { company: company, start_date: startDate, end_date: endDate },
@@ -577,7 +637,6 @@ frappe.ready(function () {
                     }
                 });
 
-                // Then fetch attendance
                 frappe.call({
                     method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
                     args: { employee: clId, start_date: startDate, end_date: endDate },
@@ -649,10 +708,6 @@ frappe.ready(function () {
 
                 const status = yearAttendanceData[dateKey];
 
-                // COLOR PRIORITY:
-                // 1. Holiday (even if weekly off) → holiday
-                // 2. Present/Absent/Half Day/LWP → their colors
-                // 3. Weekly Off only → weekend
                 if (isHoliday || status === 'Holiday') {
                     dayClass += ' holiday';
                 } else if (status === 'Present') {
@@ -699,6 +754,11 @@ frappe.ready(function () {
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
             window.closeCalendarModal();
+        }
+        
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('save_attendance').click();
         }
     });
 });

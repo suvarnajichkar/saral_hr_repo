@@ -332,6 +332,11 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
 @frappe.whitelist()
 def get_eligible_employees_for_salary_slip(company, year, month):
+    """
+    Fetch eligible employees for bulk salary slip generation.
+    Excludes employees who already have either DRAFT or SUBMITTED salary slips.
+    Only shows employees who have NO salary slip for the selected period.
+    """
     from datetime import datetime
 
     month_map = {
@@ -369,16 +374,18 @@ def get_eligible_employees_for_salary_slip(company, year, month):
     eligible_employees = []
 
     for emp in employees:
-        # Skip if a non-cancelled salary slip already exists for this month
+        # Exclude employees who have ANY salary slip (draft or submitted)
+        # Only show employees with NO salary slip for this period
         existing_slip = frappe.db.exists("Salary Slip", {
             "employee": emp.name,
             "start_date": start_date,
-            "docstatus": ["in", [0, 1]]
+            "docstatus": ["in", [0, 1]]  # 0 = Draft, 1 = Submitted
         })
 
         if existing_slip:
             continue
 
+        # Check if attendance exists for this employee in this period
         attendance_count = frappe.db.count("Attendance", {
             "employee": emp.name,
             "attendance_date": ["between", [start_date_obj, end_date]]
@@ -392,6 +399,9 @@ def get_eligible_employees_for_salary_slip(company, year, month):
 
 @frappe.whitelist()
 def bulk_generate_salary_slips(employees, year, month):
+    """
+    COMPLETELY FIXED: Now replicates the exact manual calculation logic
+    """
     import json
     from datetime import datetime
 
@@ -418,6 +428,7 @@ def bulk_generate_salary_slips(employees, year, month):
         try:
             employee = emp_data.get('employee')
 
+            # Fetch salary structure
             salary_data = get_salary_structure_for_employee(employee, start_date)
 
             if not salary_data:
@@ -425,6 +436,7 @@ def bulk_generate_salary_slips(employees, year, month):
                 failed_count += 1
                 continue
 
+            # Fetch attendance and days calculation
             attendance_data = get_attendance_and_days(employee, start_date)
 
             if not attendance_data:
@@ -432,8 +444,15 @@ def bulk_generate_salary_slips(employees, year, month):
                 failed_count += 1
                 continue
 
-            variable_pay = get_variable_pay_percentage(employee, start_date) or 0
+            # FIXED: Get variable pay percentage and convert properly
+            variable_pay_pct = get_variable_pay_percentage(employee, start_date)
+            if variable_pay_pct is None:
+                variable_pay_pct = 0
+            
+            # Convert percentage to decimal (e.g., 80% becomes 0.80)
+            variable_pay_decimal = flt(variable_pay_pct) / 100.0
 
+            # Create new salary slip
             salary_slip = frappe.new_doc("Salary Slip")
             salary_slip.employee = employee
             salary_slip.start_date = start_date
@@ -441,6 +460,7 @@ def bulk_generate_salary_slips(employees, year, month):
             salary_slip.currency = "INR"
             salary_slip.salary_structure = salary_data.get('salary_structure')
 
+            # Set attendance data
             salary_slip.total_working_days = attendance_data.get('working_days')
             salary_slip.payment_days = attendance_data.get('payment_days')
             salary_slip.present_days = attendance_data.get('present_days')
@@ -448,14 +468,31 @@ def bulk_generate_salary_slips(employees, year, month):
             salary_slip.weekly_offs_count = attendance_data.get('weekly_offs')
             salary_slip.total_half_days = attendance_data.get('total_half_days')
 
+            # Add earnings with base_amount
             for earning in salary_data.get('earnings', []):
-                salary_slip.append('earnings', earning)
+                row = salary_slip.append('earnings', {})
+                row.salary_component = earning.get('salary_component')
+                row.abbr = earning.get('abbr')
+                row.amount = earning.get('amount')
+                row.base_amount = earning.get('amount')  # Set base_amount
+                row.depends_on_payment_days = earning.get('depends_on_payment_days')
+                row.is_special_component = earning.get('is_special_component')
 
+            # Add deductions with base_amount
             for deduction in salary_data.get('deductions', []):
-                salary_slip.append('deductions', deduction)
+                row = salary_slip.append('deductions', {})
+                row.salary_component = deduction.get('salary_component')
+                row.abbr = deduction.get('abbr')
+                row.amount = deduction.get('amount')
+                row.base_amount = deduction.get('amount')  # Set base_amount
+                row.employer_contribution = deduction.get('employer_contribution')
+                row.depends_on_payment_days = deduction.get('depends_on_payment_days')
+                row.is_special_component = deduction.get('is_special_component')
 
-            calculate_salary_slip_amounts(salary_slip, variable_pay / 100 if variable_pay else 0, start_date)
+            # FIXED: Calculate amounts using the EXACT same logic as manual form
+            calculate_salary_slip_amounts_exact(salary_slip, variable_pay_decimal, start_date)
 
+            # Insert the salary slip
             salary_slip.insert(ignore_permissions=True)
             success_count += 1
 
@@ -465,6 +502,7 @@ def bulk_generate_salary_slips(employees, year, month):
             errors.append(f"{emp_data.get('employee_name', employee)}: {str(e)}")
             failed_count += 1
             frappe.log_error(f"Error generating salary slip for {employee}: {str(e)}", "Bulk Salary Slip Generation")
+            frappe.db.rollback()
 
     return {
         "success": success_count,
@@ -473,7 +511,10 @@ def bulk_generate_salary_slips(employees, year, month):
     }
 
 
-def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage, start_date):
+def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, start_date):
+    """
+    COMPLETELY REWRITTEN: This now exactly replicates the client-side recalculate_salary() function
+    """
     total_earnings = 0
     total_deductions = 0
     total_basic_da = 0
@@ -482,93 +523,121 @@ def calculate_salary_slip_amounts(salary_slip, variable_pay_percentage, start_da
 
     wd = flt(salary_slip.total_working_days)
     pd = flt(salary_slip.payment_days)
+    variable_pct = flt(variable_pay_percentage)
 
     basic_amount = 0
     da_amount = 0
     conveyance_amount = 0
 
+    # ================= EARNINGS - EXACT REPLICA =================
     for row in salary_slip.earnings:
-        base = flt(row.amount or 0)
+        base = flt(row.base_amount or row.amount or 0)
         row.base_amount = base
 
-        if row.salary_component and 'variable' in row.salary_component.lower():
-            if wd > 0 and row.depends_on_payment_days:
-                row.amount = flt((base / wd) * pd * variable_pay_percentage, 2)
-            else:
-                row.amount = flt(base * variable_pay_percentage, 2)
-        else:
-            if row.depends_on_payment_days and wd > 0:
-                row.amount = flt((base / wd) * pd, 2)
-            else:
-                row.amount = flt(base, 2)
+        amount = 0
 
+        # Check if this is a variable component
+        if row.salary_component and row.salary_component.lower().find("variable") != -1:
+            # Variable component logic
+            if wd > 0 and row.depends_on_payment_days:
+                amount = (base / wd) * pd * variable_pct
+            else:
+                amount = base * variable_pct
+        else:
+            # Regular component logic
+            if row.depends_on_payment_days and wd > 0:
+                amount = (base / wd) * pd
+            else:
+                amount = base
+
+        row.amount = flt(amount, 2)
         total_earnings += row.amount
 
-        comp_lower = row.salary_component.lower()
-        if 'basic' in comp_lower:
+        comp = (row.salary_component or "").lower()
+
+        if "basic" in comp:
             basic_amount = row.amount
-        if 'da' in comp_lower or 'dearness' in comp_lower:
+        if "da" in comp or "dearness" in comp:
             da_amount = row.amount
-        if 'conveyance' in comp_lower:
+        if "conveyance" in comp:
             conveyance_amount = row.amount
 
     total_basic_da = basic_amount + da_amount
 
+    # ================= DEDUCTIONS - EXACT REPLICA =================
     for row in salary_slip.deductions:
-        base = flt(row.amount or 0)
+        base = flt(row.base_amount or row.amount or 0)
         row.base_amount = base
-        comp_lower = row.salary_component.lower()
 
-        if 'esic' in comp_lower and 'employer' not in comp_lower:
-            if base > 0 and total_earnings < 21000:
-                row.amount = flt((total_earnings - conveyance_amount) * 0.0075, 2)
+        amount = 0
+        comp = (row.salary_component or "").lower()
+
+        # ===== ESIC EMPLOYEE =====
+        if "esic" in comp and "employer" not in comp:
+            if base > 0:
+                if total_earnings < 21000:
+                    amount = flt((total_earnings - conveyance_amount) * 0.0075, 2)
+                else:
+                    amount = 0
             else:
-                row.amount = 0
+                amount = 0
 
-        elif 'esic' in comp_lower and 'employer' in comp_lower:
-            if base > 0 and total_earnings < 21000:
-                row.amount = flt((total_earnings - conveyance_amount) * 0.0325, 2)
+        # ===== ESIC EMPLOYER =====
+        elif "esic" in comp and "employer" in comp:
+            if base > 0:
+                if total_earnings < 21000:
+                    amount = flt((total_earnings - conveyance_amount) * 0.0325, 2)
+                else:
+                    amount = 0
             else:
-                row.amount = 0
+                amount = 0
 
-        elif 'pf' in comp_lower or 'provident' in comp_lower:
+        # ===== PF =====
+        elif "pf" in comp or "provident" in comp:
             if base > 0:
                 basic_da_total = basic_amount + da_amount
                 if basic_da_total >= 15000:
-                    row.amount = 1800
+                    amount = 1800
                 else:
-                    row.amount = flt(basic_da_total * 0.12, 2)
+                    amount = flt(basic_da_total * 0.12, 2)
             else:
-                row.amount = 0
+                amount = 0
 
-        elif 'pt' in comp_lower or 'professional tax' in comp_lower:
+        # ===== PT (Professional Tax) =====
+        elif "pt" in comp or "professional tax" in comp:
             if base > 0:
                 start_date_obj = getdate(start_date)
                 month = start_date_obj.month
-                if month == 2:
-                    row.amount = 300
+                if month == 2:  # February
+                    amount = 300
                 else:
-                    row.amount = 200
+                    amount = 200
             else:
-                row.amount = 0
+                amount = 0
 
+        # ===== Other Deductions =====
         else:
             if row.depends_on_payment_days and wd > 0 and base > 0:
-                row.amount = flt((base / wd) * pd, 2)
+                amount = (base / wd) * pd
             else:
-                row.amount = flt(base, 2)
+                amount = base
+
+        row.amount = flt(amount, 2)
 
         if row.employer_contribution:
             total_employer_contribution += row.amount
         else:
             total_deductions += row.amount
 
-        if 'retention' in comp_lower:
+        if "retention" in comp:
             retention += row.amount
+
+    # Set totals
+    net_salary = flt(total_earnings - total_deductions, 2)
 
     salary_slip.total_earnings = flt(total_earnings, 2)
     salary_slip.total_deductions = flt(total_deductions, 2)
-    salary_slip.net_salary = flt(total_earnings - total_deductions, 2)
+    salary_slip.net_salary = net_salary
     salary_slip.total_basic_da = flt(total_basic_da, 2)
     salary_slip.total_employer_contribution = flt(total_employer_contribution, 2)
     salary_slip.retention = flt(retention, 2)
@@ -620,13 +689,11 @@ def bulk_print_salary_slips(salary_slip_names):
         frappe.throw("No salary slips selected")
 
     merger = PdfMerger()
-
     temp_files = []
 
     try:
         for slip_name in salary_slip_names:
             slip_doc = frappe.get_doc("Salary Slip", slip_name)
-
             html = generate_bulk_print_html(slip_doc)
 
             pdf_options = {
@@ -642,7 +709,6 @@ def bulk_print_salary_slips(salary_slip_names):
             }
 
             pdf_data = get_pdf(html, options=pdf_options)
-
             temp_file = frappe.utils.get_files_path(f"temp_slip_{slip_name}.pdf", is_private=1)
             temp_files.append(temp_file)
 
@@ -822,35 +888,29 @@ def generate_bulk_print_html(doc):
             padding: 0;
             box-sizing: border-box;
         }}
-
         body {{
             font-family: Arial, sans-serif;
             font-size: 11px;
         }}
-
         .container {{
             border: 2px solid #000;
             padding: 15px;
             max-width: 100%;
         }}
-
         .header {{
             text-align: center;
             margin-bottom: 10px;
             border-bottom: 2px solid #000;
             padding-bottom: 8px;
         }}
-
         .header h2 {{
             font-size: 16px;
             margin-bottom: 5px;
         }}
-
         .header p {{
             font-size: 11px;
             margin: 2px 0;
         }}
-
         .payslip-title {{
             background-color: #f2f2f2;
             text-align: center;
@@ -858,21 +918,17 @@ def generate_bulk_print_html(doc):
             margin-bottom: 10px;
             border: 1px solid #ccc;
         }}
-
         .payslip-title h3 {{
             font-size: 14px;
             margin: 0;
         }}
-
         table {{
             width: 100%;
             border-collapse: collapse;
         }}
-
         .summary-table {{
             margin-bottom: 10px;
         }}
-
         .summary-table th {{
             background-color: #e8e8e8;
             padding: 6px;
@@ -880,27 +936,22 @@ def generate_bulk_print_html(doc):
             border: 1px solid #ccc;
             font-size: 12px;
         }}
-
         .summary-table td {{
             padding: 5px 8px;
             border: 1px solid #ddd;
             font-size: 11px;
         }}
-
         .summary-table .label {{
             font-weight: 600;
             background-color: #f5f5f5;
             width: 16%;
         }}
-
         .summary-table .value {{
             width: 17%;
         }}
-
         .earnings-table {{
             margin-bottom: 10px;
         }}
-
         .earnings-table th {{
             background-color: #f8f8f8;
             padding: 8px;
@@ -909,12 +960,10 @@ def generate_bulk_print_html(doc):
             font-weight: bold;
             text-align: center;
         }}
-
         .earnings-table .total-row {{
             background-color: #e8f4f8;
             font-weight: bold;
         }}
-
         .net-payable {{
             background-color: #f9f9f9;
             padding: 10px;
@@ -922,13 +971,11 @@ def generate_bulk_print_html(doc):
             border: 2px solid #000;
             margin-top: 10px;
         }}
-
         .net-payable .amount {{
             font-size: 14px;
             font-weight: bold;
             margin-bottom: 3px;
         }}
-
         .net-payable .words {{
             font-size: 11px;
         }}
@@ -949,11 +996,9 @@ def generate_bulk_print_html(doc):
     html += f"""
             </p>
         </div>
-
         <div class="payslip-title">
             <h3>Payslip for the Month of {formatdate(doc.start_date, "MMMM yyyy")}</h3>
         </div>
-
         <table class="summary-table">
             <thead>
                 <tr>
@@ -1011,7 +1056,6 @@ def generate_bulk_print_html(doc):
                 </tr>
             </tbody>
         </table>
-
         <table class="earnings-table">
             <thead>
                 <tr>
@@ -1040,7 +1084,6 @@ def generate_bulk_print_html(doc):
                 </tr>
             </tbody>
         </table>
-
         <div class="net-payable">
             <div class="amount">Total Net Payable: {fmt_money(flt(doc.net_salary, 2), currency=doc.currency)}</div>
             <div class="words">({money_in_words(flt(doc.net_salary, 2), doc.currency)})</div>
