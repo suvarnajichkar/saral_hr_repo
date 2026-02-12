@@ -79,7 +79,8 @@
   {
    "fieldname": "to_date",
    "fieldtype": "Date",
-   "label": "To Date"
+   "label": "To Date",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_ngyh",
@@ -230,7 +231,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-10 00:00:00.000000",
+ "modified": "2026-02-12 13:05:04.691132",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",

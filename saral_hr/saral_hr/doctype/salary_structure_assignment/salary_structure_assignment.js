@@ -22,6 +22,22 @@ frappe.ui.form.on("Salary Structure Assignment", {
         });
     },
 
+    // ── Real-time overlap check triggers ────────────────────────────────────
+
+    employee(frm) {
+        check_overlap(frm);
+    },
+
+    from_date(frm) {
+        check_overlap(frm);
+    },
+
+    to_date(frm) {
+        check_overlap(frm);
+    },
+
+    // ────────────────────────────────────────────────────────────────────────
+
     salary_structure(frm) {
         if (!frm.doc.salary_structure) {
             clear_salary_tables(frm);
@@ -69,6 +85,49 @@ frappe.ui.form.on("Salary Details", {
     }
 });
 
+// ── Overlap checker ──────────────────────────────────────────────────────────
+
+function check_overlap(frm) {
+    // Need employee + from_date — to_date is optional for the check
+    if (!frm.doc.employee || !frm.doc.from_date) return;
+
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.salary_structure_assignment.salary_structure_assignment.check_overlap",
+        args: {
+            employee:      frm.doc.employee,
+            from_date:     frm.doc.from_date,
+            to_date:       frm.doc.to_date || null,
+            employee_name: frm.doc.employee_name || frm.doc.employee,
+            // For new unsaved docs, __islocal is true and name is a temp placeholder
+            // — pass null so we don't accidentally exclude a non-existent DB record
+            current_name:  frm.doc.__islocal ? null : frm.doc.name,
+        },
+        callback(r) {
+            if (r.message) {
+                let rec    = r.message;
+                let to_lbl = rec.to_date || "Ongoing";
+
+                frappe.msgprint({
+                    title:     __("Duplicate Salary Structure Assignment"),
+                    indicator: "red",
+                    message:   `
+                        A Salary Structure Assignment already exists for employee
+                        <b>${frm.doc.employee_name || frm.doc.employee}</b>
+                        that overlaps with the selected date range.<br><br>
+                        Existing Record:
+                        <a href="/app/salary-structure-assignment/${rec.name}" target="_blank">
+                            <b>${rec.name}</b>
+                        </a><br>
+                        Period: <b>${rec.from_date}</b> to <b>${to_lbl}</b>
+                    `
+                });
+            }
+        }
+    });
+}
+
+// ── Salary calculation ───────────────────────────────────────────────────────
+
 function calculate_salary(frm) {
 
     let total_earnings  = 0;
@@ -85,8 +144,7 @@ function calculate_salary(frm) {
     });
 
     let total_basic_da = basic_amount + da_amount;
-
-    let deductions = frm.doc.deductions || [];
+    let deductions     = frm.doc.deductions || [];
 
     if (!deductions.length) {
         set_salary_totals(frm, total_earnings, total_basic_da, 0, 0, 0);
@@ -97,10 +155,7 @@ function calculate_salary(frm) {
         method: "frappe.client.get_list",
         args: {
             doctype: "Salary Component",
-            fields: [
-                "name",
-                "employer_contribution"
-            ],
+            fields: ["name", "employer_contribution"],
             filters: {
                 name: ["in", deductions.map(d => d.salary_component)]
             }
@@ -125,7 +180,7 @@ function calculate_salary(frm) {
                     return;
                 }
 
-                let is_employer  = parseInt(comp.employer_contribution) || 0;
+                let is_employer = parseInt(comp.employer_contribution) || 0;
 
                 if (d.salary_component === "Retention") {
                     retention += amount;
