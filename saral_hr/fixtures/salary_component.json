@@ -49,15 +49,8 @@
   "employer_contribution": 0,
   "enter_amount_according_to_months": [
    {
-    "amount": 25.0,
-    "month": "June",
-    "parent": "Employee -Labour Welfare Fund",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 25.0,
-    "month": "December",
+    "amount": 0.0,
+    "month": "January",
     "parent": "Employee -Labour Welfare Fund",
     "parentfield": "enter_amount_according_to_months",
     "parenttype": "Salary Component"
@@ -86,6 +79,13 @@
    {
     "amount": 0.0,
     "month": "May",
+    "parent": "Employee -Labour Welfare Fund",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 25.0,
+    "month": "June",
     "parent": "Employee -Labour Welfare Fund",
     "parentfield": "enter_amount_according_to_months",
     "parenttype": "Salary Component"
@@ -126,8 +126,8 @@
     "parenttype": "Salary Component"
    },
    {
-    "amount": 0.0,
-    "month": "January",
+    "amount": 25.0,
+    "month": "December",
     "parent": "Employee -Labour Welfare Fund",
     "parentfield": "enter_amount_according_to_months",
     "parenttype": "Salary Component"
@@ -659,6 +659,20 @@
   "name": "Retention",
   "salary_component": "Retention",
   "salary_component_abbr": "RET",
+  "type": "Deduction"
+ },
+ {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-11 13:45:20.712010",
+  "name": "Pt",
+  "salary_component": "Pt",
+  "salary_component_abbr": "PT",
   "type": "Deduction"
  }
 ]

@@ -1,11 +1,9 @@
 frappe.listview_settings['Salary Slip'] = {
     onload: function(listview) {
-        // Bulk Generate Button
         listview.page.add_inner_button(__('Bulk Generate Salary Slips'), function() {
             show_bulk_salary_slip_dialog();
         });
 
-        // Bulk Print Button
         listview.page.add_inner_button(__('Bulk Print Salary Slips'), function() {
             show_bulk_print_dialog();
         });
@@ -16,6 +14,13 @@ function show_bulk_salary_slip_dialog() {
     let d = new frappe.ui.Dialog({
         title: 'Bulk Generate Salary Slips',
         fields: [
+            {
+                fieldname: 'company',
+                fieldtype: 'Link',
+                label: 'Company',
+                options: 'Company',
+                reqd: 1
+            },
             {
                 fieldname: 'year',
                 fieldtype: 'Select',
@@ -65,6 +70,13 @@ function show_bulk_print_dialog() {
     let d = new frappe.ui.Dialog({
         title: 'Bulk Print Salary Slips',
         fields: [
+            {
+                fieldname: 'company',
+                fieldtype: 'Link',
+                label: 'Company',
+                options: 'Company',
+                reqd: 1
+            },
             {
                 fieldname: 'year',
                 fieldtype: 'Select',
@@ -128,8 +140,14 @@ function get_current_month() {
 }
 
 function fetch_eligible_employees(dialog) {
+    let company = dialog.get_value('company');
     let year = dialog.get_value('year');
     let month = dialog.get_value('month');
+
+    if (!company) {
+        frappe.msgprint(__('Please select Company'));
+        return;
+    }
 
     if (!year || !month) {
         frappe.msgprint(__('Please select Year and Month'));
@@ -139,6 +157,7 @@ function fetch_eligible_employees(dialog) {
     frappe.call({
         method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_eligible_employees_for_salary_slip',
         args: {
+            company: company,
             year: year,
             month: month
         },
@@ -155,8 +174,14 @@ function fetch_eligible_employees(dialog) {
 }
 
 function fetch_submitted_salary_slips(dialog) {
+    let company = dialog.get_value('company');
     let year = dialog.get_value('year');
     let month = dialog.get_value('month');
+
+    if (!company) {
+        frappe.msgprint(__('Please select Company'));
+        return;
+    }
 
     if (!year || !month) {
         frappe.msgprint(__('Please select Year and Month'));
@@ -166,6 +191,7 @@ function fetch_submitted_salary_slips(dialog) {
     frappe.call({
         method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_submitted_salary_slips',
         args: {
+            company: company,
             year: year,
             month: month
         },
@@ -227,14 +253,12 @@ function display_employees_table(dialog, employees) {
 
     dialog.fields_dict.employees_html.$wrapper.html(html);
 
-    // Select all functionality
     dialog.fields_dict.employees_html.$wrapper.find('#select_all_employees').on('change', function() {
         let checked = $(this).prop('checked');
         dialog.fields_dict.employees_html.$wrapper.find('.employee-checkbox').prop('checked', checked);
         update_selected_count(dialog);
     });
 
-    // Individual checkbox change
     dialog.fields_dict.employees_html.$wrapper.find('.employee-checkbox').on('change', function() {
         update_selected_count(dialog);
     });
@@ -290,14 +314,12 @@ function display_salary_slips_table(dialog, slips) {
 
     dialog.fields_dict.slips_html.$wrapper.html(html);
 
-    // Select all functionality
     dialog.fields_dict.slips_html.$wrapper.find('#select_all_slips').on('change', function() {
         let checked = $(this).prop('checked');
         dialog.fields_dict.slips_html.$wrapper.find('.slip-checkbox').prop('checked', checked);
         update_selected_slips_count(dialog);
     });
 
-    // Individual checkbox change
     dialog.fields_dict.slips_html.$wrapper.find('.slip-checkbox').on('change', function() {
         update_selected_slips_count(dialog);
     });
@@ -316,6 +338,7 @@ function update_selected_slips_count(dialog) {
 }
 
 function generate_bulk_salary_slips(dialog) {
+    let company = dialog.get_value('company');
     let year = dialog.get_value('year');
     let month = dialog.get_value('month');
 
@@ -336,7 +359,8 @@ function generate_bulk_salary_slips(dialog) {
         `Are you sure you want to generate salary slips for ${selected_employees.length} employee(s)?`,
         function() {
             dialog.hide();
-            frappe.show_progress('Generating Salary Slips', 0, selected_employees.length, 'Please wait...');
+            
+            frappe.dom.freeze(__('Generating Salary Slips for {0} employee(s)... Please wait...', [selected_employees.length]));
 
             frappe.call({
                 method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.bulk_generate_salary_slips',
@@ -346,7 +370,7 @@ function generate_bulk_salary_slips(dialog) {
                     month: month
                 },
                 callback: function(r) {
-                    frappe.hide_progress();
+                    frappe.dom.unfreeze();
                     
                     if (r.message) {
                         let result = r.message;
@@ -380,9 +404,17 @@ function generate_bulk_salary_slips(dialog) {
                             indicator: 'green'
                         });
 
-                        // Refresh the list view
                         cur_list.refresh();
                     }
+                },
+                error: function(r) {
+                    frappe.dom.unfreeze();
+                    
+                    frappe.msgprint({
+                        title: __('Error'),
+                        message: __('Failed to generate salary slips. Please try again.'),
+                        indicator: 'red'
+                    });
                 }
             });
         }
@@ -405,23 +437,17 @@ function print_selected_salary_slips(dialog) {
         function() {
             dialog.hide();
             
-            // FREEZE THE SCREEN with progress message
-            frappe.freeze_screen = true;
             frappe.dom.freeze(__('Generating PDF for {0} salary slip(s)... Please wait...', [selected_slips.length]));
             
-            // Call backend to generate combined PDF
             frappe.call({
                 method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.bulk_print_salary_slips',
                 args: {
                     salary_slip_names: selected_slips
                 },
                 callback: function(r) {
-                    // UNFREEZE THE SCREEN
                     frappe.dom.unfreeze();
-                    frappe.freeze_screen = false;
                     
                     if (r.message) {
-                        // Open the PDF in a new window (SINGLE WINDOW)
                         window.open(r.message.pdf_url, '_blank');
                         
                         frappe.msgprint({
@@ -432,9 +458,7 @@ function print_selected_salary_slips(dialog) {
                     }
                 },
                 error: function(r) {
-                    // UNFREEZE THE SCREEN even on error
                     frappe.dom.unfreeze();
-                    frappe.freeze_screen = false;
                     
                     frappe.msgprint({
                         title: __('Error'),
