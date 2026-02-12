@@ -19,8 +19,13 @@ def get_salary_data(company=None, start_date=None, end_date=None):
         filters=filters,
         fields=[
             "employee",
-            "net_pay"
-        ]
+            "employee_name",
+            "net_salary",   # ← correct field name
+            "start_date",
+            "end_date",
+            "company"
+        ],
+        order_by="employee_name asc"
     )
 
     return data
