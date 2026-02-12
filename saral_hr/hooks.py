@@ -76,25 +76,33 @@ permission_query_conditions = {
 
 # Document fixtures to be exported/imported
 fixtures = [
+
+    # Workspace
     {
         "dt": "Workspace",
         "filters": [
-            [
-                "name",
-                "in",
-                [
-                    "Saral Hr"
-                ]
-            ]
+            ["name", "in", ["Saral Hr"]]
+        ]
+    },
+
+    # Salary Component
+    {
+        "dt": "Salary Component"
+    },
+
+    # Print Formats
+    {
+        "dt": "Print Format",
+        "filters": [
+            ["name", "in", [
+                "Variable Pay",
+                "Salary Slip Custom"
+            ]]
         ]
     }
+
 ]
 
-fixtures = [
-    {
-        "doctype": "Salary Component"
-    }
-]
 
 
 # Generators
