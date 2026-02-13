@@ -114,7 +114,7 @@ function check_overlap(frm) {
                         <a href="/app/salary-structure-assignment/${rec.name}" target="_blank">
                             <b>${rec.name}</b>
                         </a>
-                        (${rec.employee_name})<br>
+                        <br>
                         Period: <b>${rec.from_date}</b> to <b>${to_lbl}</b>
                     `
                 });
