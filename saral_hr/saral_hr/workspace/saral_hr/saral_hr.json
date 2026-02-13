@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"PPFPGWh4nt\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}},{\"id\":\"u-VN2Ky00U\",\"type\":\"card\",\"data\":{\"card_name\":\"Transaction\",\"col\":4}},{\"id\":\"0MqLGizEW-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Pages</b></span>\",\"col\":12}},{\"id\":\"arnKF3gblc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Timeline\",\"col\":3}},{\"id\":\"aDJvloajAw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Mark Attendance\",\"col\":3}},{\"id\":\"0gqYXijCT0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Salary Summary\",\"col\":3}},{\"id\":\"XbxZgsy5F-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}}]",
- "creation": "2026-02-13 16:43:20.261149",
+ "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"PPFPGWh4nt\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}},{\"id\":\"u-VN2Ky00U\",\"type\":\"card\",\"data\":{\"card_name\":\"Transaction\",\"col\":4}},{\"id\":\"0MqLGizEW-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Pages</b></span>\",\"col\":12}},{\"id\":\"arnKF3gblc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Timeline\",\"col\":3}},{\"id\":\"aDJvloajAw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Mark Attendance\",\"col\":3}},{\"id\":\"nyi4nbeYV-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Salary Summary\",\"col\":3}},{\"id\":\"gYZSPC_NPh\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Salary Dashboard\",\"col\":3}},{\"id\":\"yJ2A2lJM8M\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Report</b></span>\",\"col\":12}}]",
+ "creation": "2026-02-13 16:52:06.309764",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -221,7 +221,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-02-13 16:48:27.905386",
+ "modified": "2026-02-13 16:58:44.677910",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Saral Hr",
@@ -239,6 +239,13 @@
    "label": "Employee Timeline",
    "type": "URL",
    "url": "/employee_timeline"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Salary Dashboard",
+   "type": "URL",
+   "url": "/Salary_dashboard"
   },
   {
    "color": "Grey",
