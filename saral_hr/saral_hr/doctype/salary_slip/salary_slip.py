@@ -18,15 +18,10 @@ class SalarySlip(Document):
 
 @frappe.whitelist()
 def check_duplicate_salary_slip(employee, start_date, current_doc=""):
-    """
-    Check if a Draft or Submitted salary slip already exists for this employee + month.
-    Cancelled slips (docstatus=2) are ignored.
-    Returns {"status": "duplicate", "message": "..."} or {"status": "ok"}
-    """
     filters = {
         "employee": employee,
         "start_date": start_date,
-        "docstatus": ["in", [0, 1]]   # 0 = Draft, 1 = Submitted (skip 2 = Cancelled)
+        "docstatus": ["in", [0, 1]]
     }
 
     existing = frappe.db.get_value(
@@ -39,7 +34,6 @@ def check_duplicate_salary_slip(employee, start_date, current_doc=""):
     if not existing:
         return {"status": "ok"}
 
-    # If we are re-opening the same doc, it is not a duplicate
     if current_doc and existing.name == current_doc:
         return {"status": "ok"}
 
@@ -52,11 +46,6 @@ def check_duplicate_salary_slip(employee, start_date, current_doc=""):
 
 @frappe.whitelist()
 def get_salary_structure_for_employee(employee, start_date=None):
-    """
-    Fetch the Salary Structure Assignment that is active as of start_date.
-    Filters: from_date <= start_date AND (to_date IS NULL OR to_date >= start_date)
-    Falls back to the most-recent assignment if none found for the exact date.
-    """
     filters = {"employee": employee}
     if start_date:
         filters["from_date"] = ["<=", start_date]
@@ -68,7 +57,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
         order_by="from_date desc"
     )
 
-    # Pick the first assignment whose to_date covers start_date (or is open-ended)
     ssa_name = None
     if start_date:
         for ssa in ssa_list:
@@ -76,7 +64,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
                 ssa_name = ssa.name
                 break
 
-    # Fallback: just take the most recent one
     if not ssa_name and ssa_list:
         ssa_name = ssa_list[0].name
 
@@ -298,7 +285,7 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
     present_days = 0
     absent_days = 0
     half_day_count = 0
-    lwp_days = 0  # <-- NEW: track LWP separately
+    lwp_days = 0
 
     for a in attendance:
         if a.status in ["Present", "On Leave"]:
@@ -310,12 +297,10 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         elif a.status == "Absent":
             absent_days += 1
         elif a.status == "LWP":
-            lwp_days += 1  # <-- NEW: count each LWP record as 1 absent day
+            lwp_days += 1
 
     total_half_days = flt(half_day_count * 0.5, 2)
 
-    # <-- NEW: combine raw absent + LWP into the single absent_days figure
-    # used for payment_days calculation and salary deduction
     combined_absent_days = flt(absent_days + lwp_days, 2)
 
     if calculation_method == "Include Weekly Offs":
@@ -331,20 +316,15 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "working_days": working_days,
         "payment_days": payment_days,
         "present_days": present_days,
-        "absent_days": combined_absent_days,   # combined absent + LWP
+        "absent_days": combined_absent_days,
         "total_half_days": total_half_days,
-        "total_lwp": flt(lwp_days, 2),         # <-- NEW: raw LWP count for the field
+        "total_lwp": flt(lwp_days, 2),
         "calculation_method": calculation_method
     }
 
 
 @frappe.whitelist()
 def get_eligible_employees_for_salary_slip(company, year, month):
-    """
-    Fetch eligible employees for bulk salary slip generation.
-    Excludes employees who already have either DRAFT or SUBMITTED salary slips.
-    Only shows employees who have NO salary slip for the selected period.
-    """
     from datetime import datetime
 
     month_map = {
@@ -382,18 +362,15 @@ def get_eligible_employees_for_salary_slip(company, year, month):
     eligible_employees = []
 
     for emp in employees:
-        # Exclude employees who have ANY salary slip (draft or submitted)
-        # Only show employees with NO salary slip for this period
         existing_slip = frappe.db.exists("Salary Slip", {
             "employee": emp.name,
             "start_date": start_date,
-            "docstatus": ["in", [0, 1]]  # 0 = Draft, 1 = Submitted
+            "docstatus": ["in", [0, 1]]
         })
 
         if existing_slip:
             continue
 
-        # Check if attendance exists for this employee in this period
         attendance_count = frappe.db.count("Attendance", {
             "employee": emp.name,
             "attendance_date": ["between", [start_date_obj, end_date]]
@@ -407,9 +384,6 @@ def get_eligible_employees_for_salary_slip(company, year, month):
 
 @frappe.whitelist()
 def bulk_generate_salary_slips(employees, year, month):
-    """
-    COMPLETELY FIXED: Now replicates the exact manual calculation logic
-    """
     import json
     from datetime import datetime
 
@@ -436,7 +410,6 @@ def bulk_generate_salary_slips(employees, year, month):
         try:
             employee = emp_data.get('employee')
 
-            # Fetch salary structure
             salary_data = get_salary_structure_for_employee(employee, start_date)
 
             if not salary_data:
@@ -444,7 +417,6 @@ def bulk_generate_salary_slips(employees, year, month):
                 failed_count += 1
                 continue
 
-            # Fetch attendance and days calculation
             attendance_data = get_attendance_and_days(employee, start_date)
 
             if not attendance_data:
@@ -452,15 +424,12 @@ def bulk_generate_salary_slips(employees, year, month):
                 failed_count += 1
                 continue
 
-            # FIXED: Get variable pay percentage and convert properly
             variable_pay_pct = get_variable_pay_percentage(employee, start_date)
             if variable_pay_pct is None:
                 variable_pay_pct = 0
 
-            # Convert percentage to decimal (e.g., 80% becomes 0.80)
             variable_pay_decimal = flt(variable_pay_pct) / 100.0
 
-            # Create new salary slip
             salary_slip = frappe.new_doc("Salary Slip")
             salary_slip.employee = employee
             salary_slip.start_date = start_date
@@ -468,40 +437,35 @@ def bulk_generate_salary_slips(employees, year, month):
             salary_slip.currency = "INR"
             salary_slip.salary_structure = salary_data.get('salary_structure')
 
-            # Set attendance data
             salary_slip.total_working_days = attendance_data.get('working_days')
             salary_slip.payment_days = attendance_data.get('payment_days')
             salary_slip.present_days = attendance_data.get('present_days')
-            salary_slip.absent_days = attendance_data.get('absent_days')   # already includes LWP
+            salary_slip.absent_days = attendance_data.get('absent_days')
             salary_slip.weekly_offs_count = attendance_data.get('weekly_offs')
             salary_slip.total_half_days = attendance_data.get('total_half_days')
-            salary_slip.total_lwp = attendance_data.get('total_lwp', 0)    # <-- NEW
+            salary_slip.total_lwp = attendance_data.get('total_lwp', 0)
 
-            # Add earnings with base_amount
             for earning in salary_data.get('earnings', []):
                 row = salary_slip.append('earnings', {})
                 row.salary_component = earning.get('salary_component')
                 row.abbr = earning.get('abbr')
                 row.amount = earning.get('amount')
-                row.base_amount = earning.get('amount')  # Set base_amount
+                row.base_amount = earning.get('amount')
                 row.depends_on_payment_days = earning.get('depends_on_payment_days')
                 row.is_special_component = earning.get('is_special_component')
 
-            # Add deductions with base_amount
             for deduction in salary_data.get('deductions', []):
                 row = salary_slip.append('deductions', {})
                 row.salary_component = deduction.get('salary_component')
                 row.abbr = deduction.get('abbr')
                 row.amount = deduction.get('amount')
-                row.base_amount = deduction.get('amount')  # Set base_amount
+                row.base_amount = deduction.get('amount')
                 row.employer_contribution = deduction.get('employer_contribution')
                 row.depends_on_payment_days = deduction.get('depends_on_payment_days')
                 row.is_special_component = deduction.get('is_special_component')
 
-            # FIXED: Calculate amounts using the EXACT same logic as manual form
             calculate_salary_slip_amounts_exact(salary_slip, variable_pay_decimal, start_date)
 
-            # Insert the salary slip
             salary_slip.insert(ignore_permissions=True)
             success_count += 1
 
@@ -521,9 +485,6 @@ def bulk_generate_salary_slips(employees, year, month):
 
 
 def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, start_date):
-    """
-    COMPLETELY REWRITTEN: This now exactly replicates the client-side recalculate_salary() function
-    """
     total_earnings = 0
     total_deductions = 0
     total_basic_da = 0
@@ -538,22 +499,18 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
     da_amount = 0
     conveyance_amount = 0
 
-    # ================= EARNINGS - EXACT REPLICA =================
     for row in salary_slip.earnings:
         base = flt(row.base_amount or row.amount or 0)
         row.base_amount = base
 
         amount = 0
 
-        # Check if this is a variable component
         if row.salary_component and row.salary_component.lower().find("variable") != -1:
-            # Variable component logic
             if wd > 0 and row.depends_on_payment_days:
                 amount = (base / wd) * pd * variable_pct
             else:
                 amount = base * variable_pct
         else:
-            # Regular component logic
             if row.depends_on_payment_days and wd > 0:
                 amount = (base / wd) * pd
             else:
@@ -573,7 +530,6 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
 
     total_basic_da = basic_amount + da_amount
 
-    # ================= DEDUCTIONS - EXACT REPLICA =================
     for row in salary_slip.deductions:
         base = flt(row.base_amount or row.amount or 0)
         row.base_amount = base
@@ -581,7 +537,6 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
         amount = 0
         comp = (row.salary_component or "").lower()
 
-        # ===== ESIC EMPLOYEE =====
         if "esic" in comp and "employer" not in comp:
             if base > 0:
                 if total_earnings < 21000:
@@ -591,7 +546,6 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
             else:
                 amount = 0
 
-        # ===== ESIC EMPLOYER =====
         elif "esic" in comp and "employer" in comp:
             if base > 0:
                 if total_earnings < 21000:
@@ -601,7 +555,6 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
             else:
                 amount = 0
 
-        # ===== PF =====
         elif "pf" in comp or "provident" in comp:
             if base > 0:
                 basic_da_total = basic_amount + da_amount
@@ -612,19 +565,17 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
             else:
                 amount = 0
 
-        # ===== PT (Professional Tax) =====
         elif "pt" in comp or "professional tax" in comp:
             if base > 0:
                 start_date_obj = getdate(start_date)
                 month = start_date_obj.month
-                if month == 2:  # February
+                if month == 2:
                     amount = 300
                 else:
                     amount = 200
             else:
                 amount = 0
 
-        # ===== Other Deductions =====
         else:
             if row.depends_on_payment_days and wd > 0 and base > 0:
                 amount = (base / wd) * pd
@@ -641,7 +592,6 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
         if "retention" in comp:
             retention += row.amount
 
-    # Set totals
     net_salary = flt(total_earnings - total_deductions, 2)
 
     salary_slip.total_earnings = flt(total_earnings, 2)
@@ -687,6 +637,81 @@ def get_submitted_salary_slips(company, year, month):
     """, {"company": company, "start_date": start_date}, as_dict=1)
 
     return salary_slips
+
+
+@frappe.whitelist()
+def get_draft_salary_slips(company, year, month):
+    month_map = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+    }
+    month_num = month_map.get(month)
+
+    if not month_num:
+        frappe.throw("Invalid month")
+
+    start_date = f"{year}-{month_num:02d}-01"
+
+    salary_slips = frappe.db.sql("""
+        SELECT
+            ss.name,
+            ss.employee,
+            ss.employee_name,
+            ss.department,
+            ss.designation,
+            ss.net_salary,
+            ss.start_date,
+            ss.end_date
+        FROM
+            `tabSalary Slip` ss
+        WHERE
+            ss.docstatus = 0
+            AND ss.start_date = %(start_date)s
+            AND ss.company = %(company)s
+        ORDER BY
+            ss.employee_name
+    """, {"company": company, "start_date": start_date}, as_dict=1)
+
+    return salary_slips
+
+
+@frappe.whitelist()
+def bulk_submit_salary_slips(salary_slip_names):
+    if isinstance(salary_slip_names, str):
+        salary_slip_names = json.loads(salary_slip_names)
+
+    if not salary_slip_names:
+        frappe.throw("No salary slips selected")
+
+    success_count = 0
+    failed_count = 0
+    errors = []
+
+    for slip_name in salary_slip_names:
+        try:
+            slip_doc = frappe.get_doc("Salary Slip", slip_name)
+            
+            if slip_doc.docstatus != 0:
+                errors.append(f"{slip_name}: Salary slip is not in draft state")
+                failed_count += 1
+                continue
+            
+            slip_doc.submit()
+            success_count += 1
+            frappe.db.commit()
+            
+        except Exception as e:
+            errors.append(f"{slip_name}: {str(e)}")
+            failed_count += 1
+            frappe.log_error(f"Error submitting salary slip {slip_name}: {str(e)}", "Bulk Submit Salary Slips")
+            frappe.db.rollback()
+
+    return {
+        "success": success_count,
+        "failed": failed_count,
+        "errors": errors
+    }
 
 
 @frappe.whitelist()
