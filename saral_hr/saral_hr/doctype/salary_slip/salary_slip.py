@@ -298,6 +298,7 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
     present_days = 0
     absent_days = 0
     half_day_count = 0
+    lwp_days = 0  # <-- NEW: track LWP separately
 
     for a in attendance:
         if a.status in ["Present", "On Leave"]:
@@ -308,15 +309,21 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
             absent_days += 0.5
         elif a.status == "Absent":
             absent_days += 1
+        elif a.status == "LWP":
+            lwp_days += 1  # <-- NEW: count each LWP record as 1 absent day
 
     total_half_days = flt(half_day_count * 0.5, 2)
 
+    # <-- NEW: combine raw absent + LWP into the single absent_days figure
+    # used for payment_days calculation and salary deduction
+    combined_absent_days = flt(absent_days + lwp_days, 2)
+
     if calculation_method == "Include Weekly Offs":
         working_days = total_days
-        payment_days = flt(total_days - absent_days, 2)
+        payment_days = flt(total_days - combined_absent_days, 2)
     else:
         working_days = total_days - weekly_off_count
-        payment_days = flt(working_days - absent_days, 2)
+        payment_days = flt(working_days - combined_absent_days, 2)
 
     return {
         "total_days": total_days,
@@ -324,8 +331,9 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "working_days": working_days,
         "payment_days": payment_days,
         "present_days": present_days,
-        "absent_days": absent_days,
+        "absent_days": combined_absent_days,   # combined absent + LWP
         "total_half_days": total_half_days,
+        "total_lwp": flt(lwp_days, 2),         # <-- NEW: raw LWP count for the field
         "calculation_method": calculation_method
     }
 
@@ -448,7 +456,7 @@ def bulk_generate_salary_slips(employees, year, month):
             variable_pay_pct = get_variable_pay_percentage(employee, start_date)
             if variable_pay_pct is None:
                 variable_pay_pct = 0
-            
+
             # Convert percentage to decimal (e.g., 80% becomes 0.80)
             variable_pay_decimal = flt(variable_pay_pct) / 100.0
 
@@ -464,9 +472,10 @@ def bulk_generate_salary_slips(employees, year, month):
             salary_slip.total_working_days = attendance_data.get('working_days')
             salary_slip.payment_days = attendance_data.get('payment_days')
             salary_slip.present_days = attendance_data.get('present_days')
-            salary_slip.absent_days = attendance_data.get('absent_days')
+            salary_slip.absent_days = attendance_data.get('absent_days')   # already includes LWP
             salary_slip.weekly_offs_count = attendance_data.get('weekly_offs')
             salary_slip.total_half_days = attendance_data.get('total_half_days')
+            salary_slip.total_lwp = attendance_data.get('total_lwp', 0)    # <-- NEW
 
             # Add earnings with base_amount
             for earning in salary_data.get('earnings', []):

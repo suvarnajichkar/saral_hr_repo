@@ -166,7 +166,8 @@
   {
    "fieldname": "payment_days",
    "fieldtype": "Float",
-   "label": "Payment Days"
+   "label": "Payment Days",
+   "precision": "2"
   },
   {
    "fieldname": "present_days",
@@ -293,13 +294,14 @@
   {
    "fieldname": "total_lwp",
    "fieldtype": "Float",
-   "label": "Total LWP"
+   "label": "Total LWP",
+   "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-12 17:24:51.226913",
+ "modified": "2026-02-12 18:00:31.391802",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",

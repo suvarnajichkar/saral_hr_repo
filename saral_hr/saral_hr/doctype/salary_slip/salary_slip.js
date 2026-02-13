@@ -621,9 +621,10 @@ function fetch_days_and_attendance(frm) {
                 total_working_days: d.working_days,
                 payment_days: d.payment_days,
                 present_days: d.present_days,
-                absent_days: d.absent_days,
+                absent_days: d.absent_days,       // already includes LWP
                 weekly_offs_count: d.weekly_offs,
-                total_half_days: d.total_half_days
+                total_half_days: d.total_half_days,
+                total_lwp: d.total_lwp || 0        // <-- LWP field populated here
             });
 
             recalculate_salary(frm);
@@ -793,6 +794,7 @@ function reset_form(frm) {
         absent_days: 0,
         weekly_offs_count: 0,
         total_half_days: 0,
+        total_lwp: 0,        // <-- LWP field reset
         total_earnings: 0,
         total_deductions: 0,
         net_salary: 0,
