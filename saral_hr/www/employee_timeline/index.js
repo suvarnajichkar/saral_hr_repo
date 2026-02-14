@@ -7,17 +7,10 @@ frappe.ready(function () {
     const timelineContent = document.getElementById('timeline-content');
     const noData = document.getElementById('no-data');
 
-    // Buttons
-    const gotoEmployeeBtn = document.getElementById("goto_employee");
-    const gotoCompanyLinkBtn = document.getElementById("goto_company_link");
-
-    // Navigate to list views
-    gotoEmployeeBtn.addEventListener("click", () => {
-        window.location.href = '/app/employee';
-    });
-
-    gotoCompanyLinkBtn.addEventListener("click", () => {
-        window.location.href = '/app/company-link';
+    // Home button
+    const gotoHomeBtn = document.getElementById("goto_home");
+    gotoHomeBtn.addEventListener("click", () => {
+        window.location.href = '/app/saral-hr';
     });
 
     // Extract employees from select options
@@ -29,15 +22,24 @@ frappe.ready(function () {
         }));
 
     console.log('Total employees loaded:', employees.length);
-    if (employees.length > 0) {
-        console.log('Sample employee:', employees[0]);
-    }
 
     let selectedIndex = -1;
     let filteredEmployees = [];
     let currentSelectedEmployee = null;
 
-    function showResults(results) {
+    function highlightText(text, searchTerm) {
+        if (!searchTerm) return escapeHtml(text);
+        
+        const escapedText = escapeHtml(text);
+        const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+        return escapedText.replace(regex, '<mark>$1</mark>');
+    }
+
+    function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function showResults(results, searchTerm = '') {
         console.log('showResults called with', results.length, 'results');
         
         if (results.length === 0) {
@@ -49,12 +51,10 @@ frappe.ready(function () {
 
         searchResults.innerHTML = results.map((emp, index) =>
             `<div class="search-result-item" data-index="${index}" data-name="${emp.name}">
-                ${escapeHtml(emp.employee)}
+                ${highlightText(emp.employee, searchTerm)}
             </div>`
         ).join('');
         searchResults.classList.add('show');
-        
-        console.log('Dropdown HTML set, classList:', searchResults.classList.toString());
 
         const items = searchResults.querySelectorAll('.search-result-item');
         items.forEach((item, index) => {
@@ -86,7 +86,7 @@ frappe.ready(function () {
         employeeSelect.value = emp.name;
         currentSelectedEmployee = emp;
         searchResults.classList.remove('show');
-        clearBtn.style.display = 'block'; // Show clear button after selection
+        clearBtn.style.display = 'flex';
         loadEmployeeTimeline(emp.name);
         selectedIndex = -1;
     }
@@ -102,14 +102,13 @@ frappe.ready(function () {
         searchInput.focus();
     }
 
-    // Show clear button and dropdown when clicking on input if there's existing value
     searchInput.addEventListener('click', () => {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        
         if (searchInput.value.trim() !== '') {
-            clearBtn.style.display = 'block';
+            clearBtn.style.display = 'flex';
         }
         
-        // Show dropdown with all or filtered results
-        const searchTerm = searchInput.value.toLowerCase().trim();
         if (searchTerm) {
             filteredEmployees = employees.filter(emp =>
                 emp.employee.toLowerCase().includes(searchTerm)
@@ -117,16 +116,14 @@ frappe.ready(function () {
         } else {
             filteredEmployees = employees;
         }
-        showResults(filteredEmployees);
+        showResults(filteredEmployees, searchTerm);
     });
 
     searchInput.addEventListener('focus', () => {
-        // Show clear button if there's text
         if (searchInput.value.trim() !== '') {
-            clearBtn.style.display = 'block';
+            clearBtn.style.display = 'flex';
         }
 
-        // Show dropdown
         const searchTerm = searchInput.value.toLowerCase().trim();
         if (searchTerm) {
             filteredEmployees = employees.filter(emp =>
@@ -135,38 +132,34 @@ frappe.ready(function () {
         } else {
             filteredEmployees = employees;
         }
-        showResults(filteredEmployees);
+        showResults(filteredEmployees, searchTerm);
     });
 
     searchInput.addEventListener('input', () => {
         const searchTerm = searchInput.value.toLowerCase().trim();
         
-        // Show/hide clear button based on input
-        clearBtn.style.display = searchTerm ? 'block' : 'none';
+        clearBtn.style.display = searchTerm ? 'flex' : 'none';
 
         if (!searchTerm) {
-            // Clear timeline when input is empty
             timelineSection.style.display = 'none';
             noData.style.display = 'none';
             timelineContent.innerHTML = '';
             currentSelectedEmployee = null;
-
-            // Show all employees in dropdown
             filteredEmployees = employees;
-            showResults(filteredEmployees);
+            showResults(filteredEmployees, '');
             selectedIndex = -1;
             return;
         }
 
-        // Filter and show matching employees
         filteredEmployees = employees.filter(emp =>
             emp.employee.toLowerCase().includes(searchTerm)
         );
-        showResults(filteredEmployees);
+        showResults(filteredEmployees, searchTerm);
         selectedIndex = -1;
     });
 
-    clearBtn.addEventListener('click', () => {
+    clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         clearSearch();
     });
 
