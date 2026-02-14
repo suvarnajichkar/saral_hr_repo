@@ -8,6 +8,7 @@ frappe.ready(function () {
     let employees = [];
     let selectedIndex = -1;
     let filteredEmployees = [];
+    let searchDebounceTimer = null;
 
     frappe.call({
         method: "saral_hr.www.mark_attendance.index.get_active_employees",
@@ -41,10 +42,104 @@ frappe.ready(function () {
 
                 employees = Array.from(employeeSelect.options)
                     .filter(o => o.value)
-                    .map(o => ({ value: o.value, name: o.text.trim() }));
+                    .map(o => ({
+                        value: o.value,         // HR-EMP-XXXXX
+                        name: o.text.trim(),    // Full name (Aadhaar)
+                        emp_id: o.value         // HR-EMP-XXXXX for ID search
+                    }));
             }
         }
     });
+
+    // ─── Search Logic ─────────────────────────────────────────────
+
+    /**
+     * Local search — searches display name and emp ID instantly
+     */
+    function localSearch(searchTerm) {
+        if (!searchTerm) return employees;
+        const lower = searchTerm.toLowerCase();
+        return employees.filter(emp =>
+            emp.name.toLowerCase().includes(lower) ||
+            emp.emp_id.toLowerCase().includes(lower)
+        );
+    }
+
+    /**
+     * API search — server-side full text search
+     * Searches: first_name, last_name, full name, emp ID, Aadhaar
+     */
+    function apiSearch(searchTerm, callback) {
+        frappe.call({
+            method: 'saral_hr.www.mark_attendance.index.search_employees',
+            args: { query: searchTerm },
+            freeze: false,
+            callback: (r) => {
+                if (r.message) {
+                    // Convert API result to local format
+                    const formatted = r.message.map(row => ({
+                        value: row.employee,
+                        name: row.full_name,
+                        emp_id: row.employee,
+                        company: row.company,
+                        weekly_off: row.weekly_off,
+                        aadhaar_number: row.aadhaar_number
+                    }));
+                    callback(formatted);
+                } else {
+                    callback([]);
+                }
+            },
+            error: () => callback([])
+        });
+    }
+
+    /**
+     * Merge local and API results, deduplicating by employee value
+     * API results take priority
+     */
+    function mergeResults(local, api) {
+        const seen = new Set();
+        const merged = [];
+
+        for (const emp of api) {
+            if (!seen.has(emp.value)) {
+                seen.add(emp.value);
+                merged.push(emp);
+            }
+        }
+
+        for (const emp of local) {
+            if (!seen.has(emp.value)) {
+                seen.add(emp.value);
+                merged.push(emp);
+            }
+        }
+
+        return merged;
+    }
+
+    /**
+     * Main search handler — instant local results + debounced API
+     */
+    function handleSearch(searchTerm) {
+        const localResults = localSearch(searchTerm);
+        filteredEmployees = localResults;
+        showResults(localResults, searchTerm);
+
+        clearTimeout(searchDebounceTimer);
+        if (searchTerm.length >= 2) {
+            searchDebounceTimer = setTimeout(() => {
+                apiSearch(searchTerm, (apiResults) => {
+                    const merged = mergeResults(localResults, apiResults);
+                    filteredEmployees = merged;
+                    showResults(merged, searchTerm);
+                });
+            }, 300);
+        }
+    }
+
+    // ─── UI Rendering ─────────────────────────────────────────────
 
     function escapeHtml(text) {
         if (!text) return '';
@@ -59,11 +154,9 @@ frappe.ready(function () {
 
     function highlightMatch(text, searchTerm) {
         if (!searchTerm) return escapeHtml(text);
-        
         const escapedText = escapeHtml(text);
-        const escapedTerm = escapeHtml(searchTerm);
+        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`(${escapedTerm})`, 'gi');
-        
         return escapedText.replace(regex, '<span class="highlight">$1</span>');
     }
 
@@ -77,7 +170,8 @@ frappe.ready(function () {
 
         searchResults.innerHTML = results.map((emp, i) =>
             `<div class="search-result-item" data-index="${i}" data-value="${emp.value}">
-                ${highlightMatch(emp.name, searchTerm)}
+                <div class="result-name">${highlightMatch(emp.name, searchTerm)}</div>
+                <div class="result-id">${highlightMatch(emp.emp_id, searchTerm)}</div>
             </div>`
         ).join('');
 
@@ -85,7 +179,8 @@ frappe.ready(function () {
 
         searchResults.querySelectorAll('.search-result-item').forEach((item, index) => {
             item.addEventListener('click', () => {
-                const emp = employees.find(e => e.value === item.dataset.value);
+                const emp = filteredEmployees.find(e => e.value === item.dataset.value)
+                         || employees.find(e => e.value === item.dataset.value);
                 if (emp) selectEmployee(emp);
             });
 
@@ -112,12 +207,24 @@ frappe.ready(function () {
         searchResults.classList.remove('show');
         selectedIndex = -1;
         clearBtn.classList.add('show');
+        clearTimeout(searchDebounceTimer);
+
+        // If API result has company/weekly_off, update maps too
+        if (emp.company) {
+            window.employeeCompanyMap[emp.value] = emp.company;
+        }
+        if (emp.weekly_off !== undefined) {
+            window.employeeWeeklyOffMap[emp.value] =
+                emp.weekly_off
+                    ? emp.weekly_off.split(",").map(d => d.trim().toLowerCase())
+                    : [];
+        }
 
         document.getElementById("company").value =
             window.employeeCompanyMap[emp.value] || "";
 
         document.getElementById("weekly_off").value =
-            window.employeeWeeklyOffMap[emp.value]
+            (window.employeeWeeklyOffMap[emp.value] || [])
                 .map(d => d.charAt(0).toUpperCase() + d.slice(1))
                 .join(", ");
 
@@ -134,44 +241,40 @@ frappe.ready(function () {
         document.getElementById("attendance_table").style.display = "none";
         window.attendanceTableData = {};
         window.originalAttendanceData = {};
+        clearTimeout(searchDebounceTimer);
         updateCounts();
     }
 
     clearBtn.addEventListener('click', clearSearch);
 
+    // ─── Event Listeners ──────────────────────────────────────────
+
     searchInput.addEventListener('focus', () => {
-        const term = searchInput.value.toLowerCase().trim();
-        if (term) {
-            filteredEmployees = employees.filter(e =>
-                e.name.toLowerCase().includes(term)
-            );
-            showResults(filteredEmployees, term);
-        } else {
-            filteredEmployees = employees;
-            showResults(filteredEmployees);
-        }
+        const term = searchInput.value.trim().toLowerCase();
+        filteredEmployees = term ? localSearch(term) : employees;
+        showResults(filteredEmployees, term);
     });
 
     searchInput.addEventListener('input', () => {
-        const term = searchInput.value.toLowerCase().trim();
-        
+        const term = searchInput.value.trim();
+
         if (searchInput.value.length > 0) {
             clearBtn.classList.add('show');
         } else {
             clearBtn.classList.remove('show');
         }
-        
-        if (term) {
-            filteredEmployees = employees.filter(e =>
-                e.name.toLowerCase().includes(term)
-            );
-            showResults(filteredEmployees, term);
-        } else {
+
+        if (!term) {
             filteredEmployees = employees;
             if (searchInput === document.activeElement) {
-                showResults(filteredEmployees);
+                showResults(filteredEmployees, '');
             }
+            selectedIndex = -1;
+            clearTimeout(searchDebounceTimer);
+            return;
         }
+
+        handleSearch(term.toLowerCase());
         selectedIndex = -1;
     });
 
@@ -195,10 +298,14 @@ frappe.ready(function () {
     });
 
     document.addEventListener('click', e => {
-        if (!searchInput.contains(e.target) && !searchResults.contains(e.target) && !clearBtn.contains(e.target)) {
+        if (!searchInput.contains(e.target) &&
+            !searchResults.contains(e.target) &&
+            !clearBtn.contains(e.target)) {
             searchResults.classList.remove('show');
         }
     });
+
+    // ─── Date / Table Logic (unchanged) ───────────────────────────
 
     const yearSelect = document.getElementById("year_select");
     const monthSelect = document.getElementById("month_select");
@@ -210,15 +317,10 @@ frappe.ready(function () {
 
         const year = yearSelect.value;
         const month = Number(monthSelect.value);
-
-        const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
 
-        startDateInput.value =
-            `${year}-${String(month + 1).padStart(2, "0")}-01`;
-
-        endDateInput.value =
-            `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
+        startDateInput.value = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+        endDateInput.value = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
 
         generateTable();
     }
@@ -243,13 +345,6 @@ frappe.ready(function () {
         document.getElementById('present_count').textContent = p;
         document.getElementById('absent_count').textContent = a;
         document.getElementById('halfday_count').textContent = h;
-
-        if (document.getElementById('weeklyoff_count')) {
-            document.getElementById('weeklyoff_count').textContent = w;
-        }
-        if (document.getElementById('holiday_count')) {
-            document.getElementById('holiday_count').textContent = hol;
-        }
         if (document.getElementById('lwp_count')) {
             document.getElementById('lwp_count').textContent = lwp;
         }
@@ -267,7 +362,7 @@ frappe.ready(function () {
 
         const tbody = document.getElementById("attendance_table_body");
         const table = document.getElementById("attendance_table");
-        
+
         table.style.display = "table";
         tbody.style.opacity = "0.5";
 
@@ -285,7 +380,6 @@ frappe.ready(function () {
                     method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
                     args: { employee: clId, start_date: startDate, end_date: endDate },
                     callback: function (res) {
-
                         const attendanceMap = res.message || {};
                         window.attendanceTableData = {};
                         window.originalAttendanceData = {};
@@ -294,7 +388,6 @@ frappe.ready(function () {
 
                         let current = new Date(startDate);
                         const end = new Date(endDate);
-
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
 
@@ -315,11 +408,8 @@ frappe.ready(function () {
                             let savedStatus = attendanceMap[dateKey] || "";
 
                             if (!savedStatus) {
-                                if (isHoliday) {
-                                    savedStatus = "Holiday";
-                                } else if (isDefaultWeeklyOff) {
-                                    savedStatus = "Weekly Off";
-                                }
+                                if (isHoliday) savedStatus = "Holiday";
+                                else if (isDefaultWeeklyOff) savedStatus = "Weekly Off";
                             }
 
                             window.attendanceTableData[dateKey] = savedStatus;
@@ -352,7 +442,7 @@ frappe.ready(function () {
                             const toggleColumn = !isFuture ? `
                                 <td class="text-center" style="padding: 8px;">
                                     <label class="toggle-switch" title="${toggleChecked ? 'Mark attendance' : 'Mark as weekly off'}">
-                                        <input type="checkbox" class="weekly-off-toggle" 
+                                        <input type="checkbox" class="weekly-off-toggle"
                                             data-date="${dateKey}"
                                             ${toggleChecked ? 'checked' : ''}>
                                         <span class="toggle-slider"></span>
@@ -361,17 +451,17 @@ frappe.ready(function () {
                             ` : '<td class="text-center">—</td>';
 
                             row.innerHTML = `
-                            <td>${dayName}</td>
-                            <td>${currentDate.getDate()} ${currentDate.toLocaleDateString("en-US", { month: "long" })} ${currentDate.getFullYear()}</td>
-                            ${toggleColumn}
-                            ${["Present", "Absent", "Half Day", "LWP"].map(s => `
-                                <td class="text-center">
-                                    <input type="radio" name="status_${dateKey}" value="${s}"
-                                        ${savedStatus === s ? "checked" : ""}
-                                        ${disableRadios ? "disabled" : ""}>
-                                </td>
-                            `).join("")}
-                        `;
+                                <td>${dayName}</td>
+                                <td>${currentDate.getDate()} ${currentDate.toLocaleDateString("en-US", { month: "long" })} ${currentDate.getFullYear()}</td>
+                                ${toggleColumn}
+                                ${["Present", "Absent", "Half Day", "LWP"].map(s => `
+                                    <td class="text-center">
+                                        <input type="radio" name="status_${dateKey}" value="${s}"
+                                            ${savedStatus === s ? "checked" : ""}
+                                            ${disableRadios ? "disabled" : ""}>
+                                    </td>
+                                `).join("")}
+                            `;
 
                             if (!isFuture) {
                                 const toggleInput = row.querySelector('.weekly-off-toggle');
@@ -379,7 +469,6 @@ frappe.ready(function () {
                                     toggleInput.addEventListener('change', function () {
                                         const date = this.dataset.date;
                                         const isChecked = this.checked;
-
                                         const radios = row.querySelectorAll(`input[name="status_${date}"]`);
 
                                         if (isChecked) {
@@ -400,21 +489,15 @@ frappe.ready(function () {
                                         } else {
                                             row.classList.remove("weekly-off-row");
                                             row.classList.remove("holiday-row");
-
-                                            radios.forEach(radio => {
-                                                radio.disabled = false;
-                                            });
-
+                                            radios.forEach(radio => { radio.disabled = false; });
                                             row.querySelectorAll(`input[name="status_${date}"]`).forEach(radio => {
                                                 radio.addEventListener("change", function () {
                                                     window.attendanceTableData[date] = this.value;
                                                     updateCounts();
                                                 });
                                             });
-
                                             window.attendanceTableData[date] = "";
                                         }
-
                                         updateCounts();
                                     });
                                 }
@@ -444,7 +527,6 @@ frappe.ready(function () {
     function bulkMark(status) {
         Object.keys(window.attendanceTableData).forEach(date => {
             if (window.originalAttendanceData[date]) return;
-
             if (window.attendanceTableData[date] === "Weekly Off") return;
             if (window.attendanceTableData[date] === "Holiday") return;
 
@@ -465,7 +547,6 @@ frappe.ready(function () {
         document.getElementById('mark_lwp').onclick = () => bulkMark("LWP");
     }
 
-    // Optimized Save Functionality
     document.getElementById('save_attendance').onclick = function () {
         const employee = employeeSelect.value;
         if (!employee) {
@@ -474,8 +555,7 @@ frappe.ready(function () {
         }
 
         const clId = window.employeeCLMap[employee];
-        
-        // Prepare batch data
+
         const attendanceData = [];
         Object.entries(window.attendanceTableData).forEach(([date, status]) => {
             if (status && status.trim() !== "") {
@@ -494,43 +574,28 @@ frappe.ready(function () {
 
         const currentScrollPosition = document.querySelector('.table-scroll').scrollTop;
 
-        // Suppress Frappe's error messages temporarily
         const originalMsgprint = frappe.msgprint;
         const originalThrow = frappe.throw;
-        
-        frappe.msgprint = function(msg) {
-            // Suppress document modification errors
-            if (typeof msg === 'string' && msg.includes('Document has been modified')) {
-                return;
-            }
+
+        frappe.msgprint = function (msg) {
+            if (typeof msg === 'string' && msg.includes('Document has been modified')) return;
             originalMsgprint.apply(this, arguments);
         };
-        
-        frappe.throw = function(msg) {
-            // Suppress document modification errors
-            if (typeof msg === 'string' && msg.includes('Document has been modified')) {
-                return;
-            }
+
+        frappe.throw = function (msg) {
+            if (typeof msg === 'string' && msg.includes('Document has been modified')) return;
             originalThrow.apply(this, arguments);
         };
 
-        // Use batch save method
         frappe.call({
             method: "saral_hr.www.mark_attendance.index.save_attendance_batch",
-            args: {
-                attendance_data: attendanceData
-            },
-            callback: function(r) {
-                // Restore original functions
+            args: { attendance_data: attendanceData },
+            callback: function (r) {
                 frappe.msgprint = originalMsgprint;
                 frappe.throw = originalThrow;
-                
+
                 if (r.message && r.message.success) {
-                    frappe.show_alert({ 
-                        message: "Attendance updated successfully", 
-                        indicator: "green" 
-                    });
-                    
+                    frappe.show_alert({ message: "Attendance updated successfully", indicator: "green" });
                     setTimeout(() => {
                         generateTable();
                         setTimeout(() => {
@@ -538,29 +603,20 @@ frappe.ready(function () {
                         }, 100);
                     }, 300);
                 } else {
-                    frappe.show_alert({ 
-                        message: "Error saving attendance", 
-                        indicator: "red" 
-                    });
+                    frappe.show_alert({ message: "Error saving attendance", indicator: "red" });
                 }
             },
-            error: function(err) {
-                // Restore original functions
+            error: function (err) {
                 frappe.msgprint = originalMsgprint;
                 frappe.throw = originalThrow;
-                
-                console.error("Error saving attendance:", err);
-                
-                // Don't show error if it's just a document modification error
                 if (err && err.message && !err.message.includes('Document has been modified')) {
-                    frappe.show_alert({ 
-                        message: "Error saving attendance", 
-                        indicator: "red" 
-                    });
+                    frappe.show_alert({ message: "Error saving attendance", indicator: "red" });
                 }
             }
         });
     };
+
+    // ─── Calendar Modal (unchanged) ───────────────────────────────
 
     let currentCalendarYear = 2025;
     let yearAttendanceData = {};
@@ -568,19 +624,16 @@ frappe.ready(function () {
 
     function normalizeDateKey(dateStr) {
         if (!dateStr) return null;
-
         if (dateStr instanceof Date) {
             const year = dateStr.getFullYear();
             const month = String(dateStr.getMonth() + 1).padStart(2, '0');
             const day = String(dateStr.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
-
         const parts = dateStr.toString().split('-');
         if (parts.length === 3) {
             return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
         }
-
         return dateStr;
     }
 
@@ -596,30 +649,25 @@ frappe.ready(function () {
         modal.classList.add('show');
         currentCalendarYear = parseInt(yearSelect.value) || new Date().getFullYear();
         document.getElementById('selected-year').textContent = currentCalendarYear;
-
         loadYearAttendance();
-    }
+    };
 
     window.closeCalendarModal = function () {
-        const modal = document.getElementById('calendar-modal');
-        modal.classList.remove('show');
-    }
+        document.getElementById('calendar-modal').classList.remove('show');
+    };
 
     window.changeYear = function (direction) {
         currentCalendarYear += direction;
         document.getElementById('selected-year').textContent = currentCalendarYear;
         loadYearAttendance();
-    }
+    };
 
     function loadYearAttendance() {
         const employee = employeeSelect.value;
         const clId = window.employeeCLMap[employee];
         const company = window.employeeCompanyMap[employee];
 
-        if (!clId) {
-            console.error('No Company Link ID found');
-            return;
-        }
+        if (!clId) return;
 
         const startDate = `${currentCalendarYear}-01-01`;
         const endDate = `${currentCalendarYear}-12-31`;
@@ -629,28 +677,20 @@ frappe.ready(function () {
             args: { company: company, start_date: startDate, end_date: endDate },
             callback: function (holidayRes) {
                 yearHolidayData = {};
-                const holidays = holidayRes.message || [];
-                holidays.forEach(h => {
+                (holidayRes.message || []).forEach(h => {
                     const normalized = normalizeDateKey(h);
-                    if (normalized) {
-                        yearHolidayData[normalized] = true;
-                    }
+                    if (normalized) yearHolidayData[normalized] = true;
                 });
 
                 frappe.call({
                     method: "saral_hr.www.mark_attendance.index.get_attendance_between_dates",
                     args: { employee: clId, start_date: startDate, end_date: endDate },
                     callback: function (res) {
-                        const rawData = res.message || {};
-
                         yearAttendanceData = {};
-                        Object.entries(rawData).forEach(([dateKey, status]) => {
+                        Object.entries(res.message || {}).forEach(([dateKey, status]) => {
                             const normalized = normalizeDateKey(dateKey);
-                            if (normalized) {
-                                yearAttendanceData[normalized] = status;
-                            }
+                            if (normalized) yearAttendanceData[normalized] = status;
                         });
-
                         renderMonthsGrid();
                     }
                 });
@@ -696,9 +736,7 @@ frappe.ready(function () {
                 const date = new Date(currentCalendarYear, monthIndex, day);
                 const dateKey = normalizeDateKey(date);
                 const isToday = date.toDateString() === today.toDateString();
-                const dayName = date
-                    .toLocaleDateString("en-US", { weekday: "long" })
-                    .toLowerCase();
+                const dayName = date.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
 
                 const isDefaultWeeklyOff = weeklyOffDays.includes(dayName);
                 const isHoliday = yearHolidayData[dateKey] === true;
@@ -708,19 +746,12 @@ frappe.ready(function () {
 
                 const status = yearAttendanceData[dateKey];
 
-                if (isHoliday || status === 'Holiday') {
-                    dayClass += ' holiday';
-                } else if (status === 'Present') {
-                    dayClass += ' present';
-                } else if (status === 'Absent') {
-                    dayClass += ' absent';
-                } else if (status === 'Half Day') {
-                    dayClass += ' halfday';
-                } else if (status === 'LWP') {
-                    dayClass += ' lwp';
-                } else if (status === 'Weekly Off' || isDefaultWeeklyOff) {
-                    dayClass += ' weekend';
-                }
+                if (isHoliday || status === 'Holiday') dayClass += ' holiday';
+                else if (status === 'Present') dayClass += ' present';
+                else if (status === 'Absent') dayClass += ' absent';
+                else if (status === 'Half Day') dayClass += ' halfday';
+                else if (status === 'LWP') dayClass += ' lwp';
+                else if (status === 'Weekly Off' || isDefaultWeeklyOff) dayClass += ' weekend';
 
                 miniCalendarHTML += `<div class="${dayClass}">${day}</div>`;
             }
@@ -734,28 +765,18 @@ frappe.ready(function () {
     function selectMonth(monthIndex) {
         yearSelect.value = currentCalendarYear;
         monthSelect.value = monthIndex;
-
-        const event = new Event('change');
-        monthSelect.dispatchEvent(event);
-
+        monthSelect.dispatchEvent(new Event('change'));
         window.closeCalendarModal();
     }
 
-    document.getElementById('get_attendance_info').onclick = function () {
-        window.openCalendarModal();
-    };
+    document.getElementById('get_attendance_info').onclick = () => window.openCalendarModal();
 
     document.getElementById('calendar-modal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            window.closeCalendarModal();
-        }
+        if (e.target === this) window.closeCalendarModal();
     });
 
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            window.closeCalendarModal();
-        }
-        
+        if (e.key === 'Escape') window.closeCalendarModal();
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
             document.getElementById('save_attendance').click();

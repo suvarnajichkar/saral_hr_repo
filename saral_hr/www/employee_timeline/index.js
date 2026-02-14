@@ -7,29 +7,113 @@ frappe.ready(function () {
     const timelineContent = document.getElementById('timeline-content');
     const noData = document.getElementById('no-data');
 
-    // Home button
     const gotoHomeBtn = document.getElementById("goto_home");
     gotoHomeBtn.addEventListener("click", () => {
         window.location.href = '/app/saral-hr';
     });
 
-    // Extract employees from select options
-    const employees = Array.from(employeeSelect.options)
+    // Load all employees from hidden select (for instant local search)
+    const allEmployees = Array.from(employeeSelect.options)
         .filter(option => option.value)
         .map(option => ({
-            name: option.value,
-            employee: option.textContent.trim()
+            name: option.value,           // HR-EMP-00001
+            employee: option.textContent.trim(), // Piyush Prakash Ladole (aadhar)
+            emp_id: option.value          // HR-EMP-00001
         }));
-
-    console.log('Total employees loaded:', employees.length);
 
     let selectedIndex = -1;
     let filteredEmployees = [];
     let currentSelectedEmployee = null;
+    let searchDebounceTimer = null;
+
+    // ─── Search Logic ─────────────────────────────────────────────
+
+    /**
+     * Local search — searches name, display text, and emp ID
+     * Used for instant results before API kicks in
+     */
+    function localSearch(searchTerm) {
+        if (!searchTerm) return allEmployees;
+        const lower = searchTerm.toLowerCase();
+        return allEmployees.filter(emp =>
+            emp.employee.toLowerCase().includes(lower) ||
+            emp.emp_id.toLowerCase().includes(lower)
+        );
+    }
+
+    /**
+     * API search — hits the server for full-text search
+     * Searches: first_name, last_name, full name, emp ID, aadhar
+     */
+    function apiSearch(searchTerm, callback) {
+        frappe.call({
+            method: 'saral_hr.www.employee_timeline.index.search_employees',
+            args: { query: searchTerm },
+            freeze: false,
+            callback: (r) => {
+                callback(r.message || []);
+            },
+            error: () => {
+                callback([]);
+            }
+        });
+    }
+
+    /**
+     * Main search handler — shows local results instantly,
+     * then updates with API results after debounce
+     */
+    function handleSearch(searchTerm) {
+        // Show local results immediately
+        const localResults = localSearch(searchTerm);
+        filteredEmployees = localResults;
+        showResults(localResults, searchTerm);
+
+        // Debounce API call for richer server-side search
+        clearTimeout(searchDebounceTimer);
+        if (searchTerm.length >= 2) {
+            searchDebounceTimer = setTimeout(() => {
+                apiSearch(searchTerm, (apiResults) => {
+                    // Merge: API results take priority, deduplicate by name
+                    const merged = mergeResults(localResults, apiResults);
+                    filteredEmployees = merged;
+                    showResults(merged, searchTerm);
+                });
+            }, 300);
+        }
+    }
+
+    /**
+     * Merge local and API results, deduplicating by employee name
+     * API results take priority (richer data)
+     */
+    function mergeResults(local, api) {
+        const seen = new Set();
+        const merged = [];
+
+        // API results first (priority)
+        for (const emp of api) {
+            if (!seen.has(emp.name)) {
+                seen.add(emp.name);
+                merged.push(emp);
+            }
+        }
+
+        // Fill in from local if not already present
+        for (const emp of local) {
+            if (!seen.has(emp.name)) {
+                seen.add(emp.name);
+                merged.push(emp);
+            }
+        }
+
+        return merged;
+    }
+
+    // ─── UI Rendering ─────────────────────────────────────────────
 
     function highlightText(text, searchTerm) {
         if (!searchTerm) return escapeHtml(text);
-        
         const escapedText = escapeHtml(text);
         const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
         return escapedText.replace(regex, '<mark>$1</mark>');
@@ -40,8 +124,6 @@ frappe.ready(function () {
     }
 
     function showResults(results, searchTerm = '') {
-        console.log('showResults called with', results.length, 'results');
-        
         if (results.length === 0) {
             searchResults.innerHTML = '<div class="no-results">No employee found</div>';
             searchResults.classList.add('show');
@@ -51,7 +133,8 @@ frappe.ready(function () {
 
         searchResults.innerHTML = results.map((emp, index) =>
             `<div class="search-result-item" data-index="${index}" data-name="${emp.name}">
-                ${highlightText(emp.employee, searchTerm)}
+                <div class="result-name">${highlightText(emp.employee, searchTerm)}</div>
+                <div class="result-id">${highlightText(emp.emp_id || emp.name, searchTerm)}</div>
             </div>`
         ).join('');
         searchResults.classList.add('show');
@@ -60,7 +143,8 @@ frappe.ready(function () {
         items.forEach((item, index) => {
             item.addEventListener('click', () => {
                 const empName = item.getAttribute('data-name');
-                const emp = employees.find(e => e.name === empName);
+                const emp = filteredEmployees.find(e => e.name === empName)
+                         || allEmployees.find(e => e.name === empName);
                 if (emp) selectEmployee(emp);
             });
 
@@ -89,6 +173,7 @@ frappe.ready(function () {
         clearBtn.style.display = 'flex';
         loadEmployeeTimeline(emp.name);
         selectedIndex = -1;
+        clearTimeout(searchDebounceTimer);
     }
 
     function clearSearch() {
@@ -100,44 +185,33 @@ frappe.ready(function () {
         timelineContent.innerHTML = '';
         searchResults.classList.remove('show');
         searchInput.focus();
+        clearTimeout(searchDebounceTimer);
     }
 
+    // ─── Event Listeners ──────────────────────────────────────────
+
     searchInput.addEventListener('click', () => {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        
-        if (searchInput.value.trim() !== '') {
-            clearBtn.style.display = 'flex';
-        }
-        
+        const searchTerm = searchInput.value.trim();
         if (searchTerm) {
-            filteredEmployees = employees.filter(emp =>
-                emp.employee.toLowerCase().includes(searchTerm)
-            );
+            clearBtn.style.display = 'flex';
+            handleSearch(searchTerm.toLowerCase());
         } else {
-            filteredEmployees = employees;
+            filteredEmployees = allEmployees;
+            showResults(allEmployees, '');
         }
-        showResults(filteredEmployees, searchTerm);
     });
 
     searchInput.addEventListener('focus', () => {
-        if (searchInput.value.trim() !== '') {
+        if (searchInput.value.trim()) {
             clearBtn.style.display = 'flex';
         }
-
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        if (searchTerm) {
-            filteredEmployees = employees.filter(emp =>
-                emp.employee.toLowerCase().includes(searchTerm)
-            );
-        } else {
-            filteredEmployees = employees;
-        }
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        filteredEmployees = searchTerm ? localSearch(searchTerm) : allEmployees;
         showResults(filteredEmployees, searchTerm);
     });
 
     searchInput.addEventListener('input', () => {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        
+        const searchTerm = searchInput.value.trim();
         clearBtn.style.display = searchTerm ? 'flex' : 'none';
 
         if (!searchTerm) {
@@ -145,16 +219,14 @@ frappe.ready(function () {
             noData.style.display = 'none';
             timelineContent.innerHTML = '';
             currentSelectedEmployee = null;
-            filteredEmployees = employees;
-            showResults(filteredEmployees, '');
+            filteredEmployees = allEmployees;
+            showResults(allEmployees, '');
             selectedIndex = -1;
+            clearTimeout(searchDebounceTimer);
             return;
         }
 
-        filteredEmployees = employees.filter(emp =>
-            emp.employee.toLowerCase().includes(searchTerm)
-        );
-        showResults(filteredEmployees, searchTerm);
+        handleSearch(searchTerm.toLowerCase());
         selectedIndex = -1;
     });
 
@@ -186,13 +258,15 @@ frappe.ready(function () {
     });
 
     document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && 
-            !searchResults.contains(e.target) && 
+        if (!searchInput.contains(e.target) &&
+            !searchResults.contains(e.target) &&
             !clearBtn.contains(e.target)) {
             searchResults.classList.remove('show');
             selectedIndex = -1;
         }
     });
+
+    // ─── Timeline ─────────────────────────────────────────────────
 
     function loadEmployeeTimeline(employee) {
         if (!employee) {
@@ -201,7 +275,7 @@ frappe.ready(function () {
             timelineContent.innerHTML = '';
             return;
         }
-        
+
         timelineContent.innerHTML = '';
         timelineSection.style.display = 'none';
         noData.style.display = 'none';
@@ -231,8 +305,9 @@ frappe.ready(function () {
 
     function renderTimeline(data) {
         const html = data.map(record => {
-            const isActive = !record.end_date;
+            const isActive = record.is_active == 1;
             const statusText = isActive ? 'Active' : 'Inactive';
+
             return `
                 <div class="timeline-item ${isActive ? 'active' : ''}">
                     <div class="timeline-card">
