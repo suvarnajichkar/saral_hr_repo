@@ -2,6 +2,7 @@ frappe.ui.form.on("Salary Structure Assignment", {
 
     refresh(frm) {
         calculate_salary(frm);
+        toggle_salary_sections(frm);
     },
 
     setup(frm) {
@@ -39,6 +40,8 @@ frappe.ui.form.on("Salary Structure Assignment", {
     // ────────────────────────────────────────────────────────────────────────
 
     salary_structure(frm) {
+        toggle_salary_sections(frm);
+
         if (!frm.doc.salary_structure) {
             clear_salary_tables(frm);
             return;
@@ -84,6 +87,15 @@ frappe.ui.form.on("Salary Details", {
         calculate_salary(frm);
     }
 });
+
+// ── Section visibility ───────────────────────────────────────────────────────
+
+function toggle_salary_sections(frm) {
+    let has_structure = !!frm.doc.salary_structure;
+    frm.toggle_display("earnings_and_deductions_section", has_structure);
+    frm.toggle_display("calculations_section", has_structure);
+    frm.toggle_display("ctc_section", has_structure);
+}
 
 // ── Overlap checker ──────────────────────────────────────────────────────────
 
