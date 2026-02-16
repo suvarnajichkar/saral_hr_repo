@@ -799,7 +799,6 @@ def generate_bulk_print_html(doc):
         company_address = frappe.db.get_value("Company", doc.company, "address") or ""
 
     # ── Company Link details (employee master) ───────────────────────────────
-    # FIX: guard against None — frappe.db.get_value returns None when record not found
     company_link_details = {}
     if doc.employee:
         result = frappe.db.get_value(
@@ -821,7 +820,6 @@ def generate_bulk_print_html(doc):
     division      = company_link_details.get("division")
 
     # ── Employee record details ──────────────────────────────────────────────
-    # FIX: guard against None
     employee_details = {}
     if employee_link:
         result = frappe.db.get_value(
@@ -873,26 +871,26 @@ def generate_bulk_print_html(doc):
             computed_items.append(e)
             computed_earnings_total += e.amount
 
-    # ── Deductions (employee-side only) ──────────────────────────────────────
-    # FIX: guard against None when fetching Salary Component details
+    # ── Deductions (employee-side only, non-zero only) ────────────────────────
+    # FIX: Only fetch fields that actually exist on Salary Component doctype.
+    # Previously, fetching the non-existent "deduct_from_cash_in_hand_only" field
+    # caused frappe.db.get_value to return None, making component_details always {},
+    # which broke the employer_contribution filter and hid all deductions incl. PF.
     deductions_total = 0
     deduction_items = []
     for d in doc.deductions:
-        component_details = {}
+        is_employer = 0
         if d.salary_component:
             result = frappe.db.get_value(
                 "Salary Component",
                 d.salary_component,
-                ["employer_contribution", "deduct_from_cash_in_hand_only"],
-                as_dict=True
+                "employer_contribution"  # ← only fetch this one valid field
             )
-            if result:
-                component_details = result
+            # get_value with a single field returns the value directly (not a dict)
+            is_employer = result or 0
 
-        is_employer   = component_details.get("employer_contribution", 0)
-        is_cash_only  = component_details.get("deduct_from_cash_in_hand_only", 0)
-
-        if d.amount and d.amount > 0 and not is_employer and not is_cash_only:
+        # Show only: amount > 0 AND not an employer contribution
+        if d.amount and d.amount > 0 and not is_employer:
             deduction_items.append(d)
             deductions_total += d.amount
 
