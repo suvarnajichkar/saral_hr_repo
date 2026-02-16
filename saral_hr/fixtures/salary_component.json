@@ -43,6 +43,20 @@
  },
  {
   "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-11 13:45:20.712010",
+  "name": "Professional Tax",
+  "salary_component": "Professional Tax",
+  "salary_component_abbr": "PT",
+  "type": "Deduction"
+ },
+ {
+  "depends_on_payment_days": 0,
   "description": "To be deducted only in the month of June and december , part of employee deduction",
   "docstatus": 0,
   "doctype": "Salary Component",
@@ -282,34 +296,6 @@
   "type": "Deduction"
  },
  {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-11 13:45:20.712010",
-  "name": "Professional Tax",
-  "salary_component": "Professional Tax",
-  "salary_component_abbr": "PT",
-  "type": "Deduction"
- },
- {
-  "depends_on_payment_days": 1,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-01-30 17:39:36.519405",
-  "name": "Basic",
-  "salary_component": "Basic",
-  "salary_component_abbr": "BASIC",
-  "type": "Earning"
- },
- {
   "depends_on_payment_days": 1,
   "description": null,
   "docstatus": 0,
@@ -413,94 +399,9 @@
   "docstatus": 0,
   "doctype": "Salary Component",
   "employer_contribution": 1,
-  "enter_amount_according_to_months": [
-   {
-    "amount": 200.0,
-    "month": "January",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 300.0,
-    "month": "February",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "March",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "April",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "May",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "June",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "July",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "August",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "September",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "October",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "November",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "December",
-    "parent": "Employer -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   }
-  ],
-  "is_special_component": 1,
-  "modified": "2026-02-09 17:18:07.774836",
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-16 12:00:33.991599",
   "name": "Employer -  PF",
   "salary_component": "Employer -  PF",
   "salary_component_abbr": "EPF",
@@ -540,111 +441,12 @@
   "docstatus": 0,
   "doctype": "Salary Component",
   "employer_contribution": 0,
-  "enter_amount_according_to_months": [
-   {
-    "amount": 200.0,
-    "month": "January",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 300.0,
-    "month": "February",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "March",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "April",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "May",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "June",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "July",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "August",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "September",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "October",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "November",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   },
-   {
-    "amount": 200.0,
-    "month": "December",
-    "parent": "Employee -  PF",
-    "parentfield": "enter_amount_according_to_months",
-    "parenttype": "Salary Component"
-   }
-  ],
-  "is_special_component": 1,
-  "modified": "2026-02-09 17:19:00.054274",
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-16 12:00:44.279815",
   "name": "Employee -  PF",
   "salary_component": "Employee -  PF",
   "salary_component_abbr": "PF",
-  "type": "Deduction"
- },
- {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-09 14:25:08.541706",
-  "name": "Employee - ESIC",
-  "salary_component": "Employee - ESIC",
-  "salary_component_abbr": "ESI",
   "type": "Deduction"
  },
  {
@@ -673,6 +475,34 @@
   "name": "Pt",
   "salary_component": "Pt",
   "salary_component_abbr": "PT",
+  "type": "Deduction"
+ },
+ {
+  "depends_on_payment_days": 1,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-01-30 17:39:36.519405",
+  "name": "Basic",
+  "salary_component": "Basic",
+  "salary_component_abbr": "BASIC",
+  "type": "Earning"
+ },
+ {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-09 14:25:08.541706",
+  "name": "Employee - ESIC",
+  "salary_component": "Employee - ESIC",
+  "salary_component_abbr": "ESI",
   "type": "Deduction"
  }
 ]
