@@ -691,16 +691,16 @@ def bulk_submit_salary_slips(salary_slip_names):
     for slip_name in salary_slip_names:
         try:
             slip_doc = frappe.get_doc("Salary Slip", slip_name)
-            
+
             if slip_doc.docstatus != 0:
                 errors.append(f"{slip_name}: Salary slip is not in draft state")
                 failed_count += 1
                 continue
-            
+
             slip_doc.submit()
             success_count += 1
             frappe.db.commit()
-            
+
         except Exception as e:
             errors.append(f"{slip_name}: {str(e)}")
             failed_count += 1
@@ -793,38 +793,56 @@ def bulk_print_salary_slips(salary_slip_names):
 def generate_bulk_print_html(doc):
     from frappe.utils import fmt_money, formatdate, money_in_words
 
-    company_address = frappe.db.get_value("Company", doc.company, "address") if doc.company else ""
+    # ── Company address ──────────────────────────────────────────────────────
+    company_address = ""
+    if doc.company:
+        company_address = frappe.db.get_value("Company", doc.company, "address") or ""
 
-    company_link_details = frappe.db.get_value(
-        "Company Link",
-        doc.employee,
-        ["employee", "date_of_joining", "designation", "department", "branch", "category", "division"],
-        as_dict=1
-    ) if doc.employee else {}
+    # ── Company Link details (employee master) ───────────────────────────────
+    # FIX: guard against None — frappe.db.get_value returns None when record not found
+    company_link_details = {}
+    if doc.employee:
+        result = frappe.db.get_value(
+            "Company Link",
+            doc.employee,
+            ["employee", "date_of_joining", "designation", "department",
+             "branch", "category", "division"],
+            as_dict=True
+        )
+        if result:
+            company_link_details = result
 
-    doj = company_link_details.get('date_of_joining') if company_link_details else None
-    employee_link = company_link_details.get('employee') if company_link_details else None
-    designation = company_link_details.get('designation') if company_link_details else None
-    department = company_link_details.get('department') if company_link_details else None
-    branch = company_link_details.get('branch') if company_link_details else None
-    category = company_link_details.get('category') if company_link_details else None
-    division = company_link_details.get('division') if company_link_details else None
+    doj           = company_link_details.get("date_of_joining")
+    employee_link = company_link_details.get("employee")
+    designation   = company_link_details.get("designation")
+    department    = company_link_details.get("department")
+    branch        = company_link_details.get("branch")
+    category      = company_link_details.get("category")
+    division      = company_link_details.get("division")
 
-    employee_details = frappe.db.get_value(
-        "Employee",
-        employee_link,
-        ["employee_pf_account", "esic_number", "lin_number", "bank_name", "account_number", "ifsc_code", "gender"],
-        as_dict=1
-    ) if employee_link else {}
+    # ── Employee record details ──────────────────────────────────────────────
+    # FIX: guard against None
+    employee_details = {}
+    if employee_link:
+        result = frappe.db.get_value(
+            "Employee",
+            employee_link,
+            ["employee_pf_account", "esic_number", "lin_number",
+             "bank_name", "account_number", "ifsc_code", "gender"],
+            as_dict=True
+        )
+        if result:
+            employee_details = result
 
     present_days = (doc.total_working_days or 0) - (doc.absent_days or 0)
 
+    # ── Salary Structure Assignment earnings (base / contracted amounts) ─────
     salary_assignment = frappe.db.sql("""
         SELECT name, from_date, to_date
         FROM `tabSalary Structure Assignment`
         WHERE employee = %s
-        AND from_date <= %s
-        AND (to_date IS NULL OR to_date >= %s)
+          AND from_date <= %s
+          AND (to_date IS NULL OR to_date >= %s)
         ORDER BY from_date DESC
         LIMIT 1
     """, (doc.employee, doc.end_date, doc.start_date), as_dict=1)
@@ -838,15 +856,16 @@ def generate_bulk_print_html(doc):
             SELECT salary_component, amount
             FROM `tabSalary Details`
             WHERE parent = %s
-            AND parenttype = 'Salary Structure Assignment'
-            AND parentfield = 'earnings'
-            AND amount > 0
+              AND parenttype = 'Salary Structure Assignment'
+              AND parentfield = 'earnings'
+              AND amount > 0
             ORDER BY idx ASC
         """, (assignment_name,), as_dict=1)
 
         for ae in assignment_earnings:
             assignment_earnings_total += (ae.amount or 0)
 
+    # ── Computed earnings (after payment-day proration etc.) ─────────────────
     computed_earnings_total = 0
     computed_items = []
     for e in doc.earnings:
@@ -854,20 +873,31 @@ def generate_bulk_print_html(doc):
             computed_items.append(e)
             computed_earnings_total += e.amount
 
+    # ── Deductions (employee-side only) ──────────────────────────────────────
+    # FIX: guard against None when fetching Salary Component details
     deductions_total = 0
     deduction_items = []
     for d in doc.deductions:
-        component_details = frappe.db.get_value(
-            "Salary Component",
-            d.salary_component,
-            ["employer_contribution", "deduct_from_cash_in_hand_only"],
-            as_dict=1
-        )
-        if d.amount and d.amount > 0 and component_details and not component_details.employer_contribution and not component_details.deduct_from_cash_in_hand_only:
+        component_details = {}
+        if d.salary_component:
+            result = frappe.db.get_value(
+                "Salary Component",
+                d.salary_component,
+                ["employer_contribution", "deduct_from_cash_in_hand_only"],
+                as_dict=True
+            )
+            if result:
+                component_details = result
+
+        is_employer   = component_details.get("employer_contribution", 0)
+        is_cash_only  = component_details.get("deduct_from_cash_in_hand_only", 0)
+
+        if d.amount and d.amount > 0 and not is_employer and not is_cash_only:
             deduction_items.append(d)
             deductions_total += d.amount
 
-    max_rows = max(len(assignment_earnings), len(computed_items), len(deduction_items))
+    # ── Build table rows ─────────────────────────────────────────────────────
+    max_rows = max(len(assignment_earnings), len(computed_items), len(deduction_items), 1)
 
     earnings_deductions_rows = ""
     for i in range(max_rows):
@@ -911,6 +941,7 @@ def generate_bulk_print_html(doc):
 
         earnings_deductions_rows += "</tr>"
 
+    # ── HTML template ─────────────────────────────────────────────────────────
     html = f"""
 <!DOCTYPE html>
 <html>
@@ -1042,7 +1073,7 @@ def generate_bulk_print_html(doc):
             <tbody>
                 <tr>
                     <td class="label">Employee Name</td>
-                    <td class="value">{doc.employee_name}</td>
+                    <td class="value">{doc.employee_name or '-'}</td>
                     <td class="label">Gender</td>
                     <td class="value">{employee_details.get('gender') or '-'}</td>
                     <td class="label">Date of Joining</td>
