@@ -1,62 +1,45 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, now
+from frappe.utils import flt, now_datetime
+from frappe import generate_hash
 
 MONTHS = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ]
 
+
 class SalaryComponent(Document):
+
     def validate(self):
         if self.is_special_component:
-            # Save amounts to a temp attribute before clearing the table
-            self._month_amounts = {}
-            for row in self.enter_amount_according_to_months:
-                if row.month in MONTHS and row.month not in self._month_amounts:
-                    self._month_amounts[row.month] = flt(row.amount)
-
-            # Clear child table so Frappe saves NOTHING for it
+            self._rebuild_month_table()
+        else:
+            # If unchecked, wipe the table
             self.enter_amount_according_to_months = []
 
-    def on_update(self):
-        if self.is_special_component:
-            self._write_months_to_db()
+    def _rebuild_month_table(self):
+        # Step 1: preserve any amounts the user typed
+        existing = {}
+        for row in (self.enter_amount_according_to_months or []):
+            if row.month and row.month not in existing:
+                existing[row.month] = flt(row.amount)
 
-    def after_insert(self):
-        if self.is_special_component:
-            self._write_months_to_db()
-
-    def _write_months_to_db(self):
-        amounts = getattr(self, "_month_amounts", {})
-
-        # Wipe all existing child rows with raw SQL
-        frappe.db.sql("""
-            DELETE FROM `tabSpecial Salary Component`
-            WHERE parent = %s
-        """, self.name)
-
-        # Insert all 12 months directly — no Frappe ORM, no name collision possible
-        ts = now()
-        user = frappe.session.user
-        for idx, month in enumerate(MONTHS):
+        # Step 2: wipe via raw SQL so there are zero stale rows in DB
+        if not self.is_new():
             frappe.db.sql("""
-                INSERT INTO `tabSpecial Salary Component`
-                    (name, creation, modified, modified_by, owner,
-                     docstatus, parent, parentfield, parenttype,
-                     idx, month, amount)
-                VALUES (%s, %s, %s, %s, %s,
-                        0, %s, %s, %s,
-                        %s, %s, %s)
-            """, (
-                f"{self.name}-{month}",
-                ts, ts, user, user,
-                self.name,
-                "enter_amount_according_to_months",
-                "Salary Component",
-                idx + 1,
-                month,
-                amounts.get(month, 0.0)
-            ))
+                DELETE FROM `tabSpecial Salary Component`
+                WHERE parent = %s
+            """, self.name)
 
-        frappe.db.commit()
+        # Step 3: rebuild exactly 12 rows with guaranteed-unique names
+        self.enter_amount_according_to_months = []
+        for idx, month in enumerate(MONTHS, start=1):
+            # generate_hash gives a random unique string — no collision possible
+            child_name = f"{self.name}-{month}-{generate_hash(length=6)}"
+            row = self.append("enter_amount_according_to_months", {
+                "name":   child_name,
+                "month":  month,
+                "amount": existing.get(month, 0.0),
+                "idx":    idx,
+            })

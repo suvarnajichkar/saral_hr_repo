@@ -49,6 +49,12 @@
    "label": "Description"
   },
   {
+   "default": "0",
+   "fieldname": "is_special_component",
+   "fieldtype": "Check",
+   "label": "Is Special Component?"
+  },
+  {
    "depends_on": "eval:doc.is_special_component == 1",
    "fieldname": "enter_amount_according_to_months",
    "fieldtype": "Table",
@@ -65,19 +71,6 @@
   {
    "fieldname": "column_break_phkq",
    "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.is_special_component == 1",
-   "fieldname": "enter_amount_according_to_months",
-   "fieldtype": "Table",
-   "label": "Enter Amount according to months",
-   "options": "Special Salary Component"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_special_component",
-   "fieldtype": "Check",
-   "label": "Is Special Component?"
   },
   {
    "default": "0",
