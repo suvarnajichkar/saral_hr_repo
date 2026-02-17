@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2026-01-10 11:27:57.450566",
@@ -139,7 +140,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-07 11:27:54.324626",
+ "modified": "2026-02-17 12:20:11.623597",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",
