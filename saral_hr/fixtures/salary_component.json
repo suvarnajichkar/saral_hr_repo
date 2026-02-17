@@ -43,20 +43,6 @@
  },
  {
   "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-11 13:45:20.712010",
-  "name": "Professional Tax",
-  "salary_component": "Professional Tax",
-  "salary_component_abbr": "PT",
-  "type": "Deduction"
- },
- {
-  "depends_on_payment_days": 0,
   "description": "To be deducted only in the month of June and december , part of employee deduction",
   "docstatus": 0,
   "doctype": "Salary Component",
@@ -464,20 +450,6 @@
   "type": "Deduction"
  },
  {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-11 13:45:20.712010",
-  "name": "Pt",
-  "salary_component": "Pt",
-  "salary_component_abbr": "PT",
-  "type": "Deduction"
- },
- {
   "depends_on_payment_days": 1,
   "description": null,
   "docstatus": 0,
@@ -503,6 +475,105 @@
   "name": "Employee - ESIC",
   "salary_component": "Employee - ESIC",
   "salary_component_abbr": "ESI",
+  "type": "Deduction"
+ },
+ {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [
+   {
+    "amount": 200.0,
+    "month": "January",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 300.0,
+    "month": "February",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "March",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "April",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "May",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "June",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "July",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "August",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "September",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "October",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "November",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   },
+   {
+    "amount": 200.0,
+    "month": "December",
+    "parent": "Professional Tax",
+    "parentfield": "enter_amount_according_to_months",
+    "parenttype": "Salary Component"
+   }
+  ],
+  "is_special_component": 1,
+  "modified": "2026-02-17 16:31:29.937077",
+  "name": "Professional Tax",
+  "salary_component": "Professional Tax",
+  "salary_component_abbr": "PT",
   "type": "Deduction"
  }
 ]

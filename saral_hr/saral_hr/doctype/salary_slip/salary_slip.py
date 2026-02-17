@@ -87,7 +87,10 @@ def get_salary_structure_for_employee(employee, start_date=None):
     added_earnings = set()
     added_deductions = set()
 
+    # Process Earnings from Salary Structure Assignment
     for row in ssa_doc.earnings:
+        base_amount = flt(row.amount)
+
         comp = frappe.db.get_value(
             "Salary Component",
             row.salary_component,
@@ -100,13 +103,31 @@ def get_salary_structure_for_employee(employee, start_date=None):
             as_dict=True
         )
 
-        amount = row.amount
+        # Mark this component as "seen in SSA" ALWAYS — even if we skip it below.
+        # This prevents the global special-component fallback block from re-adding
+        # a component that the SSA explicitly has as 0 (not eligible).
+        added_earnings.add(row.salary_component)
+
         if comp.is_special_component and current_month:
-            special_amount = get_special_component_amount(row.salary_component, current_month)
-            if special_amount is not None:
-                amount = special_amount
-            else:
+            # Special component logic:
+            # - SSA base_amount == 0 → employee is NOT eligible → exclude entirely
+            # - SSA base_amount  > 0 → employee IS eligible → use month-specific amount
+            #   (even if that month's amount is 0, still include it as 0)
+            if base_amount == 0:
+                # Employee not eligible for this component — skip (already marked above)
                 continue
+
+            # Employee is eligible; fetch the month-specific amount
+            special_amount = get_special_component_amount(row.salary_component, current_month)
+
+            # If the month is not configured in the component at all, treat as 0
+            amount = special_amount if special_amount is not None else 0
+
+        else:
+            # Regular component: SSA base_amount == 0 means not applicable
+            if base_amount == 0:
+                continue
+            amount = base_amount
 
         earnings.append({
             "salary_component": row.salary_component,
@@ -115,9 +136,11 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "depends_on_payment_days": comp.depends_on_payment_days,
             "is_special_component": comp.is_special_component
         })
-        added_earnings.add(row.salary_component)
 
+    # Process Deductions from Salary Structure Assignment
     for row in ssa_doc.deductions:
+        base_amount = flt(row.amount)
+
         comp = frappe.db.get_value(
             "Salary Component",
             row.salary_component,
@@ -131,13 +154,25 @@ def get_salary_structure_for_employee(employee, start_date=None):
             as_dict=True
         )
 
-        amount = row.amount
+        # Mark as "seen in SSA" ALWAYS — prevents global fallback from re-adding
+        # components where SSA = 0 (employee not eligible).
+        added_deductions.add(row.salary_component)
+
         if comp.is_special_component and current_month:
-            special_amount = get_special_component_amount(row.salary_component, current_month)
-            if special_amount is not None:
-                amount = special_amount
-            else:
+            # Same rule as earnings:
+            # - SSA base_amount == 0 → not eligible → exclude
+            # - SSA base_amount  > 0 → eligible → use month amount (even if 0)
+            if base_amount == 0:
                 continue
+
+            special_amount = get_special_component_amount(row.salary_component, current_month)
+            amount = special_amount if special_amount is not None else 0
+
+        else:
+            # Regular component: SSA base_amount == 0 means not applicable
+            if base_amount == 0:
+                continue
+            amount = base_amount
 
         deductions.append({
             "salary_component": row.salary_component,
@@ -147,8 +182,11 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "depends_on_payment_days": comp.depends_on_payment_days,
             "is_special_component": comp.is_special_component
         })
-        added_deductions.add(row.salary_component)
 
+    # Add special components NOT in the SSA but applicable for this month.
+    # These are global special components that apply to ALL eligible employees.
+    # Since there is no SSA row, we check the month amount itself:
+    # if month amount > 0 → include; if 0 or not configured → skip.
     if current_month:
         all_special_components = frappe.get_all(
             "Salary Component",
@@ -165,6 +203,8 @@ def get_salary_structure_for_employee(employee, start_date=None):
         for comp in all_special_components:
             special_amount = get_special_component_amount(comp.name, current_month)
 
+            # For components NOT in the SSA, only include if there is a positive
+            # month amount — there is no per-employee eligibility flag here.
             if special_amount is not None and special_amount > 0:
                 if comp.type == "Earning" and comp.name not in added_earnings:
                     earnings.append({
@@ -194,6 +234,11 @@ def get_salary_structure_for_employee(employee, start_date=None):
 
 
 def get_special_component_amount(component_name, month):
+    """
+    Returns the configured amount for a special component in a given month.
+    Returns None if the month row is not found at all.
+    Returns 0 if the month row exists but the amount is 0.
+    """
     component_doc = frappe.get_doc("Salary Component", component_name)
 
     if not component_doc.is_special_component:
@@ -201,9 +246,9 @@ def get_special_component_amount(component_name, month):
 
     for row in component_doc.enter_amount_according_to_months:
         if row.month == month:
-            amount = flt(row.amount)
-            return amount if amount > 0 else None
+            return flt(row.amount)
 
+    # Month not configured at all
     return None
 
 
@@ -286,6 +331,7 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
     absent_days = 0
     half_day_count = 0
     lwp_days = 0
+    holiday_days = 0
 
     for a in attendance:
         if a.status in ["Present", "On Leave"]:
@@ -298,6 +344,8 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
             absent_days += 1
         elif a.status == "LWP":
             lwp_days += 1
+        elif a.status == "Holiday":
+            holiday_days += 1
 
     total_half_days = flt(half_day_count * 0.5, 2)
 
@@ -319,6 +367,7 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         "absent_days": combined_absent_days,
         "total_half_days": total_half_days,
         "total_lwp": flt(lwp_days, 2),
+        "total_holidays": flt(holiday_days, 2),
         "calculation_method": calculation_method
     }
 
@@ -444,6 +493,7 @@ def bulk_generate_salary_slips(employees, year, month):
             salary_slip.weekly_offs_count = attendance_data.get('weekly_offs')
             salary_slip.total_half_days = attendance_data.get('total_half_days')
             salary_slip.total_lwp = attendance_data.get('total_lwp', 0)
+            salary_slip.total_holidays = attendance_data.get('total_holidays', 0)
 
             for earning in salary_data.get('earnings', []):
                 row = salary_slip.append('earnings', {})
@@ -562,17 +612,6 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
                     amount = 1800
                 else:
                     amount = flt(basic_da_total * 0.12, 2)
-            else:
-                amount = 0
-
-        elif "pt" in comp or "professional tax" in comp:
-            if base > 0:
-                start_date_obj = getdate(start_date)
-                month = start_date_obj.month
-                if month == 2:
-                    amount = 300
-                else:
-                    amount = 200
             else:
                 amount = 0
 
@@ -872,10 +911,6 @@ def generate_bulk_print_html(doc):
             computed_earnings_total += e.amount
 
     # ── Deductions (employee-side only, non-zero only) ────────────────────────
-    # FIX: Only fetch fields that actually exist on Salary Component doctype.
-    # Previously, fetching the non-existent "deduct_from_cash_in_hand_only" field
-    # caused frappe.db.get_value to return None, making component_details always {},
-    # which broke the employer_contribution filter and hid all deductions incl. PF.
     deductions_total = 0
     deduction_items = []
     for d in doc.deductions:
@@ -884,9 +919,8 @@ def generate_bulk_print_html(doc):
             result = frappe.db.get_value(
                 "Salary Component",
                 d.salary_component,
-                "employer_contribution"  # ← only fetch this one valid field
+                "employer_contribution"
             )
-            # get_value with a single field returns the value directly (not a dict)
             is_employer = result or 0
 
         # Show only: amount > 0 AND not an employer contribution
@@ -1116,6 +1150,14 @@ def generate_bulk_print_html(doc):
                     <td class="value">{present_days}</td>
                     <td class="label">Absent Days</td>
                     <td class="value">{doc.absent_days or 0}</td>
+                </tr>
+                <tr>
+                    <td class="label">Holidays</td>
+                    <td class="value">{doc.total_holidays or 0}</td>
+                    <td class="label">Half Days</td>
+                    <td class="value">{doc.total_half_days or 0}</td>
+                    <td class="label">LWP</td>
+                    <td class="value">{doc.total_lwp or 0}</td>
                 </tr>
             </tbody>
         </table>
