@@ -1,0 +1,39 @@
+{
+ "cards": [
+  {
+   "card": "Total Employees"
+  },
+  {
+   "card": "Generated Slips"
+  },
+  {
+   "card": "Pending Slips"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Generated Slips",
+   "width": "Half"
+  },
+  {
+   "chart": "Pending Slips",
+   "width": "Half"
+  },
+  {
+   "chart": "Present Attendance",
+   "width": "Half"
+  }
+ ],
+ "creation": "2026-02-17 15:03:05.073076",
+ "dashboard_name": "Salary Dashboard",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-02-17 16:01:36.492970",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Salary Dashboard",
+ "owner": "Administrator"
+}
