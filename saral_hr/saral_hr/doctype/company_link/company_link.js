@@ -15,37 +15,46 @@ frappe.ui.form.on("Company Link", {
             });
         }
 
-        refresh_company_fields(frm);
+        if (!frm.is_new()) {
+            refresh_company_fields(frm);
+        }
+
+        // Only show transfer warning once using a flag
+        if (frm.is_new() && frm.doc.employee && !frm._transfer_warned) {
+            frm._transfer_warned = true;
+            check_and_warn_transfer(frm, frm.doc.employee);
+        }
     },
 
     company(frm) {
-        refresh_company_fields(frm);
+        if (!frm.is_new()) {
+            refresh_company_fields(frm);
+        }
     },
 
     employee(frm) {
-        if (frm.doc.employee && frm.is_new()) {
-            // Warn HR if employee already has an active record
-            frappe.db.get_list("Company Link", {
-                filters: {
-                    employee: frm.doc.employee,
-                    is_active: 1
-                },
-                fields: ["name", "company"]
-            }).then(r => {
-                if (r && r.length > 0) {
-                    frappe.msgprint({
-                        title: __("Transfer Notice"),
-                        indicator: "blue",
-                        message: __(
-                            "Employee is currently active in company {0}. " +
-                            "Saving this record will automatically archive " +
-                            "that record and transfer the employee here.",
-                            [r[0].company]
-                        )
-                    });
-                }
-            });
-        }
+        const selected_employee = frm.doc.employee;
+        if (!selected_employee || !frm.is_new()) return;
+        if (frm._transfer_warned) return;
+        frm._transfer_warned = true;
+        check_and_warn_transfer(frm, selected_employee);
+    },
+
+    date_of_joining(frm) {
+        if (!frm.is_new() || !frm.doc.employee || !frm.doc.date_of_joining) return;
+
+        find_active_record(frm.doc.employee).then(record => {
+            if (record) {
+                const leaving = frappe.datetime.add_days(frm.doc.date_of_joining, -1);
+                frappe.show_alert({
+                    message: __(
+                        "On save: <b>{0}</b> record will be archived with leaving date <b>{1}</b>",
+                        [record.company, leaving]
+                    ),
+                    indicator: "blue"
+                }, 6);
+            }
+        });
     },
 
     left_date(frm) {
@@ -56,40 +65,81 @@ frappe.ui.form.on("Company Link", {
     }
 });
 
+function find_active_record(employee) {
+    return frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Company Link",
+            filters: [
+                ["name", "like", employee + "%"],
+                ["is_active", "=", 1]
+            ],
+            fields: ["name", "company", "employee", "is_active"],
+            limit: 5
+        }
+    }).then(r => {
+        if (r.message && r.message.length > 0) {
+            return r.message[0];
+        }
+        return null;
+    });
+}
+
+function check_and_warn_transfer(frm, employee) {
+    find_active_record(employee).then(record => {
+        if (record) {
+            frappe.msgprint({
+                title: __("Transfer Notice"),
+                indicator: "blue",
+                message: __(
+                    "Employee is currently active in company {0}. " +
+                    "Saving this record will automatically archive " +
+                    "that record and transfer the employee here.",
+                    [record.company]
+                )
+            });
+        }
+    }).catch(err => {
+        console.error("Transfer check error:", err);
+    });
+}
+
 function refresh_company_fields(frm) {
-    if (frm.doc.company && !frm.is_new()) {
-        frappe.db.get_value(
-            "Company",
-            frm.doc.company,
-            ["salary_calculation_based_on", "default_holiday_list"],
-            (r) => {
-                if (r) {
-                    let fields_changed = false;
+    if (!frm.doc.company || frm.is_new()) return;
 
-                    if (r.salary_calculation_based_on &&
-                        r.salary_calculation_based_on !== frm.doc.salary_calculation_based_on) {
-                        frm.set_value("salary_calculation_based_on", r.salary_calculation_based_on);
-                        fields_changed = true;
-                    }
+    frappe.db.get_value(
+        "Company",
+        frm.doc.company,
+        ["salary_calculation_based_on", "default_holiday_list"],
+        (r) => {
+            if (!r) return;
 
-                    if (r.default_holiday_list &&
-                        r.default_holiday_list !== frm.doc.holiday_list) {
-                        frm.set_value("holiday_list", r.default_holiday_list);
-                        fields_changed = true;
-                    }
+            let fields_changed = false;
 
-                    if (fields_changed && !frm.is_dirty()) {
-                        setTimeout(() => {
-                            frm.save().then(() => {
-                                frappe.show_alert({
-                                    message: __('Company Link updated with latest Company settings'),
-                                    indicator: 'green'
-                                }, 3);
-                            });
-                        }, 500);
-                    }
-                }
+            if (r.salary_calculation_based_on &&
+                r.salary_calculation_based_on !== frm.doc.salary_calculation_based_on) {
+                frm.set_value("salary_calculation_based_on", r.salary_calculation_based_on);
+                fields_changed = true;
             }
-        );
-    }
+
+            if (r.default_holiday_list &&
+                r.default_holiday_list !== frm.doc.holiday_list) {
+                frm.set_value("holiday_list", r.default_holiday_list);
+                fields_changed = true;
+            }
+
+            if (fields_changed) {
+                setTimeout(() => {
+                    if (frm.is_dirty()) {
+                        frm.save().then(() => {
+                            frappe.show_alert({
+                                message: __("Company Link updated with latest Company settings"),
+                                indicator: "green"
+                            }, 3);
+                        });
+                    }
+                }, 500);
+            }
+        }
+    );
 }
