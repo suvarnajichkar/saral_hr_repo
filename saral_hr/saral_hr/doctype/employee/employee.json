@@ -20,6 +20,7 @@
   "column_break_ngyj",
   "status",
   "employee_image",
+  "pf_uan_number",
   "statutory_account_details_tab",
   "bank_details_section",
   "bank_name",
@@ -236,11 +237,16 @@
    "fieldname": "esic_number",
    "fieldtype": "Data",
    "label": "ESIC Number"
+  },
+  {
+   "fieldname": "pf_uan_number",
+   "fieldtype": "Data",
+   "label": "PF UAN Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-04 17:42:39.665401",
+ "modified": "2026-02-17 12:10:46.236188",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",
