@@ -3,8 +3,6 @@ from frappe import _
 
 
 def execute(filters=None):
-    # Return one hidden dummy column+row so Frappe renders the datatable
-    # and fires after_datatable_render — our JS then injects the custom UI
     columns = [{"label": "", "fieldname": "dummy", "fieldtype": "Data", "width": 1}]
     data    = [{"dummy": ""}]
     return columns, data
@@ -13,8 +11,7 @@ def execute(filters=None):
 @frappe.whitelist()
 def employee_search(doctype, txt, searchfield, start, page_len, filters):
     """
-    Custom search for Employee Link filter —
-    Returns employee name as display with ID as subtitle
+    Custom search — returns full_name first (shown bold), ID second (shown as subtitle)
     """
     search = f"%{txt}%"
     return frappe.db.sql("""
@@ -35,7 +32,6 @@ def employee_search(doctype, txt, searchfield, start, page_len, filters):
 
 @frappe.whitelist()
 def get_all_employees():
-    """Get all employees with Aadhaar number — for instant local search on load"""
     employees = frappe.db.sql("""
         SELECT
             name,
@@ -56,15 +52,15 @@ def get_all_employees():
         if emp.get('last_name'):
             parts.append(emp['last_name'].strip())
 
-        display_name = ' '.join(parts) if parts else emp['employee']
+        display_name = ' '.join(parts) if parts else emp['name']
 
         if emp.get('aadhar_number'):
             display_name += f" ({emp['aadhar_number']})"
 
         result.append({
-            'name':     emp['name'],       # HR-EMP-00001
-            'employee': display_name,       # Piyush Prakash Ladole (123456789012)
-            'emp_id':   emp['name'],        # HR-EMP-00001 (for ID search)
+            'name':     emp['name'],
+            'employee': display_name,
+            'emp_id':   emp['name'],
         })
 
     return result
@@ -72,10 +68,6 @@ def get_all_employees():
 
 @frappe.whitelist()
 def search_employees(query):
-    """
-    Search employees by name OR employee ID OR Aadhaar.
-    Returns matching employees for live search.
-    """
     if not query or len(query.strip()) < 1:
         return []
 
@@ -124,18 +116,12 @@ def search_employees(query):
 
 @frappe.whitelist()
 def get_employee_timeline(employee):
-    """
-    Get employment timeline for an employee — ALL records including inactive.
-    Fetches from tabCompany Link same as the web page.
-    """
     if not employee:
         return []
 
     if not frappe.db.exists("Employee", employee):
-        return []  # Silent return — no error toast
+        return []
 
-    # Active record: employee = employee ID
-    # Archived records: name LIKE HR-EMP-00001-1, HR-EMP-00001-2, etc.
     timeline = frappe.db.sql("""
         SELECT
             name,

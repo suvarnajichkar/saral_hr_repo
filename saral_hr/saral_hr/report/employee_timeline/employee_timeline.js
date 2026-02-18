@@ -8,7 +8,8 @@ frappe.query_reports["Employee Timeline"] = {
             mandatory: 0,
             get_query: function() {
                 return {
-                    query: "saral_hr.saral_hr.report.employee_timeline.employee_timeline.employee_search"
+                    query: "saral_hr.saral_hr.report.employee_timeline.employee_timeline.employee_search",
+                    page_length: 200
                 };
             },
         },
@@ -21,11 +22,39 @@ frappe.query_reports["Employee Timeline"] = {
 
         setTimeout(() => {
             setupUI(report);
-            watchFilter(report);
+
+            const empFilter = report.get_filter("employee");
+            if (empFilter && empFilter.$input) {
+
+                if (empFilter.df) {
+                    empFilter.df.label_from_options = "employee_name";
+                }
+
+                empFilter.$input.on("input change", function () {
+                    setTimeout(() => {
+                        const val = (frappe.query_report.get_filter_value("employee") || "")
+                                    .replace(/^"|"$/g, "").trim();
+                        if (val) {
+                            if (window._etLoad) window._etLoad(val);
+                        } else {
+                            if (window._etClear) window._etClear();
+                        }
+                    }, 200);
+                });
+
+                empFilter.df.onchange = function () {
+                    const val = (frappe.query_report.get_filter_value("employee") || "")
+                                .replace(/^"|"$/g, "").trim();
+                    if (val) {
+                        if (window._etLoad) window._etLoad(val);
+                    } else {
+                        if (window._etClear) window._etClear();
+                    }
+                };
+            }
         }, 400);
     },
 
-    // Fires after Run/Refresh button
     after_datatable_render: function () {
         const report = frappe.query_report;
         if (!document.getElementById("emp-timeline-styles")) {
@@ -33,7 +62,8 @@ frappe.query_reports["Employee Timeline"] = {
         }
         setupUI(report);
         setTimeout(() => {
-            const val = getFilterVal();
+            const val = (frappe.query_report.get_filter_value("employee") || "")
+                        .replace(/^"|"$/g, "").trim();
             if (val) {
                 if (window._etLoad) window._etLoad(val);
             } else {
@@ -45,72 +75,10 @@ frappe.query_reports["Employee Timeline"] = {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-function getFilterVal() {
-    return (frappe.query_report.get_filter_value("employee") || "")
-            .replace(/^"|"$/g, "").trim();
-}
-
-function watchFilter(report) {
-    let lastVal = getFilterVal();
-    let loadTimer = null;
-
-    // Poll every 300ms — detect filter changes
-    setInterval(() => {
-        const currentVal = getFilterVal();
-        if (currentVal === lastVal) return;
-        lastVal = currentVal;
-
-        clearTimeout(loadTimer);
-
-        if (!currentVal) {
-            // Empty — clear immediately, no API call
-            if (window._etClear) window._etClear();
-            return;
-        }
-
-        // Only load if value looks like a valid saved employee ID
-        // (Frappe Link field only saves value after user picks from dropdown)
-        loadTimer = setTimeout(() => {
-            const stillVal = getFilterVal();
-            if (stillVal === currentVal && window._etLoad) {
-                window._etLoad(currentVal);
-            }
-        }, 400);
-    }, 300);
-
-    // Also wire up awesomplete select event — fires only when user picks from dropdown
-    const empFilter = report.get_filter("employee");
-    if (empFilter && empFilter.$input) {
-        empFilter.$input.on("awesomplete-selectcomplete", function () {
-            setTimeout(() => {
-                const val = getFilterVal();
-                if (val) {
-                    lastVal = val;
-                    if (window._etLoad) window._etLoad(val);
-                }
-            }, 150);
-        });
-
-        // Clear when input is manually emptied
-        empFilter.$input.on("input", function () {
-            if (!this.value.trim()) {
-                lastVal = "";
-                if (window._etClear) window._etClear();
-            }
-        });
-    }
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SETUP UI — inject HTML once, then expose loader
+//  SETUP UI
 // ─────────────────────────────────────────────────────────────────────────────
 
 function setupUI(report) {
-    // Find container
     let pageEl;
     if (report.page && report.page.main && report.page.main.length) {
         pageEl = report.page.main[0];
@@ -122,30 +90,73 @@ function setupUI(report) {
               || document.body;
     }
 
-    // Hide all Frappe default report elements
     pageEl.querySelectorAll(
         ".datatable, .dt-scrollable, .report-summary, .no-result-message, .chart-wrapper"
     ).forEach(el => el.style.setProperty("display", "none", "important"));
 
-    // Hide footer bar (For comparison... Execution Time)
-    pageEl.querySelectorAll("p, .filter-message").forEach(el => {
+    pageEl.querySelectorAll(".filter-message").forEach(el => {
         el.style.setProperty("display", "none", "important");
     });
 
-    // If UI already injected — just keep Frappe elements hidden
     if (pageEl.querySelector(".emp-timeline-root")) return;
 
-    // Inject our UI HTML
     const wrapper = document.createElement("div");
     wrapper.innerHTML = buildRootHTML();
-    pageEl.appendChild(wrapper.firstElementChild);
+    pageEl.insertBefore(wrapper.firstElementChild, pageEl.firstChild);
 
-    const root            = pageEl.querySelector(".emp-timeline-root");
+    const root       = pageEl.querySelector(".emp-timeline-root");
+    const filterBar  = document.querySelector(".page-form");
+    const filterSlot = root.querySelector("#et-filter-slot");
+    if (filterBar && filterSlot) {
+        filterSlot.appendChild(filterBar);
+        filterBar.style.removeProperty("display");
+        filterBar.style.padding    = "0";
+        filterBar.style.margin     = "0 0 20px 0";
+        filterBar.style.border     = "none";
+        filterBar.style.background = "transparent";
+    }
+
     const timelineSection = root.querySelector("#et-timeline-section");
     const timelineContent = root.querySelector("#et-timeline-content");
     const noData          = root.querySelector("#et-no-data");
 
-    // Expose global loader
+    // ── Patch awesomplete: Name on top, ID below & show name after select ──
+    setTimeout(() => {
+        const empFilter = frappe.query_report.get_filter("employee");
+        if (empFilter && empFilter.$input) {
+            const inputEl = empFilter.$input[0];
+
+            if (inputEl && inputEl._x_awesomplete) {
+                inputEl._x_awesomplete.item = function(text, input) {
+                    const parts = text.value ? text.value.split("\n") : [text.label || text];
+                    const id    = parts[0] || "";
+                    const name  = parts[1] || id;
+                    const li = document.createElement("li");
+                    li.setAttribute("aria-selected", "false");
+                    li.innerHTML = `<span class="et-emp-name">${name}</span><span class="et-emp-id">${id}</span>`;
+                    return li;
+                };
+            }
+
+            // After selection — show employee name in input, not ID
+            empFilter.$input.on("awesomplete-selectcomplete", function(e) {
+                setTimeout(() => {
+                    const val = (frappe.query_report.get_filter_value("employee") || "")
+                                .replace(/^"|"$/g, "").trim();
+                    if (val) {
+                        frappe.db.get_value("Employee", val, ["first_name", "last_name"], (r) => {
+                            if (r) {
+                                const name = [r.first_name, r.last_name].filter(Boolean).join(" ").trim();
+                                if (name) empFilter.$input.val(name);
+                            }
+                        });
+                        if (window._etLoad) window._etLoad(val);
+                    }
+                }, 100);
+            });
+        }
+    }, 800);
+
     window._etLoad = function(employee) {
         if (!employee) return;
 
@@ -160,38 +171,27 @@ function setupUI(report) {
             callback: (r) => {
                 const data = r.message || [];
                 if (!data.length) {
-                    noData.style.display = "block";
+                    noData.style.display = "flex";
                     return;
                 }
                 renderTimeline(data, timelineContent);
                 timelineSection.style.display = "block";
             },
             error: () => {
-                // Silently clear — don't show error toast
-                timelineContent.innerHTML     = "";
-                timelineSection.style.display = "none";
-                noData.style.display          = "none";
+                noData.style.display = "flex";
             },
         });
     };
 
-    // Clear timeline when employee filter is removed
     window._etClear = function() {
         timelineContent.innerHTML     = "";
         timelineSection.style.display = "none";
         noData.style.display          = "none";
     };
 
-    // Hide footer bar (For comparison... Execution Time)
     function hideFooter() {
-        // Target the exact bottom bar Frappe renders
-        document.querySelectorAll(".page-main-content ~ div, .layout-main-section ~ div").forEach(el => {
-            if (el.textContent && el.textContent.includes("For comparison")) {
-                el.style.setProperty("display", "none", "important");
-            }
-        });
-        // Also try direct text search in all divs
         document.querySelectorAll("div, p").forEach(el => {
+            if (el.closest(".emp-timeline-root")) return;
             if (el.children.length <= 2 &&
                 el.textContent &&
                 el.textContent.trim().startsWith("For comparison")) {
@@ -204,9 +204,20 @@ function setupUI(report) {
     setTimeout(hideFooter, 800);
     setTimeout(hideFooter, 2000);
 
-    // Auto-load if filter already has value on page open
-    const filterVal = getFilterVal();
+    let filterVal = (frappe.query_report.get_filter_value("employee") || "")
+                     .replace(/^"|"$/g, "").trim();
     if (filterVal) window._etLoad(filterVal);
+
+    setTimeout(() => {
+        const empFilter = frappe.query_report.get_filter("employee");
+        if (empFilter && empFilter.$input) {
+            empFilter.$input.off("change.et").on("change.et", function () {
+                const val = (frappe.query_report.get_filter_value("employee") || "")
+                            .replace(/^"|"$/g, "").trim();
+                if (val) window._etLoad(val);
+            });
+        }
+    }, 500);
 }
 
 
@@ -257,6 +268,8 @@ function buildRootHTML() {
     return `
     <div class="emp-timeline-root">
 
+        <div id="et-filter-slot" class="et-filter-slot"></div>
+
         <div id="et-timeline-section" class="timeline-container" style="display:none;">
             <h3 class="timeline-title">Employment History</h3>
             <div id="et-timeline-content" class="timeline-content"></div>
@@ -285,19 +298,121 @@ function injectStyles() {
     style.id = "emp-timeline-styles";
     style.textContent = `
 
-    /* Hide Frappe datatable & footer */
+    /* Hide ALL Frappe default report elements */
     .datatable, .dt-scrollable, .report-summary,
     .no-result-message, .chart-wrapper,
     .dt-header, .dt-body, .dt-footer {
         display: none !important;
     }
 
-    /* Our timeline wrapper */
-    .emp-timeline-root {
-        padding: 20px 0;
+    /* Hide footer bar */
+    .layout-main-section > p,
+    .page-main-content > p,
+    [data-page-route] p.text-muted,
+    .report-footer,
+    .filter-area {
+        display: none !important;
     }
 
-    /* Timeline container card */
+    /* Hide original filter bar from its old position */
+    .page-form {
+        display: none !important;
+    }
+
+    /* ── Root wrapper ── */
+    .emp-timeline-root {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px 30px;
+    }
+
+    /* ── Filter slot ── */
+    .et-filter-slot {
+        margin-bottom: 20px;
+    }
+
+    .et-filter-slot .page-form {
+        display: flex !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        margin: 0 !important;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    /* ── Input box — smaller width ── */
+    .et-filter-slot .page-form .form-group {
+        flex: 0 0 280px !important;
+        max-width: 280px !important;
+        min-width: 200px !important;
+    }
+
+    .et-filter-slot .page-form .form-group .input-with-feedback,
+    .et-filter-slot .page-form .form-group input[type="text"],
+    .et-filter-slot .page-form .form-group input.input-xs {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 200px !important;
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+        height: 36px !important;
+    }
+
+    /* ── Dropdown list — taller ── */
+    .awesomplete > ul {
+        min-width: 280px !important;
+        max-width: 380px !important;
+        min-height: 400px !important;
+        max-height: 70vh !important;
+        overflow-y: auto !important;
+        border-radius: 6px !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+        border: 1px solid var(--border-color) !important;
+        font-size: 13px !important;
+        z-index: 9999 !important;
+    }
+
+    /* ── Each list item — flex column-reverse so Name on top, ID below ── */
+    .awesomplete > ul > li {
+        display: flex !important;
+        flex-direction: column-reverse !important;
+        padding: 8px 14px !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        cursor: pointer !important;
+        line-height: 1.4 !important;
+    }
+
+    .awesomplete > ul > li:last-child {
+        border-bottom: none !important;
+    }
+
+    .awesomplete > ul > li[aria-selected="true"],
+    .awesomplete > ul > li:hover {
+        background: var(--primary-bg-color, #e8f3fd) !important;
+        color: var(--text-color) !important;
+    }
+
+    /* ── Employee Name — bold, on top ── */
+    .awesomplete > ul > li .et-emp-name,
+    .awesomplete > ul > li > span:last-child {
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        color: var(--text-color) !important;
+        display: block !important;
+    }
+
+    /* ── Employee ID — muted, below ── */
+    .awesomplete > ul > li .et-emp-id,
+    .awesomplete > ul > li > span:first-child {
+        font-size: 11px !important;
+        color: var(--text-muted) !important;
+        display: block !important;
+        margin-top: 1px !important;
+    }
+
+    /* ── Timeline container ── */
     .emp-timeline-root .timeline-container {
         background: var(--card-bg);
         border: 1px solid var(--border-color);
@@ -316,7 +431,6 @@ function injectStyles() {
         padding-left: 28px;
     }
 
-    /* Timeline items */
     .emp-timeline-root .timeline-item {
         border-left: 2px solid var(--border-color);
         padding-left: 24px;
@@ -378,59 +492,47 @@ function injectStyles() {
         border-radius: var(--border-radius);
     }
 
-    .emp-timeline-root .status-active  { background: var(--green-100); color: var(--green-700); }
+    .emp-timeline-root .status-active   { background: var(--green-100); color: var(--green-700); }
     .emp-timeline-root .status-inactive { background: var(--gray-100);  color: var(--gray-700);  }
 
-    /* No data message */
+    /* ── No data message ── */
     .emp-timeline-root .no-data-message {
         background: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius);
         padding: 60px 40px;
         text-align: center;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
     }
 
-    .emp-timeline-root .no-data-message svg { color: var(--gray-500); margin-bottom: 16px; }
-    .emp-timeline-root .no-data-message p   { color: var(--text-muted) !important; font-size: 14px; margin: 0; display: block !important; }
-
-    /* Awesomplete dropdown styling */
-    .awesomplete > ul {
-        border-radius: var(--border-radius, 6px) !important;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
-        border: 1px solid var(--border-color) !important;
-        font-size: 13px !important;
-    }
-
-    .awesomplete > ul > li {
-        padding: 8px 12px !important;
-        border-bottom: 1px solid var(--border-color) !important;
-        cursor: pointer !important;
-        line-height: 1.5 !important;
-    }
-
-    .awesomplete > ul > li:last-child { border-bottom: none !important; }
-
-    .awesomplete > ul > li[aria-selected="true"],
-    .awesomplete > ul > li:hover {
-        background: var(--primary-bg-color, #e8f3fd) !important;
-        color: var(--text-color) !important;
-    }
-
-    .awesomplete > ul > li > span:first-child {
-        font-weight: 600 !important;
-        color: var(--text-color) !important;
+    .emp-timeline-root .no-data-message svg {
+        color: var(--gray-400);
+        margin-bottom: 16px;
         display: block !important;
     }
 
-    .awesomplete > ul > li > span:last-child {
-        font-size: 11px !important;
+    .emp-timeline-root .no-data-message p {
         color: var(--text-muted) !important;
+        font-size: 14px !important;
+        margin: 0 !important;
         display: block !important;
     }
 
     @media (max-width: 768px) {
-        .emp-timeline-root { padding: 16px 0; }
+        .emp-timeline-root { padding: 20px 16px; }
         .emp-timeline-root .timeline-content { padding-left: 20px; }
+        .awesomplete > ul {
+            min-width: 240px !important;
+            max-width: 320px !important;
+        }
+        .et-filter-slot .page-form .form-group {
+            flex: 0 0 240px !important;
+            max-width: 240px !important;
+        }
     }
     `;
     document.head.appendChild(style);
