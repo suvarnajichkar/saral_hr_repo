@@ -51,6 +51,25 @@ function injectTimelineStyles() {
             font-size: 14px;
         }
 
+        .timeline-employee-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color, #d1d8dd);
+        }
+
+        .timeline-employee-id {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .timeline-employee-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
         /* The list itself draws the continuous vertical line on its left edge */
         .timeline-list {
             position: relative;
@@ -162,6 +181,17 @@ function renderTimeline() {
         return;
     }
 
+    // Build employee header from first record
+    const firstRecord = data[0];
+    const empId = firstRecord.employee_id || '';
+    const empName = firstRecord.employee_name || '';
+
+    const headerHtml = empName ? `
+        <div class="timeline-employee-header">
+            <div class="timeline-employee-name">${escHtml(empName)}</div>
+        </div>
+    ` : '';
+
     const listHtml = data.map(record => {
         const isActive = record.is_active == 1;
         const endDateHtml = record.end_date
@@ -181,7 +211,7 @@ function renderTimeline() {
         `;
     }).join('');
 
-    container.innerHTML = `<div class="timeline-list">${listHtml}</div>`;
+    container.innerHTML = `${headerHtml}<div class="timeline-list">${listHtml}</div>`;
     reportWrapper.appendChild(container);
 }
 
