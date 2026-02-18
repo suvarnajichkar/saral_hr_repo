@@ -6,7 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "category"
+  "category",
+  "salary_calculation_based_on"
  ],
  "fields": [
   {
@@ -14,11 +15,19 @@
    "fieldtype": "Data",
    "label": "Category",
    "unique": 1
+  },
+  {
+   "fieldname": "salary_calculation_based_on",
+   "description": "<b>Working days in a month:</b> Salary calculated based on actual working days (typically 22-26 days). Formula: (Monthly Salary ÷ Working Days) × Days Worked. <br><b>No. of days in a month:</b> Salary calculated based on calendar days (28-31 days). Formula: (Monthly Salary ÷ Total Days) × Days Worked.",
+   "fieldtype": "Select",
+   "label": "Salary Calculation Based on",
+   "options": "Working days in a month\nNo. of days in a month",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 17:16:33.838690",
+ "modified": "2026-02-18 12:11:25.086138",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Category",
