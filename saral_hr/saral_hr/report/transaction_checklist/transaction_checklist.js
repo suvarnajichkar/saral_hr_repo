@@ -1,7 +1,7 @@
 // Copyright (c) 2026, sj and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Educational Allowance Register"] = {
+frappe.query_reports["Transaction Checklist"] = {
     filters: [
         {
             fieldname: "year",
@@ -21,7 +21,6 @@ frappe.query_reports["Educational Allowance Register"] = {
             fieldname: "company",
             label: __("Company"),
             fieldtype: "MultiSelectList",
-            reqd: 1,
             get_data: function(txt) {
                 return frappe.db.get_link_options("Company", txt);
             }
@@ -41,8 +40,9 @@ frappe.query_reports["Educational Allowance Register"] = {
             get_data: function(txt) {
                 let companies = frappe.query_report.get_filter_value("company") || [];
                 let result = [];
+
                 frappe.call({
-                    method: "saral_hr.saral_hr.report.educational_allowance_register.educational_allowance_register.get_ea_employees_for_filter",
+                    method: "saral_hr.saral_hr.report.transaction_checklist.transaction_checklist.get_employees_for_filter",
                     args: {
                         companies: JSON.stringify(companies),
                         txt: txt || ""
@@ -55,6 +55,7 @@ frappe.query_reports["Educational Allowance Register"] = {
                         }));
                     }
                 });
+
                 return result;
             }
         }
@@ -63,70 +64,65 @@ frappe.query_reports["Educational Allowance Register"] = {
     onload: function(report) {
         frappe.after_ajax(() => {
             report.page.set_primary_action(__("Print"), () => {
-                ea_custom_print(report);
+                transaction_custom_print(report);
             }, "printer");
         });
     }
 };
 
-function ea_custom_print(report) {
+function transaction_custom_print(report) {
     let data    = frappe.query_report.data || [];
     let filters = frappe.query_report.get_values() || {};
 
     let month = filters.month || "";
     let year  = filters.year  || "";
 
-    let rows       = data.filter(r => r.employee_name !== "Total");
-    let totals_row = data.find(r => r.employee_name === "Total") || {};
-
-    if (!rows.length) {
+    if (!data.length) {
         frappe.msgprint(__("No data to print."));
         return;
     }
 
-    let tbody = rows.map((row, idx) => `
-        <tr>
-            <td class="center">${idx + 1}</td>
-            <td>${row.employee_id || ""}</td>
-            <td>${row.employee_name || ""}</td>
-            <td class="num">${fmt(row.educational_allowance)}</td>
-        </tr>
-    `).join("");
+    let columns = frappe.query_report.columns || [];
 
-    tbody += `
-        <tr class="total-row">
-            <td colspan="3" style="text-align:right; padding-right:12px; font-weight:bold;">Total</td>
-            <td class="num">${fmt(totals_row.educational_allowance)}</td>
-        </tr>
-    `;
+    let thead = columns.map(col => `<th>${col.label}</th>`).join("");
+
+    let tbody = data.map(row => {
+        let cells = columns.map(col => {
+            let val = row[col.fieldname];
+            if (val === null || val === undefined) return `<td></td>`;
+            if (col.fieldtype === "Currency" || col.fieldtype === "Float") {
+                return `<td class="num">${fmt(val)}</td>`;
+            }
+            return `<td>${val}</td>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+    }).join("");
 
     let html = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Educational Allowance Register – ${month} ${year}</title>
+            <title>Transaction Checklist – ${month} ${year}</title>
             <style>
                 * { margin:0; padding:0; box-sizing:border-box; }
-                body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
+                body { font-family: Arial, sans-serif; font-size: 10px; color: #000; }
                 .container { padding: 24px; }
                 .header { text-align: center; margin-bottom: 16px; }
                 .header .company-name { font-size: 16px; font-weight: bold; text-transform: uppercase; }
                 .header .report-title { font-size: 13px; font-weight: bold; margin-top: 4px; }
                 .header .period { font-size: 11px; margin-top: 2px; color: #444; }
                 table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-                thead tr th { background-color: #e8e8e8; border: 1px solid #999; padding: 7px 8px; text-align: center; font-size: 11px; font-weight: bold; white-space: nowrap; }
-                tbody tr td { border: 1px solid #bbb; padding: 6px 8px; font-size: 11px; white-space: nowrap; }
-                tbody tr:nth-child(even):not(.total-row) { background-color: #f9f9f9; }
+                thead tr th { background-color: #e8e8e8; border: 1px solid #999; padding: 6px 7px; text-align: center; font-size: 10px; font-weight: bold; white-space: nowrap; }
+                tbody tr td { border: 1px solid #bbb; padding: 5px 7px; font-size: 10px; white-space: nowrap; }
+                tbody tr:nth-child(even) { background-color: #f9f9f9; }
                 td.num { text-align: right; }
-                td.center { text-align: center; }
-                tr.total-row td { font-weight: bold; background-color: #eef4fb; border-top: 2px solid #555; border-bottom: 2px solid #555; }
                 .footer { margin-top: 40px; display: flex; justify-content: space-between; }
                 .sign-block { text-align: center; width: 180px; }
                 .sign-block .line { border-top: 1px solid #000; margin-bottom: 4px; }
                 .sign-block .label { font-size: 10px; color: #444; }
                 @media print {
-                    @page { size: A4 portrait; margin: 15mm; }
+                    @page { size: A3 landscape; margin: 10mm; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
             </style>
@@ -135,18 +131,11 @@ function ea_custom_print(report) {
         <div class="container">
             <div class="header">
                 <div class="company-name">${frappe.boot.sysdefaults.company || ""}</div>
-                <div class="report-title">Educational Allowance Register</div>
+                <div class="report-title">Transaction Checklist</div>
                 <div class="period">For the Month of ${month} ${year}</div>
             </div>
             <table>
-                <thead>
-                    <tr>
-                        <th style="width:55px;">Sr. No.</th>
-                        <th style="width:130px;">Employee ID</th>
-                        <th style="width:220px;">Employee Name</th>
-                        <th style="width:160px;">Educational Allowance</th>
-                    </tr>
-                </thead>
+                <thead><tr>${thead}</tr></thead>
                 <tbody>${tbody}</tbody>
             </table>
             <div class="footer">

@@ -1,7 +1,7 @@
 // Copyright (c) 2026, sj and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Educational Allowance Register"] = {
+frappe.query_reports["Bank Advice"] = {
     filters: [
         {
             fieldname: "year",
@@ -21,10 +21,16 @@ frappe.query_reports["Educational Allowance Register"] = {
             fieldname: "company",
             label: __("Company"),
             fieldtype: "MultiSelectList",
-            reqd: 1,
             get_data: function(txt) {
                 return frappe.db.get_link_options("Company", txt);
             }
+        },
+        {
+            fieldname: "bank_type",
+            label: __("Bank"),
+            fieldtype: "Select",
+            options: "\nHome\nDifferent",
+            reqd: 0
         },
         {
             fieldname: "category",
@@ -42,7 +48,7 @@ frappe.query_reports["Educational Allowance Register"] = {
                 let companies = frappe.query_report.get_filter_value("company") || [];
                 let result = [];
                 frappe.call({
-                    method: "saral_hr.saral_hr.report.educational_allowance_register.educational_allowance_register.get_ea_employees_for_filter",
+                    method: "saral_hr.saral_hr.report.bank_advice.bank_advice.get_employees_for_filter",
                     args: {
                         companies: JSON.stringify(companies),
                         txt: txt || ""
@@ -63,13 +69,13 @@ frappe.query_reports["Educational Allowance Register"] = {
     onload: function(report) {
         frappe.after_ajax(() => {
             report.page.set_primary_action(__("Print"), () => {
-                ea_custom_print(report);
+                bank_advice_print(report);
             }, "printer");
         });
     }
 };
 
-function ea_custom_print(report) {
+function bank_advice_print(report) {
     let data    = frappe.query_report.data || [];
     let filters = frappe.query_report.get_values() || {};
 
@@ -89,14 +95,18 @@ function ea_custom_print(report) {
             <td class="center">${idx + 1}</td>
             <td>${row.employee_id || ""}</td>
             <td>${row.employee_name || ""}</td>
-            <td class="num">${fmt(row.educational_allowance)}</td>
+            <td>${row.ifsc_code || "-"}</td>
+            <td>${row.account_number || "-"}</td>
+            <td class="num">${fmt(row.net_salary)}</td>
+            <td>${row.bank_name || "-"}</td>
         </tr>
     `).join("");
 
     tbody += `
         <tr class="total-row">
-            <td colspan="3" style="text-align:right; padding-right:12px; font-weight:bold;">Total</td>
-            <td class="num">${fmt(totals_row.educational_allowance)}</td>
+            <td colspan="5" style="text-align:right; padding-right:12px; font-weight:bold;">Total</td>
+            <td class="num">${fmt(totals_row.net_salary)}</td>
+            <td></td>
         </tr>
     `;
 
@@ -105,7 +115,7 @@ function ea_custom_print(report) {
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Educational Allowance Register – ${month} ${year}</title>
+            <title>Bank Advice – ${month} ${year}</title>
             <style>
                 * { margin:0; padding:0; box-sizing:border-box; }
                 body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
@@ -126,7 +136,7 @@ function ea_custom_print(report) {
                 .sign-block .line { border-top: 1px solid #000; margin-bottom: 4px; }
                 .sign-block .label { font-size: 10px; color: #444; }
                 @media print {
-                    @page { size: A4 portrait; margin: 15mm; }
+                    @page { size: A4 landscape; margin: 15mm; }
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
             </style>
@@ -135,16 +145,19 @@ function ea_custom_print(report) {
         <div class="container">
             <div class="header">
                 <div class="company-name">${frappe.boot.sysdefaults.company || ""}</div>
-                <div class="report-title">Educational Allowance Register</div>
+                <div class="report-title">Bank Advice</div>
                 <div class="period">For the Month of ${month} ${year}</div>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th style="width:55px;">Sr. No.</th>
-                        <th style="width:130px;">Employee ID</th>
-                        <th style="width:220px;">Employee Name</th>
-                        <th style="width:160px;">Educational Allowance</th>
+                        <th style="width:50px;">Sr. No.</th>
+                        <th style="width:120px;">Employee ID</th>
+                        <th style="width:180px;">Employee Name</th>
+                        <th style="width:130px;">IFSC Code</th>
+                        <th style="width:160px;">Account Number</th>
+                        <th style="width:120px;">Net Salary</th>
+                        <th style="width:150px;">Bank Name</th>
                     </tr>
                 </thead>
                 <tbody>${tbody}</tbody>
