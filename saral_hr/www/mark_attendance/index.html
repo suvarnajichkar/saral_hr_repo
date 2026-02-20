@@ -120,15 +120,15 @@
     <div class="calendar-modal-content">
         <div class="calendar-modal-header">
             <h4>Select Year</h4>
-            <button class="calendar-close-btn" onclick="closeCalendarModal()">✕</button>
+            <button class="calendar-close-btn" id="calendar-close-btn">✕</button>
         </div>
 
         <div class="calendar-modal-body">
 
             <div class="year-selector">
-                <button class="year-nav-btn" onclick="changeYear(-1)">‹</button>
+                <button class="year-nav-btn" id="year-prev-btn">‹</button>
                 <h3 id="selected-year">2025</h3>
-                <button class="year-nav-btn" onclick="changeYear(1)">›</button>
+                <button class="year-nav-btn" id="year-next-btn">›</button>
             </div>
 
             <div class="calendar-legend">
@@ -423,17 +423,18 @@
         color: #6c757d;
         text-align: center;
     }
-    .result-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #222;
-}
 
-.result-id {
-    font-size: 11px;
-    color: #888;
-    margin-top: 1px;
-}
+    .result-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #222;
+    }
+
+    .result-id {
+        font-size: 11px;
+        color: #888;
+        margin-top: 1px;
+    }
 
     /* Toggle Switch */
     .toggle-switch {
@@ -761,113 +762,18 @@
     .legend-color.weekend {
         background-color: #93c5fd;
     }
-
 </style>
 
+<!-- Hidden audio elements exactly like Frappe desk uses -->
+<audio id="sound-click" src="/assets/frappe/sounds/click.mp3" volume="0.2" preload="auto"></audio>
+<audio id="sound-submit" src="/assets/frappe/sounds/submit.mp3" volume="0.2" preload="auto"></audio>
+<audio id="sound-cancel" src="/assets/frappe/sounds/cancel.mp3" volume="0.2" preload="auto"></audio>
+
 <script>
+    // ONLY navigation — no event listeners here to avoid duplicates with frappe.ready()
     document.getElementById('goto_attendance').onclick = function () {
         window.location.href = '/app/attendance';
     };
-
-    let currentCalendarYear = 2025;
-
-    function openCalendarModal() {
-        const modal = document.getElementById('calendar-modal');
-        modal.classList.add('show');
-        currentCalendarYear = parseInt(document.getElementById('year_select').value) || 2025;
-        document.getElementById('selected-year').textContent = currentCalendarYear;
-        renderMonthsGrid();
-    }
-
-    function closeCalendarModal() {
-        const modal = document.getElementById('calendar-modal');
-        modal.classList.remove('show');
-    }
-
-    function changeYear(direction) {
-        currentCalendarYear += direction;
-        document.getElementById('selected-year').textContent = currentCalendarYear;
-        renderMonthsGrid();
-    }
-
-    function renderMonthsGrid() {
-        const monthsGrid = document.getElementById('months-grid');
-        const monthNames = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-        monthsGrid.innerHTML = '';
-
-        monthNames.forEach((monthName, monthIndex) => {
-            const monthCard = document.createElement('div');
-            monthCard.className = 'month-card';
-            monthCard.onclick = () => selectMonth(monthIndex);
-
-            const firstDay = new Date(currentCalendarYear, monthIndex, 1);
-            const lastDay = new Date(currentCalendarYear, monthIndex + 1, 0);
-            const startDay = firstDay.getDay();
-            const daysInMonth = lastDay.getDate();
-
-            let miniCalendarHTML = `<div class="month-name">${monthName}</div><div class="mini-calendar">`;
-            
-            dayNames.forEach(day => {
-                miniCalendarHTML += `<div class="mini-calendar-header">${day}</div>`;
-            });
-
-            for (let i = 0; i < startDay; i++) {
-                miniCalendarHTML += `<div class="mini-calendar-day empty"></div>`;
-            }
-
-            const today = new Date();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(currentCalendarYear, monthIndex, day);
-                const isToday = date.toDateString() === today.toDateString();
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                
-                let dayClass = 'mini-calendar-day';
-                if (isToday) dayClass += ' today';
-                if (isWeekend) dayClass += ' weekend';
-                
-                miniCalendarHTML += `<div class="${dayClass}">${day}</div>`;
-            }
-
-            miniCalendarHTML += '</div>';
-            monthCard.innerHTML = miniCalendarHTML;
-            monthsGrid.appendChild(monthCard);
-        });
-    }
-
-    function selectMonth(monthIndex) {
-        document.getElementById('year_select').value = currentCalendarYear;
-        document.getElementById('month_select').value = monthIndex;
-        
-        const event = new Event('change');
-        document.getElementById('month_select').dispatchEvent(event);
-        
-        closeCalendarModal();
-    }
-
-    document.getElementById('get_attendance_info').onclick = function () {
-        openCalendarModal();
-    };
-
-    document.getElementById('calendar-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeCalendarModal();
-        }
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeCalendarModal();
-        }
-        
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            document.getElementById('save_attendance').click();
-        }
-    });
 </script>
+
 {% endblock %}

@@ -87,7 +87,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
     added_earnings = set()
     added_deductions = set()
 
-    # Process Earnings from Salary Structure Assignment
     for row in ssa_doc.earnings:
         base_amount = flt(row.amount)
 
@@ -103,28 +102,14 @@ def get_salary_structure_for_employee(employee, start_date=None):
             as_dict=True
         )
 
-        # Mark this component as "seen in SSA" ALWAYS — even if we skip it below.
-        # This prevents the global special-component fallback block from re-adding
-        # a component that the SSA explicitly has as 0 (not eligible).
         added_earnings.add(row.salary_component)
 
         if comp.is_special_component and current_month:
-            # Special component logic:
-            # - SSA base_amount == 0 → employee is NOT eligible → exclude entirely
-            # - SSA base_amount  > 0 → employee IS eligible → use month-specific amount
-            #   (even if that month's amount is 0, still include it as 0)
             if base_amount == 0:
-                # Employee not eligible for this component — skip (already marked above)
                 continue
-
-            # Employee is eligible; fetch the month-specific amount
             special_amount = get_special_component_amount(row.salary_component, current_month)
-
-            # If the month is not configured in the component at all, treat as 0
             amount = special_amount if special_amount is not None else 0
-
         else:
-            # Regular component: SSA base_amount == 0 means not applicable
             if base_amount == 0:
                 continue
             amount = base_amount
@@ -137,7 +122,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "is_special_component": comp.is_special_component
         })
 
-    # Process Deductions from Salary Structure Assignment
     for row in ssa_doc.deductions:
         base_amount = flt(row.amount)
 
@@ -154,22 +138,14 @@ def get_salary_structure_for_employee(employee, start_date=None):
             as_dict=True
         )
 
-        # Mark as "seen in SSA" ALWAYS — prevents global fallback from re-adding
-        # components where SSA = 0 (employee not eligible).
         added_deductions.add(row.salary_component)
 
         if comp.is_special_component and current_month:
-            # Same rule as earnings:
-            # - SSA base_amount == 0 → not eligible → exclude
-            # - SSA base_amount  > 0 → eligible → use month amount (even if 0)
             if base_amount == 0:
                 continue
-
             special_amount = get_special_component_amount(row.salary_component, current_month)
             amount = special_amount if special_amount is not None else 0
-
         else:
-            # Regular component: SSA base_amount == 0 means not applicable
             if base_amount == 0:
                 continue
             amount = base_amount
@@ -183,10 +159,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
             "is_special_component": comp.is_special_component
         })
 
-    # Add special components NOT in the SSA but applicable for this month.
-    # These are global special components that apply to ALL eligible employees.
-    # Since there is no SSA row, we check the month amount itself:
-    # if month amount > 0 → include; if 0 or not configured → skip.
     if current_month:
         all_special_components = frappe.get_all(
             "Salary Component",
@@ -203,8 +175,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
         for comp in all_special_components:
             special_amount = get_special_component_amount(comp.name, current_month)
 
-            # For components NOT in the SSA, only include if there is a positive
-            # month amount — there is no per-employee eligibility flag here.
             if special_amount is not None and special_amount > 0:
                 if comp.type == "Earning" and comp.name not in added_earnings:
                     earnings.append({
@@ -214,7 +184,6 @@ def get_salary_structure_for_employee(employee, start_date=None):
                         "depends_on_payment_days": comp.depends_on_payment_days,
                         "is_special_component": 1
                     })
-
                 elif comp.type == "Deduction" and comp.name not in added_deductions:
                     deductions.append({
                         "salary_component": comp.name,
@@ -248,7 +217,6 @@ def get_special_component_amount(component_name, month):
         if row.month == month:
             return flt(row.amount)
 
-    # Month not configured at all
     return None
 
 
@@ -281,6 +249,59 @@ def get_variable_pay_percentage(employee, start_date):
             return flt(row.percentage)
 
     return None
+
+
+@frappe.whitelist()
+def check_variable_pay_assignment(employee, start_date):
+    """
+    Checks whether a Variable Pay Assignment exists for the employee's division
+    in the given month/year.
+
+    Returns:
+        {"status": "ok"}     — assignment exists with a percentage for this division
+        {"status": "missing", "message": "..."}  — assignment or division entry missing
+    """
+    if not employee or not start_date:
+        return {"status": "ok"}
+
+    division = frappe.db.get_value("Company Link", employee, "division")
+    if not division:
+        # No division configured on the employee — skip the variable pay check
+        return {"status": "ok"}
+
+    date_obj = getdate(start_date)
+    year = str(date_obj.year)
+    month_names = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    month = month_names[date_obj.month - 1]
+
+    vpa_name = f"{year} - {month}"
+
+    if not frappe.db.exists("Variable Pay Assignment", vpa_name):
+        return {
+            "status": "missing",
+            "message": (
+                f"No Variable Pay Assignment found for <b>{month} {year}</b>. "
+                f"Please create a Variable Pay Assignment for this month before processing salary slips."
+            )
+        }
+
+    vpa_doc = frappe.get_doc("Variable Pay Assignment", vpa_name)
+    division_found = any(row.division == division for row in vpa_doc.variable_pay)
+
+    if not division_found:
+        return {
+            "status": "missing",
+            "message": (
+                f"No variable pay percentage is configured for division <b>{division}</b> "
+                f"in the Variable Pay Assignment for <b>{month} {year}</b>. "
+                f"Please update the assignment before processing salary slips."
+            )
+        }
+
+    return {"status": "ok"}
 
 
 @frappe.whitelist()
@@ -348,7 +369,6 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
             holiday_days += 1
 
     total_half_days = flt(half_day_count * 0.5, 2)
-
     combined_absent_days = flt(absent_days + lwp_days, 2)
 
     if calculation_method == "Include Weekly Offs":
@@ -359,6 +379,7 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
         payment_days = flt(working_days - combined_absent_days, 2)
 
     return {
+        "attendance_count": len(attendance),
         "total_days": total_days,
         "weekly_offs": weekly_off_count,
         "working_days": working_days,
@@ -374,8 +395,14 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
 
 @frappe.whitelist()
 def get_eligible_employees_for_salary_slip(company, year, month):
-    from datetime import datetime
-
+    """
+    Returns employees who pass ALL four eligibility criteria:
+      1. Active employee with a valid Salary Structure Assignment for the month
+      2. No existing Salary Slip (draft or submitted) for the month
+      3. Has attendance records for the month
+      4. Has a Variable Pay Assignment covering their division for the month
+         (employees with no division set are included without this check)
+    """
     month_map = {
         'January': 1, 'February': 2, 'March': 3, 'April': 4,
         'May': 5, 'June': 6, 'July': 7, 'August': 8,
@@ -390,13 +417,26 @@ def get_eligible_employees_for_salary_slip(company, year, month):
     start_date_obj = getdate(start_date)
     end_date = get_last_day(start_date_obj)
 
+    # ── Pre-load Variable Pay Assignment once for the whole batch ─────────────
+    # This avoids hitting the DB once per employee for the same VPA document.
+    vpa_name = f"{year} - {month}"
+    vpa_exists = frappe.db.exists("Variable Pay Assignment", vpa_name)
+    vpa_divisions = set()
+
+    if vpa_exists:
+        vpa_doc = frappe.get_doc("Variable Pay Assignment", vpa_name)
+        vpa_divisions = {row.division for row in vpa_doc.variable_pay}
+
+    # ── Fetch all active employees with a salary structure for the month ──────
+    # We also SELECT cl.division here so we can filter without an extra query
     employees = frappe.db.sql("""
         SELECT DISTINCT
             cl.name,
-            cl.full_name as employee_name,
+            cl.full_name   AS employee_name,
             cl.department,
             cl.designation,
-            cl.company
+            cl.company,
+            cl.division
         FROM
             `tabCompany Link` cl
         INNER JOIN
@@ -411,31 +451,43 @@ def get_eligible_employees_for_salary_slip(company, year, month):
     eligible_employees = []
 
     for emp in employees:
+
+        # ── Constraint 1: No duplicate slip already exists ────────────────────
         existing_slip = frappe.db.exists("Salary Slip", {
             "employee": emp.name,
             "start_date": start_date,
             "docstatus": ["in", [0, 1]]
         })
-
         if existing_slip:
             continue
 
+        # ── Constraint 2: Must have attendance records for the month ──────────
         attendance_count = frappe.db.count("Attendance", {
             "employee": emp.name,
             "attendance_date": ["between", [start_date_obj, end_date]]
         })
+        if attendance_count == 0:
+            continue
 
-        if attendance_count > 0:
-            eligible_employees.append(emp)
+        # ── Constraint 3: Variable Pay Assignment must cover this division ─────
+        # Employees with no division are not subject to the VPA check and are
+        # always included (same behaviour as the single-slip form flow).
+        division = emp.get("division")
+        if division:
+            if not vpa_exists:
+                # No VPA document at all for this month — employee is ineligible
+                continue
+            if division not in vpa_divisions:
+                # VPA exists but this division has no percentage row — ineligible
+                continue
+
+        eligible_employees.append(emp)
 
     return eligible_employees
 
 
 @frappe.whitelist()
 def bulk_generate_salary_slips(employees, year, month):
-    import json
-    from datetime import datetime
-
     if isinstance(employees, str):
         employees = json.loads(employees)
 
@@ -459,6 +511,7 @@ def bulk_generate_salary_slips(employees, year, month):
         try:
             employee = emp_data.get('employee')
 
+            # ── Constraint 1: Salary Structure ────────────────────────────
             salary_data = get_salary_structure_for_employee(employee, start_date)
 
             if not salary_data:
@@ -466,6 +519,31 @@ def bulk_generate_salary_slips(employees, year, month):
                 failed_count += 1
                 continue
 
+            # ── Constraint 2: Variable Pay Assignment ─────────────────────
+            division = frappe.db.get_value("Company Link", employee, "division")
+            if division:
+                vpa_name = f"{year} - {month}"
+
+                if not frappe.db.exists("Variable Pay Assignment", vpa_name):
+                    errors.append(
+                        f"{emp_data.get('employee_name', employee)}: "
+                        f"No Variable Pay Assignment found for {month} {year}"
+                    )
+                    failed_count += 1
+                    continue
+
+                vpa_doc = frappe.get_doc("Variable Pay Assignment", vpa_name)
+                division_found = any(row.division == division for row in vpa_doc.variable_pay)
+
+                if not division_found:
+                    errors.append(
+                        f"{emp_data.get('employee_name', employee)}: "
+                        f"No variable pay percentage configured for division '{division}' in {month} {year}"
+                    )
+                    failed_count += 1
+                    continue
+
+            # ── Constraint 3: Attendance ──────────────────────────────────
             attendance_data = get_attendance_and_days(employee, start_date)
 
             if not attendance_data:
@@ -473,6 +551,15 @@ def bulk_generate_salary_slips(employees, year, month):
                 failed_count += 1
                 continue
 
+            if attendance_data.get("attendance_count", 0) == 0:
+                errors.append(
+                    f"{emp_data.get('employee_name', employee)}: "
+                    f"No attendance records found for {month} {year}"
+                )
+                failed_count += 1
+                continue
+
+            # ── All checks passed — compute and create the slip ───────────
             variable_pay_pct = get_variable_pay_percentage(employee, start_date)
             if variable_pay_pct is None:
                 variable_pay_pct = 0
@@ -832,12 +919,10 @@ def bulk_print_salary_slips(salary_slip_names):
 def generate_bulk_print_html(doc):
     from frappe.utils import fmt_money, formatdate, money_in_words
 
-    # ── Company address ──────────────────────────────────────────────────────
     company_address = ""
     if doc.company:
         company_address = frappe.db.get_value("Company", doc.company, "address") or ""
 
-    # ── Company Link details (employee master) ───────────────────────────────
     company_link_details = {}
     if doc.employee:
         result = frappe.db.get_value(
@@ -858,7 +943,6 @@ def generate_bulk_print_html(doc):
     category      = company_link_details.get("category")
     division      = company_link_details.get("division")
 
-    # ── Employee record details ──────────────────────────────────────────────
     employee_details = {}
     if employee_link:
         result = frappe.db.get_value(
@@ -873,7 +957,6 @@ def generate_bulk_print_html(doc):
 
     present_days = (doc.total_working_days or 0) - (doc.absent_days or 0)
 
-    # ── Salary Structure Assignment earnings (base / contracted amounts) ─────
     salary_assignment = frappe.db.sql("""
         SELECT name, from_date, to_date
         FROM `tabSalary Structure Assignment`
@@ -902,7 +985,6 @@ def generate_bulk_print_html(doc):
         for ae in assignment_earnings:
             assignment_earnings_total += (ae.amount or 0)
 
-    # ── Computed earnings (after payment-day proration etc.) ─────────────────
     computed_earnings_total = 0
     computed_items = []
     for e in doc.earnings:
@@ -910,7 +992,6 @@ def generate_bulk_print_html(doc):
             computed_items.append(e)
             computed_earnings_total += e.amount
 
-    # ── Deductions (employee-side only, non-zero only) ────────────────────────
     deductions_total = 0
     deduction_items = []
     for d in doc.deductions:
@@ -923,12 +1004,10 @@ def generate_bulk_print_html(doc):
             )
             is_employer = result or 0
 
-        # Show only: amount > 0 AND not an employer contribution
         if d.amount and d.amount > 0 and not is_employer:
             deduction_items.append(d)
             deductions_total += d.amount
 
-    # ── Build table rows ─────────────────────────────────────────────────────
     max_rows = max(len(assignment_earnings), len(computed_items), len(deduction_items), 1)
 
     earnings_deductions_rows = ""
@@ -973,7 +1052,6 @@ def generate_bulk_print_html(doc):
 
         earnings_deductions_rows += "</tr>"
 
-    # ── HTML template ─────────────────────────────────────────────────────────
     html = f"""
 <!DOCTYPE html>
 <html>

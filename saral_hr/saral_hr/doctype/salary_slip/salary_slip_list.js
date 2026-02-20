@@ -666,7 +666,7 @@ function fetch_salary(frm) {
 
             frm.refresh_fields(["earnings", "deductions"]);
             fetch_variable_pay_percentage(frm);
-            fetch_days_and_attendance(frm);
+            // fetch_days_and_attendance(frm);
         }
     });
 }

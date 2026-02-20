@@ -43,9 +43,9 @@ frappe.ready(function () {
                 employees = Array.from(employeeSelect.options)
                     .filter(o => o.value)
                     .map(o => ({
-                        value: o.value,         // HR-EMP-XXXXX
-                        name: o.text.trim(),    // Full name (Aadhaar)
-                        emp_id: o.value         // HR-EMP-XXXXX for ID search
+                        value: o.value,
+                        name: o.text.trim(),
+                        emp_id: o.value
                     }));
             }
         }
@@ -53,9 +53,6 @@ frappe.ready(function () {
 
     // ─── Search Logic ─────────────────────────────────────────────
 
-    /**
-     * Local search — searches display name and emp ID instantly
-     */
     function localSearch(searchTerm) {
         if (!searchTerm) return employees;
         const lower = searchTerm.toLowerCase();
@@ -65,10 +62,6 @@ frappe.ready(function () {
         );
     }
 
-    /**
-     * API search — server-side full text search
-     * Searches: first_name, last_name, full name, emp ID, Aadhaar
-     */
     function apiSearch(searchTerm, callback) {
         frappe.call({
             method: 'saral_hr.www.mark_attendance.index.search_employees',
@@ -76,7 +69,6 @@ frappe.ready(function () {
             freeze: false,
             callback: (r) => {
                 if (r.message) {
-                    // Convert API result to local format
                     const formatted = r.message.map(row => ({
                         value: row.employee,
                         name: row.full_name,
@@ -94,10 +86,6 @@ frappe.ready(function () {
         });
     }
 
-    /**
-     * Merge local and API results, deduplicating by employee value
-     * API results take priority
-     */
     function mergeResults(local, api) {
         const seen = new Set();
         const merged = [];
@@ -119,9 +107,6 @@ frappe.ready(function () {
         return merged;
     }
 
-    /**
-     * Main search handler — instant local results + debounced API
-     */
     function handleSearch(searchTerm) {
         const localResults = localSearch(searchTerm);
         filteredEmployees = localResults;
@@ -209,7 +194,6 @@ frappe.ready(function () {
         clearBtn.classList.add('show');
         clearTimeout(searchDebounceTimer);
 
-        // If API result has company/weekly_off, update maps too
         if (emp.company) {
             window.employeeCompanyMap[emp.value] = emp.company;
         }
@@ -247,7 +231,7 @@ frappe.ready(function () {
 
     clearBtn.addEventListener('click', clearSearch);
 
-    // ─── Event Listeners ──────────────────────────────────────────
+    // ─── Search Event Listeners ───────────────────────────────────
 
     searchInput.addEventListener('focus', () => {
         const term = searchInput.value.trim().toLowerCase();
@@ -305,7 +289,7 @@ frappe.ready(function () {
         }
     });
 
-    // ─── Date / Table Logic (unchanged) ───────────────────────────
+    // ─── Date / Table Logic ───────────────────────────────────────
 
     const yearSelect = document.getElementById("year_select");
     const monthSelect = document.getElementById("month_select");
@@ -333,13 +317,11 @@ frappe.ready(function () {
     window.holidayDates = {};
 
     function updateCounts() {
-        let p = 0, a = 0, h = 0, w = 0, hol = 0, lwp = 0;
+        let p = 0, a = 0, h = 0, lwp = 0;
         Object.values(window.attendanceTableData).forEach(s => {
             if (s === "Present") p++;
             else if (s === "Absent") a++;
             else if (s === "Half Day") h++;
-            else if (s === "Weekly Off") w++;
-            else if (s === "Holiday") hol++;
             else if (s === "LWP") lwp++;
         });
         document.getElementById('present_count').textContent = p;
@@ -542,12 +524,27 @@ frappe.ready(function () {
     document.getElementById('mark_present').onclick = () => bulkMark("Present");
     document.getElementById('mark_absent').onclick = () => bulkMark("Absent");
     document.getElementById('mark_halfday').onclick = () => bulkMark("Half Day");
+    document.getElementById('mark_lwp').onclick = () => bulkMark("LWP");
 
-    if (document.getElementById('mark_lwp')) {
-        document.getElementById('mark_lwp').onclick = () => bulkMark("LWP");
+    // ─── Save Attendance ──────────────────────────────────────────
+
+    // Play sound exactly like Frappe desk does internally
+    function playSaveSound() {
+        try {
+            const audio = document.getElementById("sound-click");
+            audio.volume = parseFloat(audio.getAttribute("volume")) || 0.2;
+            audio.play();
+        } catch (e) {
+            console.log("Cannot play sound", e);
+        }
     }
 
-    document.getElementById('save_attendance').onclick = function () {
+    // Guard flag to prevent double saves
+    let isSaving = false;
+
+    function doSave() {
+        if (isSaving) return;
+
         const employee = employeeSelect.value;
         if (!employee) {
             frappe.show_alert({ message: "Please select an employee first", indicator: "orange" });
@@ -572,30 +569,21 @@ frappe.ready(function () {
             return;
         }
 
+        isSaving = true;
+
+        // Play save sound
+        playSaveSound();
+
         const currentScrollPosition = document.querySelector('.table-scroll').scrollTop;
-
-        const originalMsgprint = frappe.msgprint;
-        const originalThrow = frappe.throw;
-
-        frappe.msgprint = function (msg) {
-            if (typeof msg === 'string' && msg.includes('Document has been modified')) return;
-            originalMsgprint.apply(this, arguments);
-        };
-
-        frappe.throw = function (msg) {
-            if (typeof msg === 'string' && msg.includes('Document has been modified')) return;
-            originalThrow.apply(this, arguments);
-        };
 
         frappe.call({
             method: "saral_hr.www.mark_attendance.index.save_attendance_batch",
             args: { attendance_data: attendanceData },
             callback: function (r) {
-                frappe.msgprint = originalMsgprint;
-                frappe.throw = originalThrow;
+                isSaving = false;
 
                 if (r.message && r.message.success) {
-                    frappe.show_alert({ message: "Attendance updated successfully", indicator: "green" });
+                    frappe.show_alert({ message: "Attendance saved successfully", indicator: "green" });
                     setTimeout(() => {
                         generateTable();
                         setTimeout(() => {
@@ -606,19 +594,18 @@ frappe.ready(function () {
                     frappe.show_alert({ message: "Error saving attendance", indicator: "red" });
                 }
             },
-            error: function (err) {
-                frappe.msgprint = originalMsgprint;
-                frappe.throw = originalThrow;
-                if (err && err.message && !err.message.includes('Document has been modified')) {
-                    frappe.show_alert({ message: "Error saving attendance", indicator: "red" });
-                }
+            error: function () {
+                isSaving = false;
+                frappe.show_alert({ message: "Error saving attendance", indicator: "red" });
             }
         });
-    };
+    }
 
-    // ─── Calendar Modal (unchanged) ───────────────────────────────
+    document.getElementById('save_attendance').addEventListener('click', doSave);
 
-    let currentCalendarYear = 2025;
+    // ─── Calendar Modal ───────────────────────────────────────────
+
+    let currentCalendarYear = new Date().getFullYear();
     let yearAttendanceData = {};
     let yearHolidayData = {};
 
@@ -637,7 +624,7 @@ frappe.ready(function () {
         return dateStr;
     }
 
-    window.openCalendarModal = function () {
+    function openCalendarModal() {
         const modal = document.getElementById('calendar-modal');
         const employee = employeeSelect.value;
 
@@ -650,17 +637,17 @@ frappe.ready(function () {
         currentCalendarYear = parseInt(yearSelect.value) || new Date().getFullYear();
         document.getElementById('selected-year').textContent = currentCalendarYear;
         loadYearAttendance();
-    };
+    }
 
-    window.closeCalendarModal = function () {
+    function closeCalendarModal() {
         document.getElementById('calendar-modal').classList.remove('show');
-    };
+    }
 
-    window.changeYear = function (direction) {
+    function changeYear(direction) {
         currentCalendarYear += direction;
         document.getElementById('selected-year').textContent = currentCalendarYear;
         loadYearAttendance();
-    };
+    }
 
     function loadYearAttendance() {
         const employee = employeeSelect.value;
@@ -766,20 +753,31 @@ frappe.ready(function () {
         yearSelect.value = currentCalendarYear;
         monthSelect.value = monthIndex;
         monthSelect.dispatchEvent(new Event('change'));
-        window.closeCalendarModal();
+        closeCalendarModal();
     }
 
-    document.getElementById('get_attendance_info').onclick = () => window.openCalendarModal();
+    // ─── Button & Keyboard Event Listeners (single place only) ───
+
+    document.getElementById('get_attendance_info').addEventListener('click', openCalendarModal);
+
+    document.getElementById('calendar-close-btn').addEventListener('click', closeCalendarModal);
+
+    document.getElementById('year-prev-btn').addEventListener('click', () => changeYear(-1));
+    document.getElementById('year-next-btn').addEventListener('click', () => changeYear(1));
 
     document.getElementById('calendar-modal').addEventListener('click', function (e) {
-        if (e.target === this) window.closeCalendarModal();
+        if (e.target === this) closeCalendarModal();
     });
 
+    // Single keyboard listener — handles both Escape and Ctrl+S
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') window.closeCalendarModal();
+        if (e.key === 'Escape') {
+            closeCalendarModal();
+        }
+
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
-            document.getElementById('save_attendance').click();
+            doSave();
         }
     });
 });
