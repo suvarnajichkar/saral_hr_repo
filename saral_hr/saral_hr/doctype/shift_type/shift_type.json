@@ -1,15 +1,24 @@
 {
- "doctype": "DocType",
- "name": "Shift Type",
- "module": "Saral Hr",
- "custom": 0,
- "is_submittable": 0,
- "track_changes": 1,
+ "actions": [],
  "autoname": "field:shift_name",
+ "creation": "2026-01-29 16:06:00.658511",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "shift_name",
+  "section_timing",
+  "start_time",
+  "end_time",
+  "column_break_1",
+  "late_entry_grace",
+  "early_exit_grace",
+  "half_day_hours"
+ ],
  "fields": [
   {
    "fieldname": "shift_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Shift Name",
    "reqd": 1,
    "unique": 1
@@ -22,12 +31,14 @@
   {
    "fieldname": "start_time",
    "fieldtype": "Time",
+   "in_list_view": 1,
    "label": "Start Time",
    "reqd": 1
   },
   {
    "fieldname": "end_time",
    "fieldtype": "Time",
+   "in_list_view": 1,
    "label": "End Time",
    "reqd": 1
   },
@@ -36,37 +47,47 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "0",
    "fieldname": "late_entry_grace",
    "fieldtype": "Int",
-   "label": "Late Entry Grace (Minutes)",
-   "default": 0
+   "label": "Late Entry Grace (Minutes)"
   },
   {
+   "default": "0",
    "fieldname": "early_exit_grace",
    "fieldtype": "Int",
-   "label": "Early Exit Grace (Minutes)",
-   "default": 0
+   "label": "Early Exit Grace (Minutes)"
   },
   {
+   "default": "4",
    "fieldname": "half_day_hours",
    "fieldtype": "Float",
-   "label": "Half Day Threshold (Hours)",
-   "default": 4
+   "label": "Half Day Threshold (Hours)"
   }
  ],
+ "links": [],
+ "modified": "2026-02-21 15:32:37.821810",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Shift Type",
+ "owner": "Administrator",
  "permissions": [
   {
-   "role": "System Manager",
-   "read": 1,
-   "write": 1,
    "create": 1,
-   "delete": 1
-  },
-  {
-   "role": "HR User",
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
    "read": 1,
-   "write": 1,
-   "create": 1
+   "report": 1,
+   "role": "Saral HR Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
   }
- ]
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

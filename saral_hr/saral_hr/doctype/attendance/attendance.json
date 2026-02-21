@@ -140,7 +140,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-17 12:20:11.623597",
+ "modified": "2026-02-21 17:11:25.959020",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",
@@ -155,7 +155,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -167,7 +168,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR User",
+   "role": "Saral HR User",
+   "select": 1,
    "share": 1,
    "write": 1
   }

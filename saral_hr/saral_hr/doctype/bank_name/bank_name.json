@@ -21,7 +21,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-02 18:05:28.592153",
+ "modified": "2026-02-21 14:52:23.106780",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Bank Name",
@@ -36,7 +36,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   }

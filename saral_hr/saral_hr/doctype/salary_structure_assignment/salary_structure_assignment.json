@@ -231,7 +231,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-12 13:05:04.691132",
+ "modified": "2026-02-21 17:12:13.795435",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
@@ -246,7 +246,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -258,7 +259,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR User",
+   "role": "Saral HR User",
+   "select": 1,
    "share": 1,
    "write": 1
   }

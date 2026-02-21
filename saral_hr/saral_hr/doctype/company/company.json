@@ -173,7 +173,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-05 16:56:05.907467",
+ "modified": "2026-02-21 17:10:42.125528",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",
@@ -188,7 +188,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -200,7 +201,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR User",
+   "role": "Saral HR User",
+   "select": 1,
    "share": 1,
    "write": 1
   }
