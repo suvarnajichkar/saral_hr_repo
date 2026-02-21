@@ -84,6 +84,22 @@ fixtures = [
         ]
     },
 
+    # Roles
+    {
+        "dt": "Role",
+        "filters": [
+            ["name", "in", ["Saral HR Manager", "Saral HR User"]]
+        ]
+    },
+
+    # DocType Permissions
+    {
+        "dt": "Custom DocPerm",
+        "filters": [
+            ["role", "in", ["Saral HR Manager", "Saral HR User"]]
+        ]
+    },
+
     # Salary Component
     {
         "dt": "Salary Component"
