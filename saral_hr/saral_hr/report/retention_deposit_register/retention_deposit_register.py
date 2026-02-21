@@ -2,9 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils import flt
+from frappe.utils import flt, getdate, add_months
 
-COMPONENT_NAME = "Employee -Labour Welfare Fund"
+COMPONENT_NAME = "Retention"
 
 MONTH_MAP = {
     'January': 1, 'February': 2, 'March': 3, 'April': 4,
@@ -53,30 +53,23 @@ def get_columns():
             "width": 220
         },
         {
-            "label": "Mobile No",
-            "fieldname": "mobile_no",
-            "fieldtype": "Data",
+            "label": "Date of Joining",
+            "fieldname": "date_of_joining",
+            "fieldtype": "Date",
             "width": 150
         },
         {
-            "label": "Aadhar No",
-            "fieldname": "aadhar_no",
-            "fieldtype": "Data",
+            "label": "Deduction Upto (3 Years)",
+            "fieldname": "ded_upto",
+            "fieldtype": "Date",
             "width": 180
         },
         {
-            "label": "Net Salary",
-            "fieldname": "net_salary",
+            "label": "Retention Deposit",
+            "fieldname": "retention_amount",
             "fieldtype": "Float",
             "precision": 2,
-            "width": 160
-        },
-        {
-            "label": "LWF Amount",
-            "fieldname": "lwf_amount",
-            "fieldtype": "Float",
-            "precision": 2,
-            "width": 150
+            "width": 180
         },
     ]
 
@@ -84,11 +77,10 @@ def get_columns():
 def get_data(filters):
     import json
 
-    month            = filters.get("month")
-    year             = filters.get("year")
-    category         = filters.get("category")           # single string (Link field)
-    employee_filter  = filters.get("employee")           # list from MultiSelectList
-    company_filter   = filters.get("company")            # list from MultiSelectList
+    month          = filters.get("month")
+    year           = filters.get("year")
+    category       = filters.get("category")       # single string (Link field)
+    company_filter = filters.get("company")
 
     month_num  = MONTH_MAP.get(month)
     start_date = f"{year}-{month_num:02d}-01"
@@ -96,7 +88,6 @@ def get_data(filters):
     conditions   = ""
     query_params = {"start_date": start_date, "component": COMPONENT_NAME}
 
-    # --- Company filter ---
     if company_filter:
         if isinstance(company_filter, str):
             company_filter = json.loads(company_filter)
@@ -104,7 +95,7 @@ def get_data(filters):
             conditions += " AND ss.company IN %(companies)s"
             query_params["companies"] = tuple(company_filter)
 
-    # --- Employee filter ---
+    employee_filter = filters.get("employee")
     if employee_filter:
         if isinstance(employee_filter, str):
             employee_filter = json.loads(employee_filter)
@@ -112,7 +103,7 @@ def get_data(filters):
             conditions += " AND ss.employee IN %(employees)s"
             query_params["employees"] = tuple(employee_filter)
 
-    # --- Category filter (via Company Link doctype, same pattern as Salary Summary) ---
+    # Category filter via Company Link (same pattern as all other reports)
     category_join = ""
     if category:
         category_join = """
@@ -124,10 +115,9 @@ def get_data(filters):
 
     rows = frappe.db.sql("""
         SELECT
-            ss.employee        AS employee_id,
-            ss.employee_name   AS employee_name,
-            ss.net_salary      AS net_salary,
-            sd.amount          AS lwf_amount
+            ss.employee      AS employee_id,
+            ss.employee_name AS employee_name,
+            sd.amount        AS retention_amount
         FROM
             `tabSalary Slip` ss
         INNER JOIN
@@ -139,7 +129,7 @@ def get_data(filters):
             AND sd.amount > 0
         {category_join}
         WHERE
-            ss.docstatus    = 1
+            ss.docstatus      = 1
             AND ss.start_date = %(start_date)s
             {conditions}
         ORDER BY
@@ -149,71 +139,62 @@ def get_data(filters):
     if not rows:
         return []
 
-    # --- Enrich with Employee master data ---
+    # Fetch date_of_joining from Company Link
     employee_ids = list({r.employee_id for r in rows})
 
-    cl_records = frappe.db.get_all(
-        "Company Link",
-        filters={"name": ["in", employee_ids]},
-        fields=["name", "employee"]
-    )
-    cl_map = {r.name: r.employee for r in cl_records}
+    cl_rows = frappe.db.sql("""
+        SELECT name, date_of_joining
+        FROM `tabCompany Link`
+        WHERE name IN %(ids)s
+    """, {"ids": tuple(employee_ids)}, as_dict=1)
 
-    emp_master_ids = [v for v in cl_map.values() if v]
-    emp_details_map = {}
-    if emp_master_ids:
-        emp_records = frappe.db.get_all(
-            "Employee",
-            filters={"name": ["in", emp_master_ids]},
-            fields=["name", "cell_number", "aadhar_number"]
-        )
-        emp_details_map = {r.name: r for r in emp_records}
+    cl_map = {r["name"]: r["date_of_joining"] for r in cl_rows}
 
-    data             = []
-    total_net_salary = 0.0
-    total_lwf        = 0.0
+    data            = []
+    total_retention = 0.0
 
     for idx, row in enumerate(rows, start=1):
-        emp_master_id = cl_map.get(row.employee_id)
-        emp_detail    = emp_details_map.get(emp_master_id, {})
+        doj      = cl_map.get(row.employee_id)
+        ded_upto = None
 
-        net = flt(row.net_salary, 2)
-        lwf = flt(row.lwf_amount, 2)
+        if doj:
+            try:
+                ded_upto = add_months(getdate(doj), 36)
+            except Exception:
+                ded_upto = None
 
-        total_net_salary += net
-        total_lwf        += lwf
+        retention = flt(row.retention_amount, 2)
+        total_retention += retention
 
         data.append({
-            "sr_no":         idx,
-            "employee_id":   row.employee_id,
-            "employee_name": row.employee_name,
-            "mobile_no":     emp_detail.get("cell_number") or "-",
-            "aadhar_no":     emp_detail.get("aadhar_number") or "-",
-            "net_salary":    net,
-            "lwf_amount":    lwf,
+            "sr_no":            idx,
+            "employee_id":      row.employee_id,
+            "employee_name":    row.employee_name,
+            "date_of_joining":  doj,
+            "ded_upto":         ded_upto,
+            "retention_amount": retention,
         })
 
     # Totals row
     data.append({
-        "sr_no":         "",
-        "employee_id":   "",
-        "employee_name": "Total",
-        "mobile_no":     "",
-        "aadhar_no":     "",
-        "net_salary":    flt(total_net_salary, 2),
-        "lwf_amount":    flt(total_lwf, 2),
-        "bold":          1,
+        "sr_no":            "",
+        "employee_id":      "",
+        "employee_name":    "Total",
+        "date_of_joining":  None,
+        "ded_upto":         None,
+        "retention_amount": flt(total_retention, 2),
+        "bold":             1,
     })
 
     return data
 
 
 @frappe.whitelist()
-def get_lwf_employees_for_filter(year=None, month=None, companies=None, category=None, txt=""):
+def get_retention_employees_for_filter(year=None, month=None, companies=None, category=None, txt=""):
     """
-    Called by the Employee MultiSelectList get_data in JS.
-    Returns employees who have a submitted slip with LWF > 0 for the period,
-    filtered by company and category.
+    Returns employees who have a Retention deduction in their submitted salary slip
+    for the period, filtered by company and category.
+    Used by the Employee MultiSelectList filter.
     """
     if not month or not year:
         return []
@@ -223,7 +204,6 @@ def get_lwf_employees_for_filter(year=None, month=None, companies=None, category
         return []
 
     import json
-
     if isinstance(companies, str):
         try:
             companies = json.loads(companies)
@@ -245,7 +225,6 @@ def get_lwf_employees_for_filter(year=None, month=None, companies=None, category
         company_condition = "AND ss.company IN %(companies)s"
         params["companies"] = tuple(companies)
 
-    # Category is a single Link value — join via Company Link (same as Salary Summary)
     if category:
         category_join = """
             INNER JOIN `tabCompany Link` cl
@@ -269,7 +248,7 @@ def get_lwf_employees_for_filter(year=None, month=None, companies=None, category
             AND sd.amount > 0
         {category_join}
         WHERE
-            ss.docstatus    = 1
+            ss.docstatus      = 1
             AND ss.start_date = %(start_date)s
             AND (ss.employee LIKE %(txt)s OR ss.employee_name LIKE %(txt)s)
             {company_condition}

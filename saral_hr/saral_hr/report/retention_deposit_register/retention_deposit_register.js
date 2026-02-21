@@ -1,7 +1,7 @@
 // Copyright (c) 2026, sj and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Labour Welfare Fund Register"] = {
+frappe.query_reports["Retention Deposit Register"] = {
     filters: [
         {
             fieldname: "year",
@@ -51,7 +51,7 @@ frappe.query_reports["Labour Welfare Fund Register"] = {
                 let category  = frappe.query_report.get_filter_value("category");
 
                 return frappe.call({
-                    method: "saral_hr.saral_hr.report.labour_welfare_fund_register.labour_welfare_fund_register.get_lwf_employees_for_filter",
+                    method: "saral_hr.saral_hr.report.retention_deposit_register.retention_deposit_register.get_retention_employees_for_filter",
                     args: {
                         year:      year,
                         month:     month,
@@ -69,12 +69,10 @@ frappe.query_reports["Labour Welfare Fund Register"] = {
         }
     ],
 
-    // ── Custom print ──────────────────────────────────────────────────────────
     onload: function(report) {
-        // Wait for the toolbar to render then replace the Print button action
         frappe.after_ajax(() => {
             report.page.set_primary_action(__("Print"), () => {
-                lwf_custom_print(report);
+                retention_custom_print(report);
             }, "printer");
         });
     }
@@ -91,46 +89,40 @@ function get_year_options() {
     return years;
 }
 
-function lwf_custom_print(report) {
+function retention_custom_print(report) {
     let data    = frappe.query_report.data || [];
     let filters = frappe.query_report.get_values() || {};
 
-    let month   = filters.month || "";
-    let year    = filters.year  || "";
+    let month = filters.month || "";
+    let year  = filters.year  || "";
 
-    // Separate data rows from the totals row
     let rows       = data.filter(r => r.employee_name !== "Total");
     let totals_row = data.find(r => r.employee_name === "Total") || {};
 
-    // ── Build table rows ──
     let tbody = rows.map((row, idx) => `
         <tr>
             <td class="center">${idx + 1}</td>
             <td>${row.employee_id || ""}</td>
             <td>${row.employee_name || ""}</td>
-            <td class="center">${row.mobile_no || "-"}</td>
-            <td class="center">${row.aadhar_no || "-"}</td>
-            <td class="num">${fmt(row.net_salary)}</td>
-            <td class="num">${fmt(row.lwf_amount)}</td>
+            <td class="center">${fmt_date(row.date_of_joining)}</td>
+            <td class="center">${fmt_date(row.ded_upto)}</td>
+            <td class="num">${fmt(row.retention_amount)}</td>
         </tr>
     `).join("");
 
-    // ── Totals row ──
     tbody += `
         <tr class="total-row">
             <td colspan="5" style="text-align:right; padding-right:12px; font-weight:bold;">Total</td>
-            <td class="num">${fmt(totals_row.net_salary)}</td>
-            <td class="num">${fmt(totals_row.lwf_amount)}</td>
+            <td class="num">${fmt(totals_row.retention_amount)}</td>
         </tr>
     `;
 
-    // ── Full HTML ──
     let html = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Labour Welfare Fund Register – ${month} ${year}</title>
+            <title>Retention Deposit Register – ${month} ${year}</title>
             <style>
                 * { margin:0; padding:0; box-sizing:border-box; }
                 body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
@@ -190,7 +182,7 @@ function lwf_custom_print(report) {
 
             <div class="header">
                 <div class="company-name">${frappe.boot.sysdefaults.company || ""}</div>
-                <div class="report-title">Labour Welfare Fund Register</div>
+                <div class="report-title">Retention Deposit Register</div>
                 <div class="period">For the Month of ${month} ${year}</div>
             </div>
 
@@ -200,10 +192,9 @@ function lwf_custom_print(report) {
                         <th style="width:55px;">Sr. No.</th>
                         <th style="width:140px;">Employee ID</th>
                         <th style="width:200px;">Employee Name</th>
-                        <th style="width:130px;">Mobile No</th>
-                        <th style="width:160px;">Aadhar No</th>
-                        <th style="width:130px;">Net Salary</th>
-                        <th style="width:120px;">LWF Amount</th>
+                        <th style="width:140px;">Date of Joining</th>
+                        <th style="width:160px;">Ded. Upto (3 Yrs)</th>
+                        <th style="width:150px;">Retention Deposit</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -231,7 +222,6 @@ function lwf_custom_print(report) {
         </html>
     `;
 
-    // ── Open in new tab and trigger browser print ──
     let w = window.open("", "_blank");
     w.document.write(html);
     w.document.close();
@@ -241,4 +231,13 @@ function lwf_custom_print(report) {
 
 function fmt(val) {
     return parseFloat(val || 0).toFixed(2);
+}
+
+function fmt_date(val) {
+    if (!val) return "-";
+    let parts = val.split ? val.split("-") : [];
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return val;
 }

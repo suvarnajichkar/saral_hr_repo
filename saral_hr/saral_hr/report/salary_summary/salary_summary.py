@@ -1,307 +1,232 @@
+# Copyright (c) 2026, sj and contributors
+# For license information, please see license.txt
+
 import frappe
-from frappe import _
-import calendar
 from frappe.utils import flt
 
 MONTH_MAP = {
-    "January": 1, "February": 2, "March": 3, "April": 4,
-    "May": 5, "June": 6, "July": 7, "August": 8,
-    "September": 9, "October": 10, "November": 11, "December": 12
+    'January': 1, 'February': 2, 'March': 3, 'April': 4,
+    'May': 5, 'June': 6, 'July': 7, 'August': 8,
+    'September': 9, 'October': 10, 'November': 11, 'December': 12
 }
-
-EARNING_COMPONENTS = [
-    ("Basic", "BASIC"),
-    ("Dearness Allowance", "DA"),
-    ("House Rent Allowance", "HRA"),
-    ("Conveyance Allowance", "CONV"),
-    ("Medical Allowance", "MED"),
-    ("Education Allowance", "EDU"),
-    ("Other Allowance", "OA"),
-    ("Variable Pay", "VAR"),
-    ("Arrears", "ARREARS"),
-]
-
-DEDUCTION_COMPONENTS = [
-    ("Employee -  PF", "PF"),
-    ("Employer -  PF", "EPF"),
-    ("Employee - ESIC", "ESI"),
-    ("Employer -  ESIC", "EESI"),
-    ("Professional Tax", "PT"),
-    ("Employee -Labour Welfare Fund", "Employee - LWF"),
-    ("Employer - Labour Welfare Fund", "Employer - LWF"),
-    ("Employee -Bonus", "BONUS"),
-    ("Employer - Bonus", "Employer - bonus"),
-    ("Employer - Gratuity", "GRAT"),
-    ("Loan", "Loan"),
-    ("Advance", "ADV"),
-    ("Retention", "RET"),
-    ("Other Deduction - 1", "OD -1"),
-]
 
 
 def execute(filters=None):
     filters = filters or {}
+    validate_filters(filters)
     columns = get_columns()
-    data = get_data(filters)
+    data    = get_data(filters)
     return columns, data
 
 
+def validate_filters(filters):
+    if not filters.get("month"):
+        frappe.throw("Please select a Month")
+    if not filters.get("year"):
+        frappe.throw("Please select a Year")
+    if not filters.get("company"):
+        frappe.throw("Please select at least one Company")
+    if not filters.get("category"):
+        frappe.throw("Please select a Category")
+
+
 def get_columns():
-    columns = [
-        {
-            "label": _("Employee ID"),
-            "fieldname": "employee",
-            "fieldtype": "Data",
-            "width": 120
-        },
-        {
-            "label": _("Employee Name"),
-            "fieldname": "employee_name",
-            "fieldtype": "Data",
-            "width": 180
-        },
-        {
-            "label": _("Payment Days"),
-            "fieldname": "payment_days",
-            "fieldtype": "Float",
-            "precision": 2,
-            "width": 110
-        },
+    return [
+        {"label": "Earnings — Description", "fieldname": "description",     "fieldtype": "Data",  "width": 250},
+        {"label": "Earnings — Amount",       "fieldname": "amount",          "fieldtype": "Float", "precision": 2, "width": 160},
+        {"label": " ",                        "fieldname": "spacer",          "fieldtype": "Data",  "width": 40},
+        {"label": "Deductions — Description","fieldname": "ded_description", "fieldtype": "Data",  "width": 250},
+        {"label": "Deductions — Amount",     "fieldname": "ded_amount",      "fieldtype": "Float", "precision": 2, "width": 160},
     ]
 
-    # Earning columns
-    for label, abbr in EARNING_COMPONENTS:
-        columns.append({
-            "label": _(f"{label} ({abbr})"),
-            "fieldname": f"earn_{sanitize(abbr)}",
-            "fieldtype": "Float",
-            "precision": 2,
-            "width": 150
-        })
 
-    # Deduction columns
-    for label, abbr in DEDUCTION_COMPONENTS:
-        columns.append({
-            "label": _(f"{label} ({abbr})"),
-            "fieldname": f"ded_{sanitize(abbr)}",
-            "fieldtype": "Float",
-            "precision": 2,
-            "width": 150
-        })
-
-    columns.append({
-        "label": _("Total Earnings"),
-        "fieldname": "total_earnings",
-        "fieldtype": "Float",
-        "precision": 2,
-        "width": 140
-    })
-
-    columns.append({
-        "label": _("Total Deductions"),
-        "fieldname": "total_deductions",
-        "fieldtype": "Float",
-        "precision": 2,
-        "width": 140
-    })
-    columns.append({
-        "label": _("Net Salary"),
-        "fieldname": "net_salary",
-        "fieldtype": "Float",
-        "precision": 2,
-        "width": 140
-    })
-
-    return columns
+def _parse_multiselect(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        import json
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            pass
+        return [v.strip() for v in value.split(",") if v.strip()]
+    return []
 
 
 def get_data(filters):
-    year  = filters.get("year")
-    month = filters.get("month")
+    month    = filters.get("month")
+    year     = filters.get("year")
+    category = filters.get("category")
 
-    if not year or not month:
-        return []
+    companies = _parse_multiselect(filters.get("company"))
+    divisions = _parse_multiselect(filters.get("division"))
 
-    year  = int(year)
-    month = MONTH_MAP.get(month)
-    if not month:
-        return []
+    month_num  = MONTH_MAP.get(month)
+    start_date = f"{year}-{month_num:02d}-01"
 
-    last_day   = calendar.monthrange(year, month)[1]
-    start_date = f"{year}-{str(month).zfill(2)}-01"
-    end_date   = f"{year}-{str(month).zfill(2)}-{str(last_day).zfill(2)}"
-
-    conditions  = "ss.docstatus = 1 AND ss.start_date >= %(start_date)s AND ss.end_date <= %(end_date)s"
-    sql_filters = {"start_date": start_date, "end_date": end_date}
-
-    if filters.get("company"):
-        companies = frappe.parse_json(filters.get("company"))
-        if companies:
-            sql_filters["companies"] = tuple(companies)
-            conditions += " AND ss.company IN %(companies)s"
-
-    if filters.get("employee"):
-        employees = frappe.parse_json(filters.get("employee"))
-        if employees:
-            sql_filters["employees"] = tuple(employees)
-            conditions += " AND ss.employee IN %(employees)s"
-
-    # Category filter — MultiSelectList, Company Link se INNER JOIN
-    category_join = ""
-    if filters.get("category"):
-        categories = frappe.parse_json(filters.get("category"))
-        if categories:
-            category_join = "INNER JOIN `tabCompany Link` cl_cat ON cl_cat.employee = ss.employee"
-            sql_filters["categories"] = tuple(categories)
-            conditions += " AND cl_cat.category IN %(categories)s"
-
-    salary_slips = frappe.db.sql(f"""
-        SELECT
-            ss.name          AS salary_slip,
-            ss.employee      AS employee,
-            ss.employee_name AS employee_name,
-            ss.payment_days  AS payment_days,
-            ss.net_salary    AS net_salary
-        FROM
-            `tabSalary Slip` ss
-            {category_join}
-        WHERE
-            {conditions}
-        ORDER BY
-            ss.employee_name ASC
-    """, sql_filters, as_dict=True)
-
-    if not salary_slips:
-        return []
-
-    slip_names = [d["salary_slip"] for d in salary_slips]
-
-    earnings_rows = frappe.db.sql("""
-        SELECT
-            sd.parent           AS salary_slip,
-            sd.salary_component AS salary_component,
-            sd.amount           AS amount
-        FROM
-            `tabSalary Details` sd
-        WHERE
-            sd.parent IN %(slips)s
-            AND sd.parentfield = 'earnings'
-    """, {"slips": slip_names}, as_dict=True)
-
-    deductions_rows = frappe.db.sql("""
-        SELECT
-            sd.parent           AS salary_slip,
-            sd.salary_component AS salary_component,
-            sd.amount           AS amount
-        FROM
-            `tabSalary Details` sd
-        WHERE
-            sd.parent IN %(slips)s
-            AND sd.parentfield = 'deductions'
-    """, {"slips": slip_names}, as_dict=True)
-
-    earnings_map   = {}
-    deductions_map = {}
-
-    for row in earnings_rows:
-        earnings_map.setdefault(row["salary_slip"], {})[row["salary_component"]] = row["amount"]
-
-    for row in deductions_rows:
-        deductions_map.setdefault(row["salary_slip"], {})[row["salary_component"]] = row["amount"]
-
-    data = []
-
-    # Totals tracker
-    grand = {
-        "total_earnings": 0,
-        "total_deductions": 0,
-        "net_salary": 0,
-    }
-    for _, abbr in EARNING_COMPONENTS:
-        grand[f"earn_{sanitize(abbr)}"] = 0
-    for _, abbr in DEDUCTION_COMPONENTS:
-        grand[f"ded_{sanitize(abbr)}"] = 0
-
-    for slip in salary_slips:
-        slip_earnings   = earnings_map.get(slip["salary_slip"], {})
-        slip_deductions = deductions_map.get(slip["salary_slip"], {})
-
-        row = {
-            "salary_slip":   slip["salary_slip"],
-            "employee":      slip["employee"],
-            "employee_name": slip["employee_name"],
-            "payment_days":  flt(slip["payment_days"], 2),
-            "net_salary":    flt(slip["net_salary"], 2),
-        }
-
-        total_earn = 0
-        for label, abbr in EARNING_COMPONENTS:
-            amount = slip_earnings.get(label)
-            if amount is not None:
-                val = flt(amount, 2)
-                row[f"earn_{sanitize(abbr)}"] = val
-                total_earn += val
-                grand[f"earn_{sanitize(abbr)}"] += val
-
-        row["total_earnings"] = flt(total_earn, 2)
-        grand["total_earnings"] += flt(total_earn, 2)
-
-        total_ded = 0
-        for label, abbr in DEDUCTION_COMPONENTS:
-            amount = slip_deductions.get(label)
-            if amount is not None:
-                val = flt(amount, 2)
-                row[f"ded_{sanitize(abbr)}"] = val
-                total_ded += val
-                grand[f"ded_{sanitize(abbr)}"] += val
-
-        row["total_deductions"] = flt(total_ded, 2)
-        grand["total_deductions"] += flt(total_ded, 2)
-        grand["net_salary"] += flt(slip["net_salary"], 2)
-
-        data.append(row)
-
-    # Grand Total row
-    total_row = {
-        "employee":      "",
-        "employee_name": "Total",
-        "payment_days":  "",
-        "bold":          1,
-    }
-    total_row.update(grand)
-    data.append(total_row)
-
-    return data
-
-
-def sanitize(abbr):
-    return abbr.strip().lower().replace(" ", "_").replace("-", "_").replace("__", "_")
-
-
-@frappe.whitelist()
-def get_employees_for_filter(companies=None, txt=""):
-
-    companies = frappe.parse_json(companies) if companies else []
-
-    company_condition = ""
-    params = {"txt": f"%{txt}%"}
+    query_params = {"start_date": start_date}
+    conditions   = ["ss.docstatus = 1", "ss.start_date = %(start_date)s"]
 
     if companies:
-        company_condition = "AND ss.company IN %(companies)s"
-        params["companies"] = tuple(companies)
+        query_params["companies"] = tuple(companies)
+        conditions.append("ss.company IN %(companies)s")
 
-    results = frappe.db.sql("""
-        SELECT DISTINCT
-            ss.employee      AS employee,
-            ss.employee_name AS employee_name
-        FROM
-            `tabSalary Slip` ss
-        WHERE
-            ss.docstatus = 1
-            AND (ss.employee LIKE %(txt)s OR ss.employee_name LIKE %(txt)s)
-            {company_condition}
-        ORDER BY ss.employee_name
-        LIMIT 50
-    """.format(company_condition=company_condition), params, as_dict=1)
+    if category:
+        query_params["category"] = category
+        # ss.employee = tabCompany Link.name (e.g. CL-2026-XXXXX)
+        # category lives on tabCompany Link, not tabEmployee
+        conditions.append("""ss.employee IN (
+            SELECT name FROM `tabCompany Link`
+            WHERE category = %(category)s
+        )""")
 
-    return results
+    if divisions:
+        query_params["divisions"] = tuple(divisions)
+        conditions.append("""ss.employee IN (
+            SELECT name FROM `tabCompany Link`
+            WHERE division   IN %(divisions)s
+               OR department IN %(divisions)s
+        )""")
+
+    where_clause = " AND ".join(conditions)
+
+    # ── Step 1: Components that actually appear in matching slips ──────────
+    earn_components = frappe.db.sql(f"""
+        SELECT DISTINCT sd.salary_component
+        FROM `tabSalary Slip` ss
+        INNER JOIN `tabSalary Details` sd
+            ON  sd.parent      = ss.name
+            AND sd.parenttype  = 'Salary Slip'
+            AND sd.parentfield = 'earnings'
+        WHERE {where_clause}
+        ORDER BY sd.salary_component
+    """, query_params, as_list=1)
+    earn_components = [r[0] for r in earn_components]
+
+    ded_components = frappe.db.sql(f"""
+        SELECT DISTINCT sd.salary_component
+        FROM `tabSalary Slip` ss
+        INNER JOIN `tabSalary Details` sd
+            ON  sd.parent      = ss.name
+            AND sd.parenttype  = 'Salary Slip'
+            AND sd.parentfield = 'deductions'
+        INNER JOIN `tabSalary Component` sc
+            ON  sc.name = sd.salary_component AND sc.employer_contribution = 0
+        WHERE {where_clause}
+        ORDER BY sd.salary_component
+    """, query_params, as_list=1)
+    ded_components = [r[0] for r in ded_components]
+
+    # ── Step 2: Totals ─────────────────────────────────────────────────────
+    earn_totals_rows = frappe.db.sql(f"""
+        SELECT sd.salary_component AS component, SUM(sd.amount) AS total
+        FROM `tabSalary Slip` ss
+        INNER JOIN `tabSalary Details` sd
+            ON  sd.parent      = ss.name
+            AND sd.parenttype  = 'Salary Slip'
+            AND sd.parentfield = 'earnings'
+        WHERE {where_clause}
+        GROUP BY sd.salary_component
+    """, query_params, as_dict=1)
+
+    ded_totals_rows = frappe.db.sql(f"""
+        SELECT sd.salary_component AS component, SUM(sd.amount) AS total
+        FROM `tabSalary Slip` ss
+        INNER JOIN `tabSalary Details` sd
+            ON  sd.parent      = ss.name
+            AND sd.parenttype  = 'Salary Slip'
+            AND sd.parentfield = 'deductions'
+        INNER JOIN `tabSalary Component` sc
+            ON  sc.name = sd.salary_component AND sc.employer_contribution = 0
+        WHERE {where_clause}
+        GROUP BY sd.salary_component
+    """, query_params, as_dict=1)
+
+    earn_map = {r.component: flt(r.total) for r in earn_totals_rows}
+    ded_map  = {r.component: flt(r.total) for r in ded_totals_rows}
+
+    earning_rows   = [(c, earn_map.get(c, 0.0)) for c in earn_components]
+    deduction_rows = [(c, ded_map.get(c, 0.0))  for c in ded_components]
+
+    grand_earn = sum(v for _, v in earning_rows)
+    grand_ded  = sum(v for _, v in deduction_rows)
+
+    # ── Step 3: Summary stats ──────────────────────────────────────────────
+    stats = frappe.db.sql(f"""
+        SELECT
+            COUNT(DISTINCT ss.employee) AS total_employees,
+            SUM(ss.net_salary)          AS total_net_salary,
+            SUM(ss.total_lwp)           AS total_lwp,
+            SUM(ss.absent_days)         AS total_absent,
+            SUM(ss.total_holidays)      AS total_holidays,
+            SUM(ss.payment_days)        AS total_payment_days
+        FROM `tabSalary Slip` ss
+        WHERE {where_clause}
+    """, query_params, as_dict=1)
+
+    stats = stats[0] if stats else {}
+
+    # ── Step 4: Build output rows ──────────────────────────────────────────
+    data     = []
+    max_rows = max(len(earning_rows), len(deduction_rows), 1)
+
+    for i in range(max_rows):
+        earn_comp, earn_amt = earning_rows[i]   if i < len(earning_rows)   else ("", None)
+        ded_comp,  ded_amt  = deduction_rows[i] if i < len(deduction_rows) else ("", None)
+
+        data.append({
+            "description":     earn_comp,
+            "amount":          flt(earn_amt, 2) if earn_comp else None,
+            "spacer":          "",
+            "ded_description": ded_comp,
+            "ded_amount":      flt(ded_amt, 2)  if ded_comp  else None,
+            "_row_type":       "component",
+        })
+
+    # Grand total
+    data.append({
+        "description":     "Grand Total",
+        "amount":          flt(grand_earn, 2),
+        "spacer":          "",
+        "ded_description": "Grand Total",
+        "ded_amount":      flt(grand_ded, 2),
+        "bold":            1,
+        "_row_type":       "grand_total",
+    })
+
+    # Separator
+    data.append({
+        "description": "", "amount": None,
+        "spacer": "", "ded_description": "", "ded_amount": None,
+        "_row_type": "separator",
+    })
+
+    # Other Details header
+    data.append({
+        "description": "Other Details", "amount": None,
+        "spacer": "", "ded_description": "", "ded_amount": None,
+        "bold": 1, "_row_type": "section_header",
+    })
+
+    for label, value in [
+        ("Total Employees",    stats.get("total_employees") or 0),
+        ("Total Net Salary",   flt(stats.get("total_net_salary"), 2)),
+        ("Total LWP Days",     flt(stats.get("total_lwp"), 2)),
+        ("Total Absent Days",  flt(stats.get("total_absent"), 2)),
+        ("Total Holidays",     flt(stats.get("total_holidays"), 2)),
+        ("Total Payment Days", flt(stats.get("total_payment_days"), 2)),
+    ]:
+        data.append({
+            "description":     label,
+            "amount":          value,
+            "spacer":          "",
+            "ded_description": "",
+            "ded_amount":      None,
+            "_row_type":       "other",
+        })
+
+    return data

@@ -73,7 +73,6 @@ permission_query_conditions = {
 }
 
 
-
 # Document fixtures to be exported/imported
 fixtures = [
 
