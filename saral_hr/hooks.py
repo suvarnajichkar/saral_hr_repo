@@ -98,10 +98,17 @@ fixtures = [
                 "Salary Slip Custom"
             ]]
         ]
+    },
+
+    # Reports
+    {
+        "dt": "Report",
+        "filters": [
+            ["module", "=", "Saral Hr"]
+        ]
     }
 
 ]
-
 
 
 # Generators
