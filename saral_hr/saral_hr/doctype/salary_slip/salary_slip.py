@@ -442,21 +442,12 @@ def get_eligible_employees_for_salary_slip(company, year, month):
         if emp.name not in employees_with_structure_ids:
             unmet_criteria.append("No submitted Salary Structure Assignment found covering the full payroll period")
 
-        existing_slip = frappe.db.exists("Salary Slip", {
+        attendance_count = frappe.db.count("Attendance", {
             "employee": emp.name,
-            "start_date": start_date,
-            "docstatus": ["in", [0, 1]]
+            "attendance_date": ["between", [start_date_obj, end_date]]
         })
-        if existing_slip:
-            unmet_criteria.append("A salary slip already exists for this payroll period")
-
-        if not existing_slip:
-            attendance_count = frappe.db.count("Attendance", {
-                "employee": emp.name,
-                "attendance_date": ["between", [start_date_obj, end_date]]
-            })
-            if attendance_count == 0:
-                unmet_criteria.append("No attendance has been recorded for this employee in the selected period")
+        if attendance_count == 0:
+            unmet_criteria.append("No attendance has been recorded for this employee in the selected period")
 
         division = emp.get("division")
         if division:
@@ -671,26 +662,18 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
         amount = 0
         comp = (row.salary_component or "").lower()
 
-        # ── Employee ESIC (0.75%) ─────────────────────────────────────────────
-        # SSA mein 0 → base = 0 → amount = 0
-        # SSA mein > 0  → computed total earnings calculate
         if "esic" in comp and "employer" not in comp:
             if base > 0:
                 amount = flt((total_earnings - conveyance_amount) * 0.0075, 2) if total_earnings < 21000 else 0
             else:
                 amount = 0
 
-        # ── Employer ESIC (3.25%) ─────────────────────────────────────────────
         elif "esic" in comp and "employer" in comp:
             if base > 0:
                 amount = flt((total_earnings - conveyance_amount) * 0.0325, 2) if total_earnings < 21000 else 0
             else:
                 amount = 0
 
-        # ── PF / Provident Fund (12% of computed Basic + DA) ─────────────────
-        # SSA mein 0  → base = 0 → amount = 0
-        # SSA mein > 0  → computed basic + da ka 12%
-    
         elif "pf" in comp or "provident" in comp:
             if base > 0:
                 basic_da_total = basic_amount + da_amount
@@ -1196,14 +1179,6 @@ def generate_bulk_print_html(doc):
 
 @frappe.whitelist()
 def get_salary_slips_print_summary(company, year, month):
-    """
-    Returns:
-      - submitted      : list of submitted (docstatus=1) salary slips  → shown in card grid for printing
-      - not_printable  : all active employees whose slip is NOT submitted,
-                         with slip_name, slip_status, and reasons
-      - total_active   : count of active employees in that company
-      - total_submitted: count of submitted slips
-    """
     month_map = {
         'January': 1, 'February': 2, 'March': 3, 'April': 4,
         'May': 5, 'June': 6, 'July': 7, 'August': 8,
@@ -1215,7 +1190,6 @@ def get_salary_slips_print_summary(company, year, month):
 
     start_date = f"{year}-{month_num:02d}-01"
 
-    # ── All active employees for this company ──────────────────────────────
     all_employees = frappe.db.sql("""
         SELECT name, full_name AS employee_name
         FROM `tabCompany Link`
@@ -1225,7 +1199,6 @@ def get_salary_slips_print_summary(company, year, month):
 
     total_active = len(all_employees)
 
-    # ── All salary slips (any docstatus) for this period + company ─────────
     all_slips = frappe.db.sql("""
         SELECT name, employee, employee_name, docstatus
         FROM `tabSalary Slip`
@@ -1234,7 +1207,6 @@ def get_salary_slips_print_summary(company, year, month):
         ORDER BY employee_name
     """, {"company": company, "start_date": start_date}, as_dict=1)
 
-    # Build lookup: employee → slip info
     slip_by_emp = {}
     for sl in all_slips:
         slip_by_emp[sl.employee] = sl
@@ -1242,16 +1214,12 @@ def get_salary_slips_print_summary(company, year, month):
     submitted     = []
     not_printable = []
 
-    DOCSTATUS_LABEL = {0: 'Draft', 1: 'Submitted', 2: 'Cancelled'}
-
     for emp in all_employees:
         slip = slip_by_emp.get(emp.name)
 
         if slip and slip.docstatus == 1:
-            # ✅ Submitted — eligible for printing
             submitted.append(slip)
         else:
-            # ❌ Not printable — build reason
             reasons = []
             slip_name   = None
             slip_status = 'No Slip'
