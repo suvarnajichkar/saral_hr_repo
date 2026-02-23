@@ -259,13 +259,12 @@ function fetch_eligible_employees(dialog) {
 
 function show_ineligible_employees_dialog(ineligible_list, month, year) {
     function parse_reasons(reasons) {
-        const f = { no_salary_structure: false, no_variable_pay: false, slip_exists: false, no_attendance: false };
+        const f = { no_salary_structure: false, no_variable_pay: false, no_attendance: false };
         (reasons || []).forEach(r => {
             const l = r.toLowerCase();
-            if (l.includes('salary structure'))                                     f.no_salary_structure = true;
-            if (l.includes('variable pay'))                                         f.no_variable_pay     = true;
-            if (l.includes('already exists') || l.includes('salary slip already')) f.slip_exists         = true;
-            if (l.includes('attendance'))                                           f.no_attendance       = true;
+            if (l.includes('salary structure')) f.no_salary_structure = true;
+            if (l.includes('variable pay'))     f.no_variable_pay     = true;
+            if (l.includes('attendance'))       f.no_attendance       = true;
         });
         return f;
     }
@@ -290,7 +289,6 @@ function show_ineligible_employees_dialog(ineligible_list, month, year) {
             </td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.no_salary_structure ? ICON_FAIL : ICON_OK}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.no_variable_pay     ? ICON_FAIL : ICON_OK}</td>
-            <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.slip_exists         ? ICON_FAIL : ICON_OK}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.no_attendance       ? ICON_FAIL : ICON_OK}</td>
         </tr>`;
     }).join('');
@@ -331,17 +329,16 @@ function show_ineligible_employees_dialog(ineligible_list, month, year) {
         </div>
         <div style="border:1px solid var(--border-color);border-radius:var(--border-radius);overflow:hidden;">
             <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
-                <table id="ineligible_table" style="width:100%;border-collapse:collapse;min-width:560px;">
+                <table id="ineligible_table" style="width:100%;border-collapse:collapse;min-width:460px;">
                     <thead>
                         <tr>
                             <th style="position:sticky;top:0;z-index:1;padding:8px 10px;text-align:left;
                                 font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;
                                 color:var(--text-muted);background:var(--subtle-accent-bg,#f5f6f7);
                                 border-bottom:2px solid var(--border-color);border-right:1px solid var(--border-color);
-                                width:28%;">Employee</th>
+                                width:32%;">Employee</th>
                             ${th('Salary Structure<br>Assigned', false)}
                             ${th('Variable Pay<br>Configured', false)}
-                            ${th('Salary Slip<br>Doesn\'t Exist', false)}
                             ${th('Attendance<br>Recorded', true)}
                         </tr>
                     </thead>
@@ -376,10 +373,9 @@ function show_ineligible_employees_dialog(ineligible_list, month, year) {
                 </td>
                 <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.no_salary_structure ? ICON_FAIL : ICON_OK}</td>
                 <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.no_variable_pay     ? ICON_FAIL : ICON_OK}</td>
-                <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.slip_exists         ? ICON_FAIL : ICON_OK}</td>
                 <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);text-align:center;vertical-align:middle;">${f.no_attendance       ? ICON_FAIL : ICON_OK}</td>
             </tr>`;
-        }).join('') || `<tr><td colspan="5" class="text-muted" style="padding:20px;text-align:center;">No matching employees found.</td></tr>`);
+        }).join('') || `<tr><td colspan="4" class="text-muted" style="padding:20px;text-align:center;">No matching employees found.</td></tr>`);
     });
 }
 
@@ -513,7 +509,6 @@ function fetch_submitted_salary_slips(dialog) {
 
             wrapper.html(summary + grid_html);
 
-            // bind exclusion button
             if (not_printable.length > 0) {
                 wrapper.find('#btn_view_print_exclusions').on('click', () =>
                     show_print_exclusions_dialog(dialog._not_printable_slips, month, year));
@@ -542,7 +537,6 @@ function fetch_submitted_salary_slips(dialog) {
 
 function show_print_exclusions_dialog(not_printable_list, month, year) {
 
-    // Status badge helpers
     function slip_status_badge(status) {
         const cfg = {
             'Draft':       { bg: '#fff3cd', color: '#856404', label: 'Draft'        },
@@ -612,7 +606,6 @@ function show_print_exclusions_dialog(not_printable_list, month, year) {
         ${last ? '' : 'border-right:1px solid var(--border-color);'}
         white-space:normal;line-height:1.4;">${label}</th>`;
 
-    // Status legend — each pill+label is a flex unit so they never split across lines
     function legend_item(pill_bg, pill_color, pill_text, desc) {
         return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
             <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;
