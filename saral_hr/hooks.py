@@ -84,6 +84,22 @@ fixtures = [
         ]
     },
 
+    # Roles
+    {
+        "dt": "Role",
+        "filters": [
+            ["name", "in", ["Saral HR Manager", "Saral HR User"]]
+        ]
+    },
+
+    # DocType Permissions
+    {
+        "dt": "Custom DocPerm",
+        "filters": [
+            ["role", "in", ["Saral HR Manager", "Saral HR User"]]
+        ]
+    },
+
     # Salary Component
     {
         "dt": "Salary Component"
@@ -130,13 +146,13 @@ fixtures = [
 # ------------
 
 # before_install = "saral_hr.install.before_install"
-# after_install = "saral_hr.install.after_install"
+after_install = "saral_hr.install.after_install"
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "saral_hr.uninstall.before_uninstall"
-# after_uninstall = "saral_hr.uninstall.after_uninstall"
+after_uninstall = "saral_hr.uninstall.after_uninstall"
 
 # Integration Setup
 # ------------------

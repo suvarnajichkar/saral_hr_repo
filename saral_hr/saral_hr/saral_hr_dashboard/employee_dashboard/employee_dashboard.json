@@ -1,0 +1,21 @@
+{
+ "cards": [],
+ "charts": [
+  {
+   "chart": "Present Attendance",
+   "width": "Half"
+  }
+ ],
+ "creation": "2026-02-23 14:20:59.156942",
+ "dashboard_name": "Employee Dashboard",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-02-23 14:21:41.553312",
+ "modified_by": "Administrator",
+ "module": "Saral Hr",
+ "name": "Employee Dashboard",
+ "owner": "Administrator"
+}

@@ -37,7 +37,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-03 13:40:00.000000",
+ "modified": "2026-02-21 14:51:49.356989",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Variable Pay Assignment",
@@ -52,7 +52,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   }

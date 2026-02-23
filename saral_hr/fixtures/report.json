@@ -10,6 +10,43 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
+  "modified": "2026-02-19 12:54:47.455820",
+  "module": "Saral Hr",
+  "name": "Transaction Checklist",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Salary Slip",
+  "reference_report": null,
+  "report_name": "Transaction Checklist",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "parent": "Transaction Checklist",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Transaction Checklist",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "HR User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
   "modified": "2026-02-18 11:29:10.085129",
   "module": "Saral Hr",
   "name": "Employee Timeline Report",
