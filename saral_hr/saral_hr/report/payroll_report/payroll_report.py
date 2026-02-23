@@ -329,6 +329,219 @@ def _render_salary_summary(columns, data):
 def _render_attendance(columns, data):
     if not data:
         return '<p style="color:#888;padding:10px;font-size:8px;text-align:center;">No data</p>'
+
+    rows      = [r for r in data if not r.get("_is_total")]
+    total_row = next((r for r in data if r.get("_is_total")), {})
+    day_cols  = [c for c in columns if c["fieldname"].startswith("day_")]
+
+    SUMM_LABELS = {
+        "working_days":"WD","present_days":"P","half_days":"HD","absent_days":"A",
+        "weekly_off_days":"WO","holiday_days":"H","lwp_days":"LWP","absent_lwp":"A+LWP"
+    }
+    SUMM_COLORS = {
+        "present_days":"#1a6e3c","absent_days":"#b02020","half_days":"#7a5500",
+        "working_days":"#1a1a6e","weekly_off_days":"#5a0f8a","holiday_days":"#1045a0",
+        "lwp_days":"#a04800","absent_lwp":"#b02020",
+    }
+    color_map = {"P":"#1a6e3c","A":"#b02020","WO":"#5a0f8a","H":"#1045a0","LWP":"#a04800","HD":"#7a5500"}
+
+    SUMM_GROUPS = [
+        ("present_days",   "absent_days",    "half_days"),
+        ("working_days",   "weekly_off_days", "holiday_days"),
+        ("lwp_days",       "absent_lwp",      None),
+    ]
+    GROUP_HEADERS = ["P / A / HD", "WD / WO / H", "LWP / A+LWP"]
+
+    def _sv(row, fn):
+        if fn is None: return ""
+        v = row.get(fn)
+        if v is None or v == "" or v == 0 or v == 0.0: return ""
+        return str(int(v)) if isinstance(v, float) and v == int(v) else str(v)
+
+    colgroup  = '<colgroup><col style="width:130px"/>'
+    for _ in day_cols:  colgroup += '<col style="width:11px"/>'
+    for _ in range(3):  colgroup += '<col style="width:38px"/>'
+    colgroup += '</colgroup>'
+
+    th   = "border:1px solid #999;padding:2px 1px;text-align:center;font-weight:700;"
+    th_n = "border:1px solid #999;padding:2px 4px;text-align:left;font-weight:700;"
+
+    hrow1  = '<tr style="font-size:7px;background:#dce3f0;">'
+    hrow1 += f'<th style="{th_n}">Employee Name</th>'
+    for c in day_cols:
+        hrow1 += f'<th style="{th}font-size:6.5px;">{c["label"]}</th>'
+    for gh in GROUP_HEADERS:
+        hrow1 += f'<th style="{th}font-size:6.5px;background:#c8d4ec;">{gh}</th>'
+    hrow1 += '</tr>'
+
+    hrow2  = '<tr style="font-size:6.5px;background:#e8edf8;">'
+    hrow2 += f'<th style="{th_n}font-size:6.5px;">Employee ID</th>'
+    for _ in day_cols:  hrow2 += f'<th style="{th}border-top:none;background:#e8edf8;"></th>'
+    for _ in range(3):  hrow2 += f'<th style="{th}border-top:none;background:#d8e2f4;"></th>'
+    hrow2 += '</tr>'
+
+    rs   = "border:1px solid #ddd;padding:1px;text-align:center;vertical-align:middle;"
+    body = []
+
+    for i, row in enumerate(rows):
+        bg = "#f5f7fc" if i % 2 == 0 else "#ffffff"
+
+        tr1  = (f'<td style="border:1px solid #ccc;padding:2px 4px;text-align:left;'
+                f'font-weight:600;font-size:7.5px;background:{bg};'
+                f'vertical-align:bottom;border-bottom:none;">'
+                f'{row.get("employee_name","")}</td>')
+        for c in day_cols:
+            v   = row.get(c["fieldname"], "-") or "-"
+            clr = color_map.get(v, "#333")
+            tr1 += (f'<td style="{rs}font-size:6.5px;font-weight:700;color:{clr};'
+                    f'background:{bg};border-bottom:none;padding:1px;">{v}</td>')
+        for grp in SUMM_GROUPS:
+            cell = ""
+            for fn in grp:
+                if fn is None:
+                    cell += '<div style="height:13px;"></div>'
+                    continue
+                v   = _sv(row, fn)
+                lbl = SUMM_LABELS.get(fn, "")
+                clr = SUMM_COLORS.get(fn, "#333")
+                if v:
+                    cell += f'<div style="font-size:5.5px;color:#777;line-height:1.1;text-align:center;">{lbl}</div>'
+                    cell += f'<div style="font-size:7.5px;font-weight:700;color:{clr};line-height:1.3;text-align:center;">{v}</div>'
+                else:
+                    cell += '<div style="height:7px;"></div><div style="height:9px;"></div>'
+            tr1 += (f'<td style="{rs}background:{bg};border-bottom:none;'
+                    f'vertical-align:top;padding:2px 1px;">{cell}</td>')
+        body.append(f'<tr>{tr1}</tr>')
+
+        tr2  = (f'<td style="border:1px solid #ccc;padding:1px 4px;text-align:left;'
+                f'font-size:6.5px;color:#555;background:{bg};'
+                f'vertical-align:top;border-top:none;">'
+                f'{row.get("employee","")}</td>')
+        tr2 += "".join(f'<td style="{rs}background:{bg};border-top:none;"></td>' for _ in day_cols)
+        tr2 += "".join(f'<td style="{rs}background:{bg};border-top:none;"></td>' for _ in range(3))
+        body.append(f'<tr>{tr2}</tr>')
+
+    ts  = "border:1px solid #888;padding:2px 3px;font-weight:700;font-size:7px;background:#e0e8f0;"
+    tot  = f'<td style="{ts}text-align:right;">Total</td>'
+    tot += "".join(f'<td style="{ts}font-size:6px;text-align:center;"></td>' for _ in day_cols)
+    for grp in SUMM_GROUPS:
+        cell = ""
+        for fn in grp:
+            if fn is None:
+                cell += '<div style="height:13px;"></div>'
+                continue
+            v   = _sv(total_row, fn)
+            lbl = SUMM_LABELS.get(fn, "")
+            if v:
+                cell += f'<div style="font-size:5.5px;color:#555;line-height:1.1;text-align:center;">{lbl}</div>'
+                cell += f'<div style="font-size:7.5px;font-weight:700;line-height:1.3;text-align:center;">{v}</div>'
+            else:
+                cell += '<div style="height:7px;"></div><div style="height:9px;"></div>'
+        tot += f'<td style="{ts}vertical-align:top;padding:2px 1px;">{cell}</td>'
+    body.append(f'<tr>{tot}</tr>')
+
+    legend = "".join(
+        f'<span style="margin-right:10px;font-size:7px;"><b style="color:{clr};">{k}</b> – {lbl}</span>'
+        for k, clr, lbl in [
+            ("P","#1a6e3c","Present"),("A","#b02020","Absent"),
+            ("WO","#5a0f8a","Weekly Off"),("H","#1045a0","Holiday"),
+            ("LWP","#a04800","LWP"),("HD","#7a5500","Half Day"),
+        ]
+    )
+
+    return (
+        f'<div style="margin-bottom:5px;">{legend}</div>'
+        f'<table style="width:100%;border-collapse:collapse;table-layout:fixed;">'
+        f'{colgroup}<thead>{hrow1+hrow2}</thead>'
+        f'<tbody>{"".join(body)}</tbody></table>'
+    )
+    if not data:
+        return '<p style="color:#888;padding:10px;font-size:8px;text-align:center;">No data</p>'
+
+    rows      = [r for r in data if not r.get("_is_total")]
+    total_row = next((r for r in data if r.get("_is_total")), {})
+
+    day_cols  = [c for c in columns if c["fieldname"].startswith("day_")]
+    summ_cols = [c for c in columns if c["fieldname"] in
+                 ("working_days","present_days","half_days","absent_days",
+                  "weekly_off_days","holiday_days","lwp_days","absent_lwp")]
+
+    SUMM_LABELS = {
+        "working_days":"WD","present_days":"P","half_days":"HD","absent_days":"A",
+        "weekly_off_days":"WO","holiday_days":"H","lwp_days":"LWP","absent_lwp":"A+LWP"
+    }
+    color_map = {"P":"#1a6e3c","A":"#b02020","WO":"#5a0f8a","H":"#1045a0","LWP":"#a04800","HD":"#7a5500"}
+
+    # ── colgroup ──────────────────────────────────────────────────────────────
+    colgroup  = '<colgroup><col style="width:125px"/>'
+    for _ in day_cols:   colgroup += '<col style="width:11px"/>'
+    for _ in summ_cols:  colgroup += '<col style="width:28px"/>'
+    colgroup += '</colgroup>'
+
+    # ── 2-row thead ───────────────────────────────────────────────────────────
+    th   = "border:1px solid #999;padding:2px 1px;text-align:center;font-weight:700;"
+    th_n = "border:1px solid #999;padding:2px 4px;text-align:left;font-weight:700;"
+
+    # Row 1 — Employee Name | day numbers | summary short labels
+    hrow1  = '<tr style="font-size:7px;background:#dce3f0;">'
+    hrow1 += f'<th style="{th_n}">Employee Name</th>'
+    for c in day_cols:
+        hrow1 += f'<th style="{th}font-size:6.5px;">{c["label"]}</th>'
+    for c in summ_cols:
+        hrow1 += f'<th style="{th}font-size:7px;background:#c8d4ec;">{SUMM_LABELS.get(c["fieldname"],c["fieldname"])}</th>'
+    hrow1 += '</tr>'
+
+    # Row 2 — Employee ID | (blank) | (blank)
+    hrow2  = '<tr style="font-size:6.5px;background:#e8edf8;">'
+    hrow2 += f'<th style="{th_n}font-size:6.5px;">Employee ID</th>'
+    for _ in day_cols:   hrow2 += f'<th style="{th}border-top:none;"></th>'
+    for _ in summ_cols:  hrow2 += f'<th style="{th}background:#d8e2f4;border-top:none;"></th>'
+    hrow2 += '</tr>'
+
+    # ── data rows — 2 HTML rows per employee ──────────────────────────────────
+    rs = "border:1px solid #ddd;padding:1px;text-align:center;vertical-align:middle;"
+    body = []
+    for i, row in enumerate(rows):
+        bg = "#f5f7fc" if i % 2 == 0 else "#ffffff"
+
+        # Name row
+        tr1  = f'<td style="border:1px solid #ccc;padding:2px 4px;text-align:left;font-weight:600;font-size:7.5px;background:{bg};vertical-align:bottom;border-bottom:none;">{row.get("employee_name","")}</td>'
+        for c in day_cols:
+            v   = row.get(c["fieldname"],"-") or "-"
+            clr = color_map.get(v,"#333")
+            tr1 += f'<td style="{rs}font-size:6.5px;font-weight:700;color:{clr};background:{bg};border-bottom:none;padding:1px;">{v}</td>'
+        for c in summ_cols:
+            v = row.get(c["fieldname"])
+            tr1 += f'<td style="{rs}font-size:7px;font-weight:600;background:{bg};border-bottom:none;">{v if v is not None else "-"}</td>'
+        body.append(f'<tr>{tr1}</tr>')
+
+        # ID row
+        tr2  = f'<td style="border:1px solid #ccc;padding:1px 4px;text-align:left;font-size:6.5px;color:#555;background:{bg};vertical-align:top;border-top:none;">{row.get("employee","")}</td>'
+        tr2 += "".join(f'<td style="{rs}background:{bg};border-top:none;"></td>' for _ in day_cols)
+        tr2 += "".join(f'<td style="{rs}background:{bg};border-top:none;"></td>' for _ in summ_cols)
+        body.append(f'<tr>{tr2}</tr>')
+
+    # Total row (single)
+    ts  = "border:1px solid #888;padding:2px 3px;font-weight:700;font-size:7.5px;background:#e0e8f0;"
+    tot  = f'<td style="{ts}text-align:right;">Total</td>'
+    tot += "".join(f'<td style="{ts}font-size:6px;text-align:center;"></td>' for _ in day_cols)
+    tot += "".join(f'<td style="{ts}text-align:center;">{total_row.get(c["fieldname"],"")}</td>' for c in summ_cols)
+    body.append(f'<tr>{tot}</tr>')
+
+    # Legend
+    legend = "".join(
+        f'<span style="margin-right:10px;font-size:7px;"><b style="color:{clr};">{k}</b> – {lbl}</span>'
+        for k,clr,lbl in [("P","#1a6e3c","Present"),("A","#b02020","Absent"),("WO","#5a0f8a","Weekly Off"),
+                           ("H","#1045a0","Holiday"),("LWP","#a04800","LWP"),("HD","#7a5500","Half Day")]
+    )
+
+    return (
+        f'<div style="margin-bottom:5px;">{legend}</div>'
+        f'<table style="width:100%;border-collapse:collapse;table-layout:fixed;">'
+        f'{colgroup}<thead>{hrow1+hrow2}</thead><tbody>{"".join(body)}</tbody></table>'
+    )
+    if not data:
+        return '<p style="color:#888;padding:10px;font-size:8px;text-align:center;">No data</p>'
     rows      = [r for r in data if not r.get("_is_total")]
     total_row = next((r for r in data if r.get("_is_total")), {})
     fixed     = [c for c in columns if c["fieldname"] in ("employee","employee_name")]
