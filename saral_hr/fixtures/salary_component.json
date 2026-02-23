@@ -56,6 +56,20 @@
   "type": "Deduction"
  },
  {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-02 16:18:36.740921",
+  "name": "Arrears",
+  "salary_component": "Arrears",
+  "salary_component_abbr": "ARREARS",
+  "type": "Earning"
+ },
+ {
   "depends_on_payment_days": 1,
   "description": null,
   "docstatus": 0,
@@ -96,6 +110,62 @@
   "salary_component": "Variable Pay",
   "salary_component_abbr": "VAR",
   "type": "Earning"
+ },
+ {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 1,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-05 10:50:21.828050",
+  "name": "Employer - Bonus",
+  "salary_component": "Employer - Bonus",
+  "salary_component_abbr": "Employer - bonus",
+  "type": "Deduction"
+ },
+ {
+  "depends_on_payment_days": 1,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-05 11:59:23.523718",
+  "name": "Conveyance Allowance",
+  "salary_component": "Conveyance Allowance",
+  "salary_component_abbr": "CONV",
+  "type": "Earning"
+ },
+ {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 1,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-09 14:25:02.305721",
+  "name": "Employer -  ESIC",
+  "salary_component": "Employer -  ESIC",
+  "salary_component_abbr": "EESI",
+  "type": "Deduction"
+ },
+ {
+  "depends_on_payment_days": 0,
+  "description": null,
+  "docstatus": 0,
+  "doctype": "Salary Component",
+  "employer_contribution": 0,
+  "enter_amount_according_to_months": [],
+  "is_special_component": 0,
+  "modified": "2026-02-09 14:25:08.541706",
+  "name": "Employee - ESIC",
+  "salary_component": "Employee - ESIC",
+  "salary_component_abbr": "ESI",
+  "type": "Deduction"
  },
  {
   "depends_on_payment_days": 0,
@@ -195,20 +265,6 @@
   "salary_component": "Professional Tax",
   "salary_component_abbr": "PT",
   "type": "Deduction"
- },
- {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-02 16:18:36.740921",
-  "name": "Arrears",
-  "salary_component": "Arrears",
-  "salary_component_abbr": "ARREARS",
-  "type": "Earning"
  },
  {
   "depends_on_payment_days": 0,
@@ -409,20 +465,6 @@
   "type": "Deduction"
  },
  {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 1,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-05 10:50:21.828050",
-  "name": "Employer - Bonus",
-  "salary_component": "Employer - Bonus",
-  "salary_component_abbr": "Employer - bonus",
-  "type": "Deduction"
- },
- {
   "depends_on_payment_days": 1,
   "description": null,
   "docstatus": 0,
@@ -441,20 +483,6 @@
   "description": null,
   "docstatus": 0,
   "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-05 11:59:23.523718",
-  "name": "Conveyance Allowance",
-  "salary_component": "Conveyance Allowance",
-  "salary_component_abbr": "CONV",
-  "type": "Earning"
- },
- {
-  "depends_on_payment_days": 1,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
   "employer_contribution": 1,
   "enter_amount_according_to_months": [],
   "is_special_component": 0,
@@ -462,34 +490,6 @@
   "name": "Employer -  PF",
   "salary_component": "Employer -  PF",
   "salary_component_abbr": "EPF",
-  "type": "Deduction"
- },
- {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 1,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-09 14:25:02.305721",
-  "name": "Employer -  ESIC",
-  "salary_component": "Employer -  ESIC",
-  "salary_component_abbr": "EESI",
-  "type": "Deduction"
- },
- {
-  "depends_on_payment_days": 0,
-  "description": null,
-  "docstatus": 0,
-  "doctype": "Salary Component",
-  "employer_contribution": 0,
-  "enter_amount_according_to_months": [],
-  "is_special_component": 0,
-  "modified": "2026-02-09 14:25:08.541706",
-  "name": "Employee - ESIC",
-  "salary_component": "Employee - ESIC",
-  "salary_component_abbr": "ESI",
   "type": "Deduction"
  },
  {

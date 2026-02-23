@@ -7,12 +7,12 @@
  "engine": "InnoDB",
  "field_order": [
   "employee",
-  "employee_name",
-  "salary_structure",
-  "column_break_jxct",
   "start_date",
-  "end_date",
   "currency",
+  "column_break_jxct",
+  "employee_name",
+  "end_date",
+  "salary_structure",
   "employee_company_details_section",
   "company",
   "department",
@@ -67,7 +67,8 @@
    "fieldtype": "Link",
    "label": "Salary Structure",
    "options": "Salary Structure",
-   "read_only": 1
+   "read_only": 1,
+   "bold": 1
   },
   {
    "fieldname": "payment_days_tab",
@@ -309,7 +310,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-23 13:00:58.462493",
+ "modified": "2026-02-21 17:02:28.969166",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
