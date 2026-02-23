@@ -255,7 +255,7 @@ function fetch_eligible_employees(dialog) {
     });
 }
 
-// ─── Ineligible Employees Dialog ──────────────────────────────────────────────
+// ─── Ineligible Employees Dialog (Bulk Generate) ──────────────────────────────
 
 function show_ineligible_employees_dialog(ineligible_list, month, year) {
     function parse_reasons(reasons) {
@@ -341,7 +341,7 @@ function show_ineligible_employees_dialog(ineligible_list, month, year) {
                                 width:28%;">Employee</th>
                             ${th('Salary Structure<br>Assigned', false)}
                             ${th('Variable Pay<br>Configured', false)}
-                            ${th('No Duplicate<br>Salary Slip', false)}
+                            ${th('Salary Slip<br>Doesn\'t Exist', false)}
                             ${th('Attendance<br>Recorded', true)}
                         </tr>
                     </thead>
@@ -445,76 +445,238 @@ function fetch_submitted_salary_slips(dialog) {
         ${frappe.utils.icon('loading','xs')} &nbsp;Retrieving submitted salary slips...
     </div>`);
 
-    let active_count = null;
-    let slips_data   = null;
-    let pending      = 2;
+    frappe.call({
+        method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_salary_slips_print_summary',
+        args: { company, year, month },
+        callback: function(r) {
+            if (!r.message) {
+                wrapper.html('<div class="text-muted" style="padding:16px 0;text-align:center;">Unable to retrieve data. Please try again.</div>');
+                return;
+            }
 
-    function render() {
-        if (--pending > 0) return;
+            const {
+                submitted    = [],
+                not_printable = [],
+                total_active,
+                total_submitted
+            } = r.message;
 
-        const submitted_count = slips_data ? slips_data.length : 0;
+            dialog._not_printable_slips = not_printable;
 
-        const summary = `
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:16px;
-                padding:8px 0;margin-bottom:12px;font-size:12px;
-                border-bottom:1px solid var(--border-color);">
-                <span style="color:var(--text-muted);">
-                    Active Employees: <strong style="color:var(--text-color);">${active_count !== null ? active_count : '-'}</strong>
-                </span>
-                <span style="color:var(--border-color);">|</span>
-                <span style="color:var(--text-muted);">
-                    Submitted Salary Slips: <strong style="color:var(--text-color);">${submitted_count}</strong>
-                </span>
-            </div>`;
+            const excl_btn = not_printable.length > 0
+                ? `<button class="btn btn-default btn-sm" id="btn_view_print_exclusions"
+                        style="margin-left:auto;">
+                        ${__('View Exclusion Details')} (${not_printable.length})
+                   </button>`
+                : '';
 
-        if (slips_data && slips_data.length) {
-            const items = slips_data.map(s => ({ id: s.name, name: s.employee_name || s.employee }));
-            dialog._card_items = dialog._card_items || {};
-            dialog._card_items['slips_html'] = items;
+            const summary = `
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:16px;
+                    padding:8px 0;margin-bottom:12px;font-size:12px;
+                    border-bottom:1px solid var(--border-color);">
+                    <span style="color:var(--text-muted);">
+                        Active Employees: <strong style="color:var(--text-color);">${total_active}</strong>
+                    </span>
+                    <span style="color:var(--border-color);">|</span>
+                    <span style="color:var(--text-muted);">
+                        Submitted Slips: <strong style="color:var(--text-color);">${total_submitted}</strong>
+                    </span>
+                    <span style="color:var(--border-color);">|</span>
+                    <span style="color:var(--text-muted);">
+                        Excluded from Print: <strong style="color:var(--text-color);">${not_printable.length}</strong>
+                    </span>
+                    ${excl_btn}
+                </div>`;
 
-            wrapper.html(summary + `
-                <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                    <input id="slip_search" type="text" class="form-control"
-                        placeholder="Search by name or Employee ID..."
-                        style="flex:1;min-width:160px;max-width:320px;">
-                    <button class="btn btn-xs btn-default" id="slip_search_select_all">${__('Select All')}</button>
-                    <button class="btn btn-xs btn-default" id="slip_search_deselect_all">${__('Deselect All')}</button>
-                    <span id="slip_selected_count" class="text-muted" style="font-size:12px;">0 selected</span>
-                </div>
-                <div id="slip_search_grid"
-                    style="display:flex;flex-wrap:wrap;gap:10px;max-height:380px;overflow-y:auto;padding:4px 2px;">
-                    ${build_cards(items, 'slip-card-check')}
-                </div>`);
+            let grid_html = '';
+            if (submitted && submitted.length > 0) {
+                const items = submitted.map(s => ({ id: s.name, name: s.employee_name || s.employee }));
+                dialog._card_items = dialog._card_items || {};
+                dialog._card_items['slips_html'] = items;
 
-            const update = () => update_count(wrapper, 'slip-card-check', 'slip_selected_count');
-            const bind   = () => { wrapper.find('.slip-card-check').off('change').on('change', update); update(); };
+                grid_html = `
+                    <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input id="slip_search" type="text" class="form-control"
+                            placeholder="Search by name or Employee ID..."
+                            style="flex:1;min-width:160px;max-width:320px;">
+                        <button class="btn btn-xs btn-default" id="slip_search_select_all">${__('Select All')}</button>
+                        <button class="btn btn-xs btn-default" id="slip_search_deselect_all">${__('Deselect All')}</button>
+                        <span id="slip_selected_count" class="text-muted" style="font-size:12px;">0 selected</span>
+                    </div>
+                    <div id="slip_search_grid"
+                        style="display:flex;flex-wrap:wrap;gap:10px;max-height:380px;overflow-y:auto;padding:4px 2px;">
+                        ${build_cards(items, 'slip-card-check')}
+                    </div>`;
+            } else {
+                grid_html = `<div class="text-muted" style="padding:20px;text-align:center;">No submitted salary slips found for the selected payroll period.</div>`;
+            }
 
-            wrapper.find('#slip_search').on('input', function() {
-                const q = $(this).val().toLowerCase().trim();
-                const filtered = q ? items.filter(i => i.id.toLowerCase().includes(q) || i.name.toLowerCase().includes(q)) : items;
-                wrapper.find('#slip_search_grid').html(build_cards(filtered, 'slip-card-check'));
+            wrapper.html(summary + grid_html);
+
+            // bind exclusion button
+            if (not_printable.length > 0) {
+                wrapper.find('#btn_view_print_exclusions').on('click', () =>
+                    show_print_exclusions_dialog(dialog._not_printable_slips, month, year));
+            }
+
+            if (submitted && submitted.length > 0) {
+                const items = dialog._card_items['slips_html'];
+                const update = () => update_count(wrapper, 'slip-card-check', 'slip_selected_count');
+                const bind   = () => { wrapper.find('.slip-card-check').off('change').on('change', update); update(); };
+
+                wrapper.find('#slip_search').on('input', function() {
+                    const q = $(this).val().toLowerCase().trim();
+                    const filtered = q ? items.filter(i => i.id.toLowerCase().includes(q) || i.name.toLowerCase().includes(q)) : items;
+                    wrapper.find('#slip_search_grid').html(build_cards(filtered, 'slip-card-check'));
+                    bind();
+                });
+                wrapper.find('#slip_search_select_all').on('click', () => { wrapper.find('.slip-card-check').prop('checked', true); update(); });
+                wrapper.find('#slip_search_deselect_all').on('click', () => { wrapper.find('.slip-card-check').prop('checked', false); update(); });
                 bind();
-            });
-            wrapper.find('#slip_search_select_all').on('click', () => { wrapper.find('.slip-card-check').prop('checked', true); update(); });
-            wrapper.find('#slip_search_deselect_all').on('click', () => { wrapper.find('.slip-card-check').prop('checked', false); update(); });
-            bind();
-        } else {
-            wrapper.html(summary + `<div class="text-muted" style="padding:20px;text-align:center;">No submitted salary slips found for the selected payroll period.</div>`);
+            }
         }
+    });
+}
+
+// ─── Print Exclusion Details Dialog ──────────────────────────────────────────
+
+function show_print_exclusions_dialog(not_printable_list, month, year) {
+
+    // Status badge helpers
+    function slip_status_badge(status) {
+        const cfg = {
+            'Draft':       { bg: '#fff3cd', color: '#856404', label: 'Draft'        },
+            'No Slip':     { bg: '#fde8e8', color: '#e03131', label: 'No Slip'      },
+            'Cancelled':   { bg: '#f0f0f0', color: '#6c757d', label: 'Cancelled'    },
+        };
+        const s = cfg[status] || { bg: '#f0f0f0', color: '#495057', label: status };
+        return `<span style="
+            display:inline-block;padding:2px 10px;border-radius:20px;
+            font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
+            background:${s.bg};color:${s.color};border:1px solid ${s.color}33;">
+            ${s.label}
+        </span>`;
     }
 
-    frappe.call({
-        method: 'frappe.client.get_count',
-        args: { doctype: 'Company Link', filters: { is_active: 1, company } },
-        callback: function(r) { active_count = r.message || 0; render(); },
-        error:    function()  { active_count = 0; render(); }
+    function reason_pill(text) {
+        return `<span style="
+            display:inline-block;padding:2px 8px;border-radius:4px;margin:2px 2px 2px 0;
+            font-size:10px;background:var(--subtle-accent-bg,#f5f6f7);
+            color:var(--text-muted,#8d99a6);border:1px solid var(--border-color,#d1d8dd);">
+            ${frappe.utils.escape_html(text)}
+        </span>`;
+    }
+
+    function build_rows(source) {
+        if (!source.length) {
+            return `<tr><td colspan="4" class="text-muted" style="padding:20px;text-align:center;">No matching employees found.</td></tr>`;
+        }
+        return source.map((s, idx) => {
+            const bg = idx % 2 !== 0 ? 'background:var(--subtle-accent-bg,#f9fafb);' : '';
+            const pills = (s.reasons || []).map(reason_pill).join('');
+            return `<tr style="${bg}">
+                <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);vertical-align:middle;white-space:nowrap;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text-color);">${frappe.utils.escape_html(s.employee_name || s.name)}</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${frappe.utils.escape_html(s.employee)}</div>
+                </td>
+                <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">
+                    ${s.slip_name
+                        ? `<div style="font-size:11px;font-weight:600;color:var(--text-color);">${frappe.utils.escape_html(s.slip_name)}</div>`
+                        : `<span style="font-size:11px;color:var(--text-muted);">—</span>`}
+                </td>
+                <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color);text-align:center;vertical-align:middle;">
+                    ${slip_status_badge(s.slip_status)}
+                </td>
+                <td style="padding:8px 10px;border-bottom:1px solid var(--border-color);vertical-align:middle;">
+                    <div style="line-height:1.8;">${pills}</div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    const th_left = (label, extra='') => `<th style="
+        position:sticky;top:0;z-index:1;
+        padding:8px 10px;text-align:left;font-size:11px;font-weight:600;
+        text-transform:uppercase;letter-spacing:0.04em;
+        color:var(--text-muted);background:var(--subtle-accent-bg,#f5f6f7);
+        border-bottom:2px solid var(--border-color);
+        border-right:1px solid var(--border-color);
+        white-space:normal;line-height:1.4;${extra}">${label}</th>`;
+
+    const th_center = (label, last=false) => `<th style="
+        position:sticky;top:0;z-index:1;
+        padding:8px 10px;text-align:center;font-size:11px;font-weight:600;
+        text-transform:uppercase;letter-spacing:0.04em;
+        color:var(--text-muted);background:var(--subtle-accent-bg,#f5f6f7);
+        border-bottom:2px solid var(--border-color);
+        ${last ? '' : 'border-right:1px solid var(--border-color);'}
+        white-space:normal;line-height:1.4;">${label}</th>`;
+
+    // Status legend — each pill+label is a flex unit so they never split across lines
+    function legend_item(pill_bg, pill_color, pill_text, desc) {
+        return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
+            <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;
+                font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
+                background:${pill_bg};color:${pill_color};border:1px solid ${pill_color}55;">
+                ${pill_text}
+            </span>
+            <span style="font-size:11px;color:var(--text-muted,#8d99a6);">${desc}</span>
+        </span>`;
+    }
+
+    const legend = `
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+            <strong style="color:var(--text-color);font-size:12px;white-space:nowrap;">Status Key:</strong>
+            ${legend_item('#fff3cd','#856404','Draft','— Slip exists but not yet submitted')}
+            ${legend_item('#fde8e8','#e03131','No Slip','— Salary slip not created yet')}
+            ${legend_item('#f0f0f0','#6c757d','Cancelled','— Slip was cancelled')}
+        </div>`;
+
+    const content = `
+        <p style="margin-bottom:12px;font-size:12px;color:var(--text-color);">
+            <strong>${not_printable_list.length}</strong> employee(s) cannot be included in the bulk print for
+            <strong>${month} ${year}</strong>. Only <strong>Submitted</strong> salary slips can be printed.
+        </p>
+        ${legend}
+        <div style="margin-bottom:10px;">
+            <input id="print_excl_search" type="text" class="form-control"
+                placeholder="Search by name or Employee ID..."
+                style="max-width:320px;font-size:12px;">
+        </div>
+        <div style="border:1px solid var(--border-color);border-radius:var(--border-radius);overflow:hidden;">
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;min-width:580px;">
+                    <thead>
+                        <tr>
+                            ${th_left('Employee', 'width:28%;')}
+                            ${th_center('Salary Slip')}
+                            ${th_center('Slip Status')}
+                            ${th_center('Reason(s)', true)}
+                        </tr>
+                    </thead>
+                    <tbody id="print_excl_tbody">${build_rows(not_printable_list)}</tbody>
+                </table>
+            </div>
+        </div>`;
+
+    let excl_dialog = new frappe.ui.Dialog({
+        title: __('Print Exclusion Review — ' + month + ' ' + year),
+        size: 'large',
+        fields: [{ fieldname: 'excl_html', fieldtype: 'HTML' }]
     });
 
-    frappe.call({
-        method: 'saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_submitted_salary_slips',
-        args: { company, year, month },
-        callback: function(r) { slips_data = r.message || []; render(); },
-        error:    function()  { slips_data = []; render(); }
+    excl_dialog.fields_dict.excl_html.$wrapper.html(`<div style="padding-bottom:4px;">${content}</div>`);
+    excl_dialog.show();
+
+    excl_dialog.fields_dict.excl_html.$wrapper.find('#print_excl_search').on('input', function() {
+        const q      = $(this).val().toLowerCase().trim();
+        const tbody  = excl_dialog.fields_dict.excl_html.$wrapper.find('#print_excl_tbody');
+        const source = q
+            ? not_printable_list.filter(s =>
+                (s.employee || '').toLowerCase().includes(q) ||
+                (s.employee_name || '').toLowerCase().includes(q))
+            : not_printable_list;
+        tbody.html(build_rows(source));
     });
 }
 

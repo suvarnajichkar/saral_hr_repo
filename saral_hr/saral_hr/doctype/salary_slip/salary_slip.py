@@ -672,8 +672,8 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
         comp = (row.salary_component or "").lower()
 
         # ── Employee ESIC (0.75%) ─────────────────────────────────────────────
-        # SSA mein 0 hai → base = 0 → amount = 0
-        # SSA mein > 0 hai → computed total earnings se calculate
+        # SSA mein 0 → base = 0 → amount = 0
+        # SSA mein > 0  → computed total earnings calculate
         if "esic" in comp and "employer" not in comp:
             if base > 0:
                 amount = flt((total_earnings - conveyance_amount) * 0.0075, 2) if total_earnings < 21000 else 0
@@ -688,10 +688,9 @@ def calculate_salary_slip_amounts_exact(salary_slip, variable_pay_percentage, st
                 amount = 0
 
         # ── PF / Provident Fund (12% of computed Basic + DA) ─────────────────
-        # SSA mein 0 hai → base = 0 → amount = 0
-        # SSA mein > 0 hai → computed basic + da ka 12%
-        # NOTE: 15000 cap hataya gaya — kyunki computed basic+da already
-        #       payment days ke hisab se proportional hai
+        # SSA mein 0  → base = 0 → amount = 0
+        # SSA mein > 0  → computed basic + da ka 12%
+    
         elif "pf" in comp or "provident" in comp:
             if base > 0:
                 basic_da_total = basic_amount + da_amount
@@ -1194,3 +1193,92 @@ def generate_bulk_print_html(doc):
     """
 
     return html
+
+@frappe.whitelist()
+def get_salary_slips_print_summary(company, year, month):
+    """
+    Returns:
+      - submitted      : list of submitted (docstatus=1) salary slips  → shown in card grid for printing
+      - not_printable  : all active employees whose slip is NOT submitted,
+                         with slip_name, slip_status, and reasons
+      - total_active   : count of active employees in that company
+      - total_submitted: count of submitted slips
+    """
+    month_map = {
+        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        'September': 9, 'October': 10, 'November': 11, 'December': 12
+    }
+    month_num = month_map.get(month)
+    if not month_num:
+        frappe.throw("Invalid month")
+
+    start_date = f"{year}-{month_num:02d}-01"
+
+    # ── All active employees for this company ──────────────────────────────
+    all_employees = frappe.db.sql("""
+        SELECT name, full_name AS employee_name
+        FROM `tabCompany Link`
+        WHERE is_active = 1
+          AND company = %(company)s
+    """, {"company": company}, as_dict=1)
+
+    total_active = len(all_employees)
+
+    # ── All salary slips (any docstatus) for this period + company ─────────
+    all_slips = frappe.db.sql("""
+        SELECT name, employee, employee_name, docstatus
+        FROM `tabSalary Slip`
+        WHERE start_date  = %(start_date)s
+          AND company     = %(company)s
+        ORDER BY employee_name
+    """, {"company": company, "start_date": start_date}, as_dict=1)
+
+    # Build lookup: employee → slip info
+    slip_by_emp = {}
+    for sl in all_slips:
+        slip_by_emp[sl.employee] = sl
+
+    submitted     = []
+    not_printable = []
+
+    DOCSTATUS_LABEL = {0: 'Draft', 1: 'Submitted', 2: 'Cancelled'}
+
+    for emp in all_employees:
+        slip = slip_by_emp.get(emp.name)
+
+        if slip and slip.docstatus == 1:
+            # ✅ Submitted — eligible for printing
+            submitted.append(slip)
+        else:
+            # ❌ Not printable — build reason
+            reasons = []
+            slip_name   = None
+            slip_status = 'No Slip'
+
+            if not slip:
+                slip_status = 'No Slip'
+                reasons.append('Salary slip has not been created for this period')
+            elif slip.docstatus == 0:
+                slip_name   = slip.name
+                slip_status = 'Draft'
+                reasons.append('Salary slip is in Draft — submit it first to enable printing')
+            elif slip.docstatus == 2:
+                slip_name   = slip.name
+                slip_status = 'Cancelled'
+                reasons.append('Salary slip was cancelled and cannot be printed')
+
+            not_printable.append({
+                'employee':      emp.name,
+                'employee_name': emp.employee_name or emp.name,
+                'slip_name':     slip_name,
+                'slip_status':   slip_status,
+                'reasons':       reasons,
+            })
+
+    return {
+        'submitted':      submitted,
+        'not_printable':  not_printable,
+        'total_active':   total_active,
+        'total_submitted': len(submitted),
+    }
