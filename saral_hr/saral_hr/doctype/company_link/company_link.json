@@ -147,7 +147,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-21 17:11:04.829449",
+ "modified": "2026-02-23 12:58:16.986051",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
@@ -168,8 +168,6 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -177,8 +175,7 @@
    "report": 1,
    "role": "Saral HR User",
    "select": 1,
-   "share": 1,
-   "write": 1
+   "share": 1
   }
  ],
  "sort_field": "modified",

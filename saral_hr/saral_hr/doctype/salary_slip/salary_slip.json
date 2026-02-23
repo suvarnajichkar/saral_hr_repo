@@ -309,7 +309,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-21 17:12:35.023325",
+ "modified": "2026-02-23 13:00:58.462493",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
@@ -332,8 +332,6 @@
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -341,8 +339,7 @@
    "report": 1,
    "role": "Saral HR User",
    "select": 1,
-   "share": 1,
-   "write": 1
+   "share": 1
   }
  ],
  "sort_field": "modified",
