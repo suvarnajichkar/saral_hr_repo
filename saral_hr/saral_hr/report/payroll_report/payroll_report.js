@@ -52,8 +52,6 @@ frappe.query_reports["Payroll Report"] = {
     }
 };
 
-// ─── Report list ─────────────────────────────────────────────────────────────
-
 const REPORTS = [
     { key:"bank_advice",               label:"Bank Advice",                    bank_type:true  },
     { key:"educational_allowance",     label:"Educational Allowance Register", bank_type:false },
@@ -69,11 +67,10 @@ const REPORTS = [
     { key:"monthly_attendance",        label:"Monthly Attendance Report",      bank_type:false },
 ];
 
-// ─── State ────────────────────────────────────────────────────────────────────
-
-let _idx   = 0;
-let _cache = {};       // { filterKey: { bank_advice:{columns,result}, ... } }
-let _loading = false;
+let _idx            = 0;
+let _cache          = {};
+let _debounce_timer = null;
+let _prefetch_xhr   = null;
 
 function _get_year_options() {
     const y = new Date().getFullYear(), opts = [""];
@@ -83,12 +80,8 @@ function _get_year_options() {
 
 function _filter_key() {
     const f = frappe.query_report.get_values() || {};
-    return JSON.stringify([f.year, f.month,
-        JSON.stringify(f.company||[]), f.category||"",
-        JSON.stringify(f.division||[]), f.bank_type||""]);
+    return JSON.stringify([f.year, f.month, JSON.stringify(f.company||[]), f.category||"", JSON.stringify(f.division||[])]);
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 function _ensure_styles() {
     if (document.getElementById("pr-style")) return;
@@ -115,23 +108,10 @@ function _ensure_styles() {
         .pr-item.active{background:#e8eeff;font-weight:600;color:#3b5bdb;}
         .pr-item.hide{display:none;}
         .pr-empty{padding:8px 12px;font-size:12px;color:#aaa;text-align:center;display:none;}
-
-        .pr-status{font-size:10px;color:#888;margin-left:4px;white-space:nowrap;}
-        .pr-status.ready{color:#16a34a;}
-        .pr-status.fetching{color:#d97706;}
-
-        .pr-overlay{position:absolute;inset:0;z-index:200;background:rgba(255,255,255,.85);
-            backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;
-            opacity:0;transition:opacity .15s;pointer-events:none;border-radius:4px;}
-        .pr-overlay.on{opacity:1;pointer-events:all;}
-        .pr-spin{width:26px;height:26px;border:3px solid #e5e7eb;border-top-color:#5c7cfa;
-            border-radius:50%;animation:prspin .6s linear infinite;}
-        @keyframes prspin{to{transform:rotate(360deg);}}
+        .pr-status{font-size:10px;color:#16a34a;margin-left:4px;white-space:nowrap;}
     `;
     document.head.appendChild(s);
 }
-
-// ─── Navigator inject ─────────────────────────────────────────────────────────
 
 function _inject_nav(report) {
     if (report.page.wrapper.find(".pr-bar").length) return;
@@ -154,7 +134,7 @@ function _inject_nav(report) {
                 </div>
             </div>
             <button class="btn btn-xs btn-default pr-next" style="font-size:16px;padding:2px 10px;">&rsaquo;</button>
-            <span class="pr-status">Loading all…</span>
+            <span class="pr-status"></span>
         </div>
     `);
 
@@ -166,7 +146,6 @@ function _inject_nav(report) {
     }
     if (!ok) report.page.wrapper.find(".report-wrapper").prepend(bar);
 
-    // ── input wiring ──
     const inp  = bar.find(".pr-input");
     const drop = bar.find(".pr-drop");
 
@@ -200,63 +179,50 @@ function _inject_nav(report) {
     bar.find(".pr-prev").on("click", ()=> _go(report, (_idx-1+REPORTS.length)%REPORTS.length));
     bar.find(".pr-next").on("click", ()=> _go(report, (_idx+1)%REPORTS.length));
 
-    // Bust cache when filters change — re-fetch needed
     report.page.wrapper.on("change.pr", ".frappe-control input, .frappe-control select", ()=>{
         _cache = {};
-        bar.find(".pr-status").text("Loading all…").removeClass("ready fetching");
+        bar.find(".pr-status").text("");
+        if (_prefetch_xhr) { _prefetch_xhr.abort?.(); _prefetch_xhr = null; }
+        clearTimeout(_debounce_timer);
+        _debounce_timer = setTimeout(() => _prefetch_all(bar), 1500);
     });
 
-    // After Frappe's first render, grab data and prefetch rest
     $(frappe.query_report).one("after_refresh", ()=> {
-        // Store what Frappe just fetched as the first report
         const fk = _filter_key();
         if (!_cache[fk]) _cache[fk] = {};
         _cache[fk][REPORTS[_idx].key] = {
             columns: frappe.query_report.columns,
             result:  frappe.query_report.data
         };
-        // Now bulk-fetch the rest
-        _fetch_all(report, fk);
+        _prefetch_all(bar);
     });
 }
 
-// ─── Bulk fetch — ONE call, all 12 reports ────────────────────────────────────
+function _prefetch_all(bar) {
+    const fk = _filter_key();
+    const f  = frappe.query_report.get_values() || {};
 
-function _fetch_all(report, fk) {
-    if (_loading) return;
-    _loading = true;
-
-    const bar = report.page.wrapper.find(".pr-bar");
-    bar.find(".pr-status").text("Fetching all reports…").removeClass("ready").addClass("fetching");
-
-    const f = frappe.query_report.get_values() || {};
-    frappe.call({
+    _prefetch_xhr = frappe.call({
         method: "saral_hr.saral_hr.report.payroll_report.payroll_report.get_all_reports_data",
         args: { filters: JSON.stringify({
-            year:     f.year     || "",
-            month:    f.month    || "",
-            company:  JSON.stringify(f.company  || []),
-            category: f.category || "",
-            division: JSON.stringify(f.division || []),
-            bank_type:f.bank_type|| "",
+            year:      f.year      || "",
+            month:     f.month     || "",
+            company:   JSON.stringify(f.company  || []),
+            category:  f.category  || "",
+            division:  JSON.stringify(f.division || []),
+            bank_type: f.bank_type || "",
         })},
         callback(res) {
-            _loading = false;
+            _prefetch_xhr = null;
             if (!res.message) return;
-            // Only store if filters haven't changed while we were waiting
             if (fk !== _filter_key()) return;
             if (!_cache[fk]) _cache[fk] = {};
             Object.assign(_cache[fk], res.message);
-            bar.find(".pr-status").text("✓ All ready").removeClass("fetching").addClass("ready");
+            bar.find(".pr-status").text("✓ All ready");
         },
-        error() {
-            _loading = false;
-            bar.find(".pr-status").text("").removeClass("fetching");
-        }
+        error() { _prefetch_xhr = null; }
     });
 }
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
 
 function _filt(bar, q) {
     q = q.trim().toLowerCase();
@@ -286,14 +252,12 @@ function _go(report, idx) {
     const cached = _cache[fk]?.[REPORTS[idx].key];
 
     if (cached) {
-        // ── INSTANT: no server call, inject directly ──────────────────────
         const qr = frappe.query_report;
         qr.columns = cached.columns;
         qr.data    = cached.result;
         try {
             qr.render_datatable();
         } catch(_) {
-            // render_datatable may not exist in all Frappe versions — fallback:
             if (qr.datatable) {
                 qr.datatable.refresh(cached.result, cached.columns);
             } else {
@@ -303,31 +267,17 @@ function _go(report, idx) {
         return;
     }
 
-    // ── Not cached yet: normal refresh with overlay ───────────────────────
-    const body = report.page.wrapper.find(".report-wrapper, .frappe-report").first();
-    body.css("position","relative");
-    body.find(".pr-overlay").remove();
-    const ov = $('<div class="pr-overlay"><div class="pr-spin"></div></div>').appendTo(body);
-    requestAnimationFrame(()=> ov.addClass("on"));
-
     frappe.query_report.refresh();
 
-    const done = () => {
-        // Store for next time
+    $(frappe.query_report).one("after_refresh", ()=> {
         const fk2 = _filter_key();
         if (!_cache[fk2]) _cache[fk2] = {};
         _cache[fk2][REPORTS[idx].key] = {
             columns: frappe.query_report.columns,
             result:  frappe.query_report.data
         };
-        ov.removeClass("on");
-        setTimeout(()=> ov.remove(), 180);
-    };
-    $(frappe.query_report).one("after_refresh", ()=> setTimeout(done, 50));
-    setTimeout(done, 5000);
+    });
 }
-
-// ─── Print ────────────────────────────────────────────────────────────────────
 
 function _set_print_buttons(report) {
     report.page.set_primary_action(__("Print"), _print_current, "printer");

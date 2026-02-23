@@ -47,8 +47,6 @@ REPORT_LABELS = {
     "variable_pay":"Variable Pay Register","monthly_attendance":"Monthly Attendance Report",
 }
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-
 def _parse_list(value):
     if not value: return []
     if isinstance(value, list): return value
@@ -118,14 +116,10 @@ def _pt_slab(gross):
 def _col(label, fieldname, fieldtype="Data", width=130, **kw):
     return {"label":_(label),"fieldname":fieldname,"fieldtype":fieldtype,"width":width,**kw}
 
-# ─── Execute ──────────────────────────────────────────────────────────────────
-
 def execute(filters=None):
     filters = filters or {}
     fn = ROUTER.get(filters.get("report_mode","bank_advice"))
     return fn(filters) if fn else ([], [])
-
-# ─── Print Endpoints ──────────────────────────────────────────────────────────
 
 @frappe.whitelist()
 def print_single_report(filters):
@@ -142,18 +136,45 @@ def print_single_report(filters):
 
 @frappe.whitelist()
 def get_all_reports_data(filters):
-    """Returns all 12 reports as one JSON payload — used for client-side cache."""
     if isinstance(filters, str): filters = json.loads(filters)
+
     out = {}
-    for mode in REPORTS:
-        fn = ROUTER.get(mode)
-        if not fn: continue
-        try:
-            cols, data = fn(dict(filters, report_mode=mode))
-            out[mode] = {"columns": cols, "result": data}
-        except Exception:
-            frappe.log_error(f"Error in get_all_reports_data: {mode}", "Payroll Report")
-            out[mode] = {"columns": [], "result": []}
+    results = []
+
+    try:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        def run_report(mode):
+            fn = ROUTER.get(mode)
+            if not fn:
+                return mode, {"columns": [], "result": []}
+            try:
+                frappe.db.connect()
+                cols, data = fn(dict(filters, report_mode=mode))
+                return mode, {"columns": cols, "result": data}
+            except Exception:
+                frappe.log_error(f"Error in get_all_reports_data (parallel): {mode}", "Payroll Report")
+                return mode, {"columns": [], "result": []}
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {executor.submit(run_report, mode): mode for mode in REPORTS}
+            for future in as_completed(futures):
+                mode, result = future.result()
+                out[mode] = result
+
+    except Exception:
+        for mode in REPORTS:
+            fn = ROUTER.get(mode)
+            if not fn:
+                out[mode] = {"columns": [], "result": []}
+                continue
+            try:
+                cols, data = fn(dict(filters, report_mode=mode))
+                out[mode] = {"columns": cols, "result": data}
+            except Exception:
+                frappe.log_error(f"Error in get_all_reports_data: {mode}", "Payroll Report")
+                out[mode] = {"columns": [], "result": []}
+
     return out
 
 
@@ -187,8 +208,6 @@ def _save_pdf(html, name_prefix, page_size="A4"):
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
     return doc.file_url
-
-# ─── HTML Builder ─────────────────────────────────────────────────────────────
 
 _BASE_CSS = """<style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -337,9 +356,6 @@ def _render_attendance(columns, data):
                  ("working_days","present_days","half_days","absent_days","weekly_off_days","holiday_days","lwp_days","absent_lwp")]
     SC = {"P":"att-P","A":"att-A","WO":"att-WO","H":"att-H","LWP":"att-LWP","HD":"att-HD"}
 
-    # Fixed cols: Employee ID narrow, Employee Name wider
-    # Day cols: very narrow single-char cells (10px)
-    # Summary cols: double-wide (22px) with bold headers
     COL_STYLES = {
         "employee":      "width:80px;min-width:80px;text-align:left;",
         "employee_name": "width:110px;min-width:110px;text-align:left;",
@@ -349,18 +365,16 @@ def _render_attendance(columns, data):
         "weekly_off_days":"WO","holiday_days":"H","lwp_days":"LWP","absent_lwp":"A+LWP"
     }
 
-    # Build colgroup for precise width control
     colgroup = "<colgroup>"
     for c in fixed:
         w = "80" if c["fieldname"]=="employee" else "110"
         colgroup += f'<col style="width:{w}px"/>'
     for _ in day_cols:
-        colgroup += '<col style="width:10px"/>'          # single-width date cols
+        colgroup += '<col style="width:10px"/>'
     for _ in summ_cols:
-        colgroup += '<col style="width:22px"/>'          # double-width summary cols
+        colgroup += '<col style="width:22px"/>'
     colgroup += "</colgroup>"
 
-    # Header row
     thead = "<tr>"
     for c in fixed:
         s = COL_STYLES.get(c["fieldname"],"")
@@ -372,7 +386,6 @@ def _render_attendance(columns, data):
         thead += f'<th style="width:22px;padding:2px 2px;font-size:6.5px;background:#d0d8e8;">{lbl}</th>'
     thead += "</tr>"
 
-    # Data rows
     body = []
     for i, row in enumerate(rows):
         bg = ' style="background:#fafafa"' if i%2 else ""
@@ -389,7 +402,6 @@ def _render_attendance(columns, data):
             cells += f'<td class="c" style="padding:2px;font-size:6.5px;font-weight:600;">{v if v is not None else "-"}</td>'
         body.append(f"<tr{bg}>{cells}</tr>")
 
-    # Total row
     tot = f'<td colspan="{len(fixed)}" style="font-weight:700;text-align:right;padding:2px 4px;">Total</td>'
     tot += "".join(f'<td style="padding:1px;font-size:6px;"></td>' for _ in day_cols)
     tot += "".join(f'<td class="c" style="padding:2px;font-size:6.5px;font-weight:700;">{total_row.get(c["fieldname"],"")}</td>' for c in summ_cols)
@@ -402,8 +414,6 @@ def _render_attendance(columns, data):
             f'<table class="rpt-tbl" style="font-size:6px;table-layout:fixed;width:100%;">'
             f'{colgroup}<thead>{thead}</thead><tbody>{"".join(body)}</tbody></table>')
 
-
-# ─── Report Functions ─────────────────────────────────────────────────────────
 
 def _bank_advice(filters):
     cols = [_col("Employee ID","employee_id"),_col("Employee Name","employee_name",width=180),
@@ -905,8 +915,6 @@ def _monthly_attendance(filters):
         data.append(totals)
     return cols, data
 
-
-# ─── Router (placed after all functions are defined) ─────────────────────────
 
 ROUTER = {
     "bank_advice":               _bank_advice,
