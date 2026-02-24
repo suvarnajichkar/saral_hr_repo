@@ -262,11 +262,11 @@
    "read_only": 1
   },
   {
-   "fetch_from": "employee.salary_calculation_based_on",
    "fieldname": "working_days_calculation_method",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Salary Calculation Based on"
+   "label": "Salary Calculation Based on",
+   "read_only": 1
   },
   {
    "fieldname": "total_half_days",

@@ -9,11 +9,10 @@
  "field_order": [
   "company",
   "abbr",
-  "salary_calculation_based_on",
+  "default_holiday_list",
   "column_break_opgj",
   "country",
   "default_currency",
-  "default_holiday_list",
   "addresscontact_tab",
   "address_and_contact_section",
   "company_logo",
@@ -161,19 +160,11 @@
    "fieldname": "bank_account_number",
    "fieldtype": "Data",
    "label": "Bank Account Number"
-  },
-  {
-   "description": "<b>Working days in a month:</b> Salary calculated based on actual working days (typically 22-26 days). Formula: (Monthly Salary \u00f7 Working Days) \u00d7 Days Worked. <br><b>No. of days in a month:</b> Salary calculated based on calendar days (28-31 days). Formula: (Monthly Salary \u00f7 Total Days) \u00d7 Days Worked.",
-   "fieldname": "salary_calculation_based_on",
-   "fieldtype": "Select",
-   "label": "Salary Calculation Based on",
-   "options": "Working days in a month\nNo. of days in a month",
-   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-23 12:57:28.208561",
+ "modified": "2026-02-24 15:35:27.740327",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company",

@@ -298,11 +298,12 @@ def get_attendance_and_days(employee, start_date, working_days_calculation_metho
     end_date = get_last_day(start_date)
 
     if not working_days_calculation_method:
-        working_days_calculation_method = frappe.db.get_value(
-            "Company Link",
-            employee,
-            "salary_calculation_based_on"
-        )
+        # Fetch salary_calculation_based_on from the employee's Category
+        category = frappe.db.get_value("Company Link", employee, "category")
+        if category:
+            working_days_calculation_method = frappe.db.get_value(
+                "Category", category, "salary_calculation_based_on"
+            )
 
     if working_days_calculation_method == "No. of days in a month":
         calculation_method = "Include Weekly Offs"
@@ -530,7 +531,17 @@ def bulk_generate_salary_slips(employees, year, month):
                     failed_count += 1
                     continue
 
-            attendance_data = get_attendance_and_days(employee, start_date)
+            # Fetch working_days_calculation_method from employee's Category
+            category = frappe.db.get_value("Company Link", employee, "category")
+            working_days_calculation_method = None
+            if category:
+                working_days_calculation_method = frappe.db.get_value(
+                    "Category", category, "salary_calculation_based_on"
+                )
+
+            attendance_data = get_attendance_and_days(
+                employee, start_date, working_days_calculation_method
+            )
 
             if not attendance_data:
                 errors.append(f"{emp_data.get('employee_name', employee)}: Attendance data could not be retrieved for this period")
@@ -557,6 +568,7 @@ def bulk_generate_salary_slips(employees, year, month):
             salary_slip.end_date = get_last_day(getdate(start_date))
             salary_slip.currency = "INR"
             salary_slip.salary_structure = salary_data.get('salary_structure')
+            salary_slip.working_days_calculation_method = working_days_calculation_method or ""
 
             salary_slip.total_working_days = attendance_data.get('working_days')
             salary_slip.payment_days       = attendance_data.get('payment_days')
@@ -1176,6 +1188,7 @@ def generate_bulk_print_html(doc):
     """
 
     return html
+
 
 @frappe.whitelist()
 def get_salary_slips_print_summary(company, year, month):

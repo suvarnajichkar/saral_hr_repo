@@ -13,9 +13,24 @@ frappe.ui.form.on("Salary Slip", {
     employee(frm) {
         if (!frm.doc.employee) return;
         reset_form(frm);
-        if (frm.doc.start_date) {
-            check_duplicate_and_fetch(frm);
-        }
+
+        // Fetch working_days_calculation_method from employee's Category
+        frappe.db.get_value("Company Link", frm.doc.employee, "category", (r) => {
+            if (r && r.category) {
+                frappe.db.get_value("Category", r.category, "salary_calculation_based_on", (cat) => {
+                    if (cat && cat.salary_calculation_based_on) {
+                        frm.set_value("working_days_calculation_method", cat.salary_calculation_based_on);
+                    }
+                    if (frm.doc.start_date) {
+                        check_duplicate_and_fetch(frm);
+                    }
+                });
+            } else {
+                if (frm.doc.start_date) {
+                    check_duplicate_and_fetch(frm);
+                }
+            }
+        });
     },
 
     start_date(frm) {
@@ -344,7 +359,8 @@ function reset_form(frm) {
         net_salary:                  0,
         total_basic_da:              0,
         total_employer_contribution: 0,
-        retention:                   0
+        retention:                   0,
+        working_days_calculation_method: ""
     });
 
     frm.variable_pay_percentage = 0;
