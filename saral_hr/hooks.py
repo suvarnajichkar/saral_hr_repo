@@ -159,13 +159,13 @@ def after_install():
 # ------------
 
 # before_install = "saral_hr.install.before_install"
-after_install = "saral_hr.install.after_install"
+# after_install = "saral_hr.install.after_install"
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "saral_hr.uninstall.before_uninstall"
-after_uninstall = "saral_hr.uninstall.after_uninstall"
+# after_uninstall = "saral_hr.uninstall.after_uninstall"
 
 # Integration Setup
 # ------------------
