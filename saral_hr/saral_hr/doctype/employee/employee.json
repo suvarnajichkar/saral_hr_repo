@@ -16,20 +16,19 @@
   "date_of_birth",
   "salutation",
   "pan_number",
-  "aadhar_number",
   "column_break_ngyj",
-  "status",
-  "employee_image",
+  "aadhar_number",
   "pf_uan_number",
+  "employee_image",
   "statutory_account_details_tab",
   "bank_details_section",
   "bank_name",
   "ifsc_code",
   "account_number",
-  "esic_number",
   "column_break_pxbz",
   "employee_pf_account",
   "lin_number",
+  "esic_number",
   "contact_details",
   "cell_number",
   "column_break_kwfk",
@@ -89,14 +88,6 @@
    "in_list_view": 1,
    "label": "Full Name",
    "read_only": 1
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Active\nInactive\nSuspended\nLeft",
-   "reqd": 1,
-   "search_index": 1
   },
   {
    "fieldname": "naming_series",
@@ -247,8 +238,8 @@
   }
  ],
  "index_web_pages_for_search": 1,
-"links": [],
- "modified": "2026-02-23 12:59:02.167668",
+ "links": [],
+ "modified": "2026-02-24 13:23:12.327828",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",
@@ -280,7 +271,6 @@
    "share": 1
   }
  ],
- "default_dashboard": "Salary Dashboard",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
