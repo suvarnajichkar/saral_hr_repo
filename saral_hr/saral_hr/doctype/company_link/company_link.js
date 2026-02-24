@@ -19,7 +19,7 @@ frappe.ui.form.on("Company Link", {
             refresh_company_fields(frm);
         }
 
-        // Only show transfer warning once using a flag
+        // Only show transfer warning once
         if (frm.is_new() && frm.doc.employee && !frm._transfer_warned) {
             frm._transfer_warned = true;
             check_and_warn_transfer(frm, frm.doc.employee);
@@ -110,25 +110,15 @@ function refresh_company_fields(frm) {
     frappe.db.get_value(
         "Company",
         frm.doc.company,
-        ["salary_calculation_based_on", "default_holiday_list"],
+        ["default_holiday_list"],
         (r) => {
             if (!r) return;
 
-            let fields_changed = false;
-
-            if (r.salary_calculation_based_on &&
-                r.salary_calculation_based_on !== frm.doc.salary_calculation_based_on) {
-                frm.set_value("salary_calculation_based_on", r.salary_calculation_based_on);
-                fields_changed = true;
-            }
-
             if (r.default_holiday_list &&
                 r.default_holiday_list !== frm.doc.holiday_list) {
-                frm.set_value("holiday_list", r.default_holiday_list);
-                fields_changed = true;
-            }
 
-            if (fields_changed) {
+                frm.set_value("holiday_list", r.default_holiday_list);
+
                 setTimeout(() => {
                     if (frm.is_dirty()) {
                         frm.save().then(() => {

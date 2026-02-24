@@ -27,7 +27,6 @@ class CompanyLink(Document):
                   "It is needed to calculate the leaving date for the previous company record.")
             )
 
-        # Find existing active record (name starts with employee ID)
         existing = frappe.db.sql("""
             SELECT name, company, employee, date_of_joining
             FROM `tabCompany Link`
@@ -43,16 +42,12 @@ class CompanyLink(Document):
         old_record = existing[0]
         old_name = old_record["name"]
 
-        # Calculate left_date = new joining date - 1 day
         left_date = (
             frappe.utils.getdate(self.date_of_joining)
             - datetime.timedelta(days=1)
         )
 
-        # Only rename if the old record is NOT already an archived name
-        # i.e. only rename if name == employee ID exactly (no suffix yet)
         if old_name == self.employee:
-            # This is the first archive — rename to HR-EMP-00072-1
             suffix = self.get_next_archive_suffix(self.employee)
             new_archive_name = "{0}-{1}".format(self.employee, suffix)
 
@@ -66,17 +61,15 @@ class CompanyLink(Document):
 
             archive_name = new_archive_name
         else:
-            # Already has a suffix (e.g. HR-EMP-00072-2), no rename needed
             archive_name = old_name
 
-        # Update the archived record
         frappe.db.set_value(
             "Company Link",
             archive_name,
             {
                 "is_active": 0,
                 "left_date": left_date,
-                "employee": self.employee  # always restore original employee ID
+                "employee": self.employee
             }
         )
         frappe.db.commit()
@@ -95,11 +88,6 @@ class CompanyLink(Document):
         self.is_active = 1
 
     def get_next_archive_suffix(self, employee):
-        """
-        Find the highest existing suffix for this employee and return next one.
-        e.g. HR-EMP-00072-1 exists → return 2
-             HR-EMP-00072-1 and HR-EMP-00072-2 exist → return 3
-        """
         existing_archives = frappe.db.sql("""
             SELECT name FROM `tabCompany Link`
             WHERE name LIKE %(pattern)s
@@ -108,7 +96,6 @@ class CompanyLink(Document):
         if not existing_archives:
             return 1
 
-        # Extract suffix numbers and return max + 1
         suffixes = []
         for rec in existing_archives:
             parts = rec["name"].split("-")
@@ -126,15 +113,12 @@ class CompanyLink(Document):
         company_values = frappe.db.get_value(
             "Company",
             self.company,
-            ["default_holiday_list", "salary_calculation_based_on"],
+            ["default_holiday_list"],
             as_dict=True
         )
 
-        if company_values:
-            if company_values.default_holiday_list:
-                self.holiday_list = company_values.default_holiday_list
-            if company_values.salary_calculation_based_on:
-                self.salary_calculation_based_on = company_values.salary_calculation_based_on
+        if company_values and company_values.default_holiday_list:
+            self.holiday_list = company_values.default_holiday_list
 
     def validate_left_date(self):
         if self.left_date and self.is_active:
