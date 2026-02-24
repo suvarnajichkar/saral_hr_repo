@@ -126,6 +126,19 @@ fixtures = [
 
 ]
 
+# your_app/hooks.py
+
+def after_install():
+    import subprocess
+    import sys
+
+    try:
+        # PyPDF2 install kar do current environment me
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "PyPDF2"])
+        print("PyPDF2 successfully installed.")
+    except Exception as e:
+        print("Error installing PyPDF2:", e)
+
 
 # Generators
 # ----------
