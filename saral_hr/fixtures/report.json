@@ -25,13 +25,13 @@
     "parent": "Transaction Checklist",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Transaction Checklist",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -62,13 +62,13 @@
     "parent": "Employee Timeline Report",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Employee Timeline Report",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -99,13 +99,13 @@
     "parent": "Labour Welfare Fund Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Labour Welfare Fund Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -136,13 +136,13 @@
     "parent": "Retention Deposit Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Retention Deposit Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -173,13 +173,13 @@
     "parent": "Variable Pay Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Variable Pay Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -210,13 +210,13 @@
     "parent": "ESI Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "ESI Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -247,13 +247,13 @@
     "parent": "Educational Allowance Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Educational Allowance Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -284,13 +284,13 @@
     "parent": "Professional Tax Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Professional Tax Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -321,13 +321,13 @@
     "parent": "Bank Advice",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Bank Advice",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -358,13 +358,13 @@
     "parent": "Salary Summary",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Salary Summary",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -395,13 +395,13 @@
     "parent": "Provident Fund Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Provident Fund Register",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -432,13 +432,13 @@
     "parent": "Monthly Attendance Report",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Monthly Attendance Report",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -469,13 +469,13 @@
     "parent": "Salary Summary Individual Employee",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Salary Summary Individual Employee",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0
@@ -506,13 +506,13 @@
     "parent": "Payroll Report",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "System Manager"
+    "role": "Saral HR Manager"
    },
    {
     "parent": "Payroll Report",
     "parentfield": "roles",
     "parenttype": "Report",
-    "role": "HR User"
+    "role": "Saral HR User"
    }
   ],
   "timeout": 0

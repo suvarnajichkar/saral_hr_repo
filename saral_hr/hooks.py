@@ -128,16 +128,9 @@ fixtures = [
 
 # your_app/hooks.py
 
-def after_install():
-    import subprocess
-    import sys
+before_install = "saral_hr.setup.before_install"
 
-    try:
-        # PyPDF2 install kar do current environment me
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "PyPDF2"])
-        print("PyPDF2 successfully installed.")
-    except Exception as e:
-        print("Error installing PyPDF2:", e)
+
 
 
 # Generators
@@ -159,13 +152,13 @@ def after_install():
 # ------------
 
 # before_install = "saral_hr.install.before_install"
-# after_install = "saral_hr.install.after_install"
+after_install = "saral_hr.install.after_install"
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "saral_hr.uninstall.before_uninstall"
-# after_uninstall = "saral_hr.uninstall.after_uninstall"
+after_uninstall = "saral_hr.uninstall.after_uninstall"
 
 # Integration Setup
 # ------------------
