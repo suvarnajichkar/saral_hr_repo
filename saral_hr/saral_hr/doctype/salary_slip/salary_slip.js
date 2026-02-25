@@ -1,186 +1,341 @@
-frappe.ui.form.on("Salary Slip", {
+// ─── Form Events ──────────────────────────────────────────────────────────────
 
+frappe.ui.form.on("Salary Slip", {
     refresh(frm) {
         if (!frm.doc.currency) {
             frm.set_value("currency", "INR");
         }
-
-        if (frm.doc.deduct_weekly_off_from_working_days === undefined) {
-            frm.set_value("deduct_weekly_off_from_working_days", 1);
-        }
-
-        // Show only active employees
-        frm.set_query("employee", () => {
-            return {
-                filters: { is_active: 1 }
-            };
-        });
+        frm.set_query("employee", () => ({
+            filters: { is_active: 1 }
+        }));
     },
 
     employee(frm) {
         if (!frm.doc.employee) return;
         reset_form(frm);
-        fetch_salary(frm);
+
+        // Fetch working_days_calculation_method from employee's Category
+        frappe.db.get_value("Company Link", frm.doc.employee, "category", (r) => {
+            if (r && r.category) {
+                frappe.db.get_value("Category", r.category, "salary_calculation_based_on", (cat) => {
+                    if (cat && cat.salary_calculation_based_on) {
+                        frm.set_value("working_days_calculation_method", cat.salary_calculation_based_on);
+                    }
+                    if (frm.doc.start_date) {
+                        check_duplicate_and_fetch(frm);
+                    }
+                });
+            } else {
+                if (frm.doc.start_date) {
+                    check_duplicate_and_fetch(frm);
+                }
+            }
+        });
     },
 
     start_date(frm) {
         if (!frm.doc.start_date) return;
         set_end_date(frm);
-        if (!frm.doc.employee) return;
-        fetch_days_and_attendance(frm);
+        if (frm.doc.employee) {
+            check_duplicate_and_fetch(frm);
+        }
     },
 
-    deduct_weekly_off_from_working_days(frm) {
+    working_days_calculation_method(frm) {
         if (!frm.doc.employee || !frm.doc.start_date) return;
-        fetch_days_and_attendance(frm);
+        frappe.call({
+            method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_attendance_and_days",
+            args: {
+                employee: frm.doc.employee,
+                start_date: frm.doc.start_date,
+                working_days_calculation_method: frm.doc.working_days_calculation_method
+            },
+            callback(r) {
+                if (!r.message) return;
+                apply_attendance(frm, r.message);
+                // recalculate is called inside apply_attendance with correct wd/pd
+            }
+        });
     }
 });
 
+frappe.ui.form.on("Salary Details", {
+    amount(frm)           { recalculate_salary(frm); },
+    earnings_remove(frm)  { recalculate_salary(frm); },
+    deductions_remove(frm){ recalculate_salary(frm); }
+});
+
+// ─── Core Form Functions ──────────────────────────────────────────────────────
+
+function check_duplicate_and_fetch(frm) {
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.check_duplicate_salary_slip",
+        args: {
+            employee:    frm.doc.employee,
+            start_date:  frm.doc.start_date,
+            current_doc: frm.doc.name || ""
+        },
+        callback(r) {
+            if (r.message && r.message.status === "duplicate") {
+                frappe.msgprint({
+                    title:   __("Duplicate Salary Slip"),
+                    message: r.message.message,
+                    indicator: "red"
+                });
+                frm.set_value("start_date", "");
+                return;
+            }
+            fetch_and_validate_all(frm);
+        }
+    });
+}
+
 function set_end_date(frm) {
-    let start = frappe.datetime.str_to_obj(frm.doc.start_date);
-    let end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    const start = frappe.datetime.str_to_obj(frm.doc.start_date);
+    const end   = new Date(start.getFullYear(), start.getMonth() + 1, 0);
     frm.set_value("end_date", frappe.datetime.obj_to_str(end));
 }
 
-function fetch_salary(frm) {
+function fetch_and_validate_all(frm) {
+    frm.page.btn_primary.prop("disabled", false);
+    frm.clear_table("earnings");
+    frm.clear_table("deductions");
+
+    let salary_data     = null;
+    let attendance_data = null;
+    let vpa_status      = null;
+    let vpa_percentage  = 0;
+
+    let pending = 3;
+
+    function try_finalize() {
+        if (--pending > 0) return;
+
+        const unmet = [];
+
+        if (!salary_data) {
+            unmet.push("No Salary Structure has been assigned for the selected payroll period.");
+        }
+        if (vpa_status && vpa_status.status === "missing") {
+            unmet.push(vpa_status.message.replace(/<[^>]+>/g, ""));
+        }
+        if (!attendance_data) {
+            unmet.push("Attendance data could not be retrieved for the selected period. Please verify attendance records.");
+        } else if (attendance_data.attendance_count === 0) {
+            unmet.push("No attendance has been recorded for this employee in the selected month.");
+        }
+
+        if (unmet.length > 0) {
+            const bullets = unmet
+                .map(e => `<li style="margin-bottom:6px;">${e}</li>`)
+                .join("");
+            frappe.msgprint({
+                title:   __("Payroll Processing Requirements Not Met"),
+                message: `
+                    <div style="margin-bottom:8px;font-weight:600;">
+                        Please resolve the following before saving this salary slip:
+                    </div>
+                    <ul style="margin:0;padding-left:18px;line-height:1.7;">${bullets}</ul>
+                `,
+                indicator: "red"
+            });
+            frm.page.btn_primary.prop("disabled", true);
+            return;
+        }
+
+        apply_salary_structure(frm, salary_data);
+        // Pass attendance_data and vpa_percentage directly so
+        // recalculate_salary gets correct wd/pd without relying on frm.doc
+        apply_attendance(frm, attendance_data, flt(vpa_percentage) / 100);
+        frm.page.btn_primary.prop("disabled", false);
+    }
+
     frappe.call({
         method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_salary_structure_for_employee",
-        args: { employee: frm.doc.employee },
-        callback(r) {
-            if (!r.message) {
-                frappe.msgprint("No Salary Structure found");
-                return;
-            }
-
-            frm.set_value("salary_structure", r.message.salary_structure);
-
-            frm.clear_table("earnings");
-            frm.clear_table("deductions");
-
-            (r.message.earnings || []).forEach(row => {
-                let e = frm.add_child("earnings");
-                Object.assign(e, row);
-                e.base_amount = row.amount;
-            });
-
-            (r.message.deductions || []).forEach(row => {
-                let d = frm.add_child("deductions");
-                Object.assign(d, row);
-                d.base_amount = row.amount;
-            });
-
-            frm.refresh_fields(["earnings", "deductions"]);
-            recalculate_salary(frm);
-        }
+        args: { employee: frm.doc.employee, start_date: frm.doc.start_date },
+        callback(r) { salary_data = r.message || null; try_finalize(); },
+        error()     { salary_data = null; try_finalize(); }
     });
-}
 
-function fetch_days_and_attendance(frm) {
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.check_variable_pay_assignment",
+        args: { employee: frm.doc.employee, start_date: frm.doc.start_date },
+        callback(r) {
+            vpa_status = r.message || { status: "ok" };
+            if (vpa_status.status === "ok") {
+                frappe.call({
+                    method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_variable_pay_percentage",
+                    args: { employee: frm.doc.employee, start_date: frm.doc.start_date },
+                    callback(vr) { vpa_percentage = flt(vr.message || 0); try_finalize(); },
+                    error()      { vpa_percentage = 0; try_finalize(); }
+                });
+            } else {
+                try_finalize();
+            }
+        },
+        error() { vpa_status = { status: "ok" }; try_finalize(); }
+    });
+
     frappe.call({
         method: "saral_hr.saral_hr.doctype.salary_slip.salary_slip.get_attendance_and_days",
         args: {
-            employee: frm.doc.employee,
-            start_date: frm.doc.start_date,
-            deduct_weekly_off: frm.doc.deduct_weekly_off_from_working_days ? 1 : 0
+            employee:    frm.doc.employee,
+            start_date:  frm.doc.start_date,
+            working_days_calculation_method: frm.doc.working_days_calculation_method
         },
-        callback(r) {
-            if (!r.message) return;
-
-            let d = r.message;
-            frm.set_value("total_working_days", d.working_days);
-            frm.set_value("payment_days", d.payment_days);
-            frm.set_value("present_days", d.present_days);
-            frm.set_value("absent_days", d.absent_days);
-            frm.set_value("weekly_offs_count", d.weekly_offs);
-
-            recalculate_salary(frm);
-        }
+        callback(r) { attendance_data = r.message || null; try_finalize(); },
+        error()     { attendance_data = null; try_finalize(); }
     });
 }
 
-function recalculate_salary(frm) {
-    let gross = 0;
-    let employee_deductions = 0;
-    let employer_contribution = 0;
+// ─── Helpers to Apply Fetched Data ───────────────────────────────────────────
+
+function apply_salary_structure(frm, data) {
+    frm.set_value("salary_structure", data.salary_structure);
+    frm.clear_table("earnings");
+    frm.clear_table("deductions");
+
+    (data.earnings || []).forEach(row => {
+        const e = frm.add_child("earnings");
+        Object.assign(e, row);
+        e.base_amount = row.amount;
+    });
+
+    (data.deductions || []).forEach(row => {
+        const d = frm.add_child("deductions");
+        Object.assign(d, row);
+        d.base_amount = row.amount;
+    });
+
+    frm.refresh_fields(["earnings", "deductions"]);
+}
+
+// KEY FIX: accept wd, pd, variable_pay_pct directly so recalculate doesn't
+// have to read frm.doc (which may not be updated yet after set_value).
+function apply_attendance(frm, d, variable_pay_pct) {
+    frm.set_value({
+        total_working_days: d.working_days,
+        payment_days:       d.payment_days,
+        present_days:       d.present_days,
+        absent_days:        d.absent_days,
+        weekly_offs_count:  d.weekly_offs,
+        total_half_days:    d.total_half_days,
+        total_lwp:          d.total_lwp      || 0,
+        total_holidays:     d.total_holidays || 0
+    });
+
+    // Store variable pay percentage on frm for manual edits later
+    if (variable_pay_pct !== undefined) {
+        frm.variable_pay_percentage = variable_pay_pct;
+    }
+
+    // Pass wd/pd directly — do NOT read from frm.doc here
+    recalculate_salary(frm, d.working_days, d.payment_days);
+}
+
+// ─── Salary Calculation ───────────────────────────────────────────────────────
+
+// wd and pd are optional overrides — used when frm.doc may not yet reflect
+// the latest set_value calls (async Frappe behaviour).
+function recalculate_salary(frm, wd_override, pd_override) {
+    let total_earnings = 0;
+    let total_deductions = 0;
+    let total_basic_da = 0;
+    let total_employer_contribution = 0;
     let retention = 0;
 
-    let wd = flt(frm.doc.total_working_days);
-    let pd = flt(frm.doc.payment_days);
+    // Use passed-in values if available, otherwise fall back to frm.doc
+    const wd = flt(wd_override !== undefined ? wd_override : frm.doc.total_working_days);
+    const pd = flt(pd_override !== undefined ? pd_override : frm.doc.payment_days);
+    const variable_pct = flt(frm.variable_pay_percentage || 0);
 
-    // ========== EARNINGS CALCULATION ==========
+    let basic_amount      = 0;
+    let da_amount         = 0;
+    let conveyance_amount = 0;
+
     (frm.doc.earnings || []).forEach(row => {
-        let base = row.base_amount || row.amount || 0;
+        const base = flt(row.base_amount || row.amount || 0);
         row.base_amount = base;
 
-        // Pro-rata calculation based on payment days
-        let amount = row.depends_on_payment_days && wd > 0
-            ? (base / wd) * pd
-            : base;
+        let amount = 0;
+        if (row.salary_component && row.salary_component.toLowerCase().includes("variable")) {
+            amount = (wd > 0 && row.depends_on_payment_days)
+                ? (base / wd) * pd * variable_pct
+                : base * variable_pct;
+        } else {
+            amount = (row.depends_on_payment_days && wd > 0)
+                ? (base / wd) * pd
+                : base;
+        }
 
         row.amount = flt(amount, 2);
-        gross += row.amount;
+        total_earnings += row.amount;
+
+        const comp = (row.salary_component || "").toLowerCase();
+        if (comp.includes("basic"))                            basic_amount      = row.amount;
+        if (comp.includes("da") || comp.includes("dearness")) da_amount         = row.amount;
+        if (comp.includes("conveyance"))                       conveyance_amount = row.amount;
     });
 
-    // ========== DEDUCTIONS CATEGORIZATION ==========
+    total_basic_da = basic_amount + da_amount;
+
     (frm.doc.deductions || []).forEach(row => {
-        let base = row.base_amount || row.amount || 0;
+        const base = flt(row.base_amount || row.amount || 0);
         row.base_amount = base;
 
-        // Pro-rata calculation based on payment days
-        let amount = row.depends_on_payment_days && wd > 0
-            ? (base / wd) * pd
-            : base;
+        let amount = 0;
+        const comp = (row.salary_component || "").toLowerCase();
+
+        if (comp.includes("esic") && !comp.includes("employer")) {
+            if (base > 0) {
+                amount = total_earnings < 21000
+                    ? flt((total_earnings - conveyance_amount) * 0.0075, 2)
+                    : 0;
+            } else {
+                amount = 0;
+            }
+
+        } else if (comp.includes("esic") && comp.includes("employer")) {
+            if (base > 0) {
+                amount = total_earnings < 21000
+                    ? flt((total_earnings - conveyance_amount) * 0.0325, 2)
+                    : 0;
+            } else {
+                amount = 0;
+            }
+
+        } else if (comp.includes("pf") || comp.includes("provident")) {
+            if (base > 0) {
+                const basic_da_total = basic_amount + da_amount;
+                amount = flt(basic_da_total * 0.12, 2);
+            } else {
+                amount = 0;
+            }
+
+        } else {
+            amount = (row.depends_on_payment_days && wd > 0 && base > 0)
+                ? (base / wd) * pd
+                : base;
+        }
 
         row.amount = flt(amount, 2);
-
-        // CRITICAL LOGIC:
-        // 1. First check if it's employer contribution
-        // 2. Then check if component name is "Retention" AND has deduct_from_cash_in_hand_only flag
-        // 3. Otherwise treat as regular employee deduction
-        //    (Even if deduct_from_cash_in_hand_only = 1, components like Employee PF, PT, ESIC
-        //     should be part of total deductions)
 
         if (row.employer_contribution) {
-            // Employer contributions: Employer ESIC, Employer PF, Bonus, Gratuity
-            employer_contribution += row.amount;
-        } else if (row.deduct_from_cash_in_hand_only && row.salary_component === 'Retention') {
-            // ONLY "Retention" component goes here
-            // NOT part of total deductions, only deducted from cash in hand
-            retention += row.amount;
+            total_employer_contribution += row.amount;
         } else {
-            // Regular employee deductions: Employee ESIC, Employee PF, Professional Tax
-            // These ARE part of total deductions
-            // (Even if they have deduct_from_cash_in_hand_only = 1)
-            employee_deductions += row.amount;
+            total_deductions += row.amount;
         }
+
+        if (comp.includes("retention")) retention += row.amount;
     });
 
-    // ========== FINAL CALCULATIONS ==========
-    // Total Deductions = ONLY employee deductions (NOT including retention)
-    let total_deductions = employee_deductions;
-
-    // Net Salary = Gross - Total Deductions
-    let net_salary = gross - total_deductions;
-
-    // Cash in Hand = Net Salary - Retention
-    let cash_in_hand = net_salary - retention;
-
-    // Monthly CTC = Gross + Employer Contribution
-    let monthly_ctc = gross + employer_contribution;
-
-    // Annual CTC = Monthly CTC × 12
-    let annual_ctc = monthly_ctc * 12;
-
     frm.set_value({
-        gross_salary: gross,
-        total_earnings: gross,
-        total_deductions: total_deductions,           // ✅ ONLY employee deductions (NO retention)
-        total_employer_contribution: employer_contribution,
-        retention: retention,                         // ✅ Tracked separately
-        net_salary: net_salary,                       // Gross - Total Deductions
-        cash_in_hand: cash_in_hand,                   // Net Salary - Retention
-        monthly_ctc: monthly_ctc,
-        annual_ctc: annual_ctc
+        total_earnings:              flt(total_earnings, 2),
+        total_deductions:            flt(total_deductions, 2),
+        net_salary:                  flt(total_earnings - total_deductions, 2),
+        total_basic_da:              flt(total_basic_da, 2),
+        total_employer_contribution: flt(total_employer_contribution, 2),
+        retention:                   flt(retention, 2)
     });
 
     frm.refresh_fields(["earnings", "deductions"]);
@@ -191,21 +346,24 @@ function reset_form(frm) {
     frm.clear_table("deductions");
 
     frm.set_value({
-        total_working_days: 0,
-        payment_days: 0,
-        present_days: 0,
-        absent_days: 0,
-        weekly_offs_count: 0,
-        gross_salary: 0,
-        total_earnings: 0,
-        total_deductions: 0,
+        total_working_days:          0,
+        payment_days:                0,
+        present_days:                0,
+        absent_days:                 0,
+        weekly_offs_count:           0,
+        total_half_days:             0,
+        total_lwp:                   0,
+        total_holidays:              0,
+        total_earnings:              0,
+        total_deductions:            0,
+        net_salary:                  0,
+        total_basic_da:              0,
         total_employer_contribution: 0,
-        retention: 0,
-        net_salary: 0,
-        cash_in_hand: 0,
-        monthly_ctc: 0,
-        annual_ctc: 0
+        retention:                   0,
+        working_days_calculation_method: ""
     });
 
+    frm.variable_pay_percentage = 0;
+    frm.page.btn_primary.prop("disabled", false);
     frm.refresh_fields();
 }

@@ -1,53 +1,125 @@
 import frappe
+import datetime
 from frappe.model.document import Document
 from frappe import _
 
 
 class CompanyLink(Document):
 
+    def autoname(self):
+        if self.employee:
+            self.name = self.employee
+
+    def before_insert(self):
+        self.handle_employee_transfer()
+
     def validate(self):
-        self.validate_active_employee()
+        self.sync_holiday_list_from_company()
         self.validate_left_date()
 
-    def validate_active_employee(self):
-        """
-        An employee can be active in ONLY ONE company at a time
-        """
-        if not self.employee or not self.is_active:
+    def handle_employee_transfer(self):
+        if not self.employee:
             return
 
-        existing_active = frappe.db.sql("""
-            SELECT name, company
-            FROM `tabCompany Link`
-            WHERE employee = %(employee)s
-              AND is_active = 1
-              AND name != %(name)s
-            LIMIT 1
-        """, {
-            "employee": self.employee,
-            "name": self.name or ""
-        })
-
-        if existing_active:
+        if not self.date_of_joining:
             frappe.throw(
-                _(
-                    "Employee {0} is already active in company {1} (Record: {2}). "
-                    "Please deactivate the existing record before assigning to another company."
-                ).format(
-                    frappe.bold(self.employee),
-                    frappe.bold(existing_active[0][1]),
-                    frappe.bold(existing_active[0][0])
-                ),
-                title=_("Employee Already Active")
+                _("Please set the <b>Date of Joining</b> before saving. "
+                  "It is needed to calculate the leaving date for the previous company record.")
             )
+
+        existing = frappe.db.sql("""
+            SELECT name, company, employee, date_of_joining
+            FROM `tabCompany Link`
+            WHERE name LIKE %(pattern)s
+              AND is_active = 1
+            LIMIT 1
+        """, {"pattern": "{0}%".format(self.employee)}, as_dict=True)
+
+        if not existing:
+            self.is_active = 1
+            return
+
+        old_record = existing[0]
+        old_name = old_record["name"]
+
+        left_date = (
+            frappe.utils.getdate(self.date_of_joining)
+            - datetime.timedelta(days=1)
+        )
+
+        if old_name == self.employee:
+            suffix = self.get_next_archive_suffix(self.employee)
+            new_archive_name = "{0}-{1}".format(self.employee, suffix)
+
+            frappe.rename_doc(
+                "Company Link",
+                old_name,
+                new_archive_name,
+                force=True
+            )
+            frappe.db.commit()
+
+            archive_name = new_archive_name
+        else:
+            archive_name = old_name
+
+        frappe.db.set_value(
+            "Company Link",
+            archive_name,
+            {
+                "is_active": 0,
+                "left_date": left_date,
+                "employee": self.employee
+            }
+        )
+        frappe.db.commit()
+
+        frappe.msgprint(
+            _("Previous record at company {0} has been archived as {1} "
+              "with leaving date {2}.").format(
+                frappe.bold(old_record["company"]),
+                frappe.bold(archive_name),
+                frappe.bold(str(left_date))
+            ),
+            title=_("Employee Transferred"),
+            indicator="blue"
+        )
+
+        self.is_active = 1
+
+    def get_next_archive_suffix(self, employee):
+        existing_archives = frappe.db.sql("""
+            SELECT name FROM `tabCompany Link`
+            WHERE name LIKE %(pattern)s
+        """, {"pattern": "{0}-%".format(employee)}, as_dict=True)
+
+        if not existing_archives:
+            return 1
+
+        suffixes = []
+        for rec in existing_archives:
+            parts = rec["name"].split("-")
+            try:
+                suffixes.append(int(parts[-1]))
+            except ValueError:
+                pass
+
+        return max(suffixes) + 1 if suffixes else 1
+
+    def sync_holiday_list_from_company(self):
+        if not self.company:
+            return
+
+        company_values = frappe.db.get_value(
+            "Company",
+            self.company,
+            ["default_holiday_list"],
+            as_dict=True
+        )
+
+        if company_values and company_values.default_holiday_list:
+            self.holiday_list = company_values.default_holiday_list
 
     def validate_left_date(self):
-        """
-        Automatically deactivate when left date is set
-        """
         if self.left_date and self.is_active:
-            frappe.msgprint(
-                _("Employee has a left date. The record will be marked as inactive."),
-                indicator="orange"
-            )
             self.is_active = 0

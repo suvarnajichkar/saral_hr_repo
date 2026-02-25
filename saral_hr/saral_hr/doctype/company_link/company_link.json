@@ -1,12 +1,12 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
- "autoname": "naming_series:",
+ "autoname": "field:employee",
  "creation": "2026-01-10 16:47:22.388127",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "naming_series",
   "is_active",
   "section_break_employee",
   "company",
@@ -14,22 +14,19 @@
   "full_name",
   "weekly_off",
   "aadhar_number",
+  "holiday_list",
   "column_break_hopr",
   "department",
   "designation",
   "branch",
+  "division",
+  "category",
   "section_break_dates",
   "date_of_joining",
   "column_break_leftdate",
   "left_date"
  ],
  "fields": [
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "Series",
-   "options": "CL-.YYYY.-"
-  },
   {
    "default": "1",
    "fieldname": "is_active",
@@ -58,7 +55,8 @@
    "in_standard_filter": 1,
    "label": "Employee",
    "options": "Employee",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fetch_from": "employee.employee",
@@ -120,15 +118,33 @@
    "fieldname": "aadhar_number",
    "fieldtype": "Data",
    "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "division",
+   "fieldtype": "Link",
+   "label": "Division",
+   "options": "Division"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "options": "Category"
+  },
+  {
+   "fetch_from": "company.default_holiday_list",
+   "fieldname": "holiday_list",
+   "fieldtype": "Data",
+   "label": "Holiday List"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-28 17:49:59.236443",
+ "modified": "2026-02-24 15:42:48.527882",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
- "naming_rule": "By \"Naming Series\" field",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -139,21 +155,20 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR User",
-   "share": 1,
-   "write": 1
+   "role": "Saral HR User",
+   "select": 1,
+   "share": 1
   }
  ],
  "sort_field": "modified",

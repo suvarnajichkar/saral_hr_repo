@@ -7,38 +7,48 @@
  "engine": "InnoDB",
  "field_order": [
   "employee",
-  "employee_name",
-  "salary_structure",
-  "company",
-  "column_break_jxct",
   "start_date",
-  "end_date",
   "currency",
-  "deduct_weekly_off_from_working_days",
+  "column_break_jxct",
+  "employee_name",
+  "end_date",
+  "salary_structure",
+  "employee_company_details_section",
+  "company",
+  "department",
+  "designation",
+  "working_days_calculation_method",
+  "column_break_alvo",
+  "branch",
+  "category",
+  "division",
+  "hold_section",
+  "on_hold",
+  "hold_reason",
+  "release_reason",
   "payment_days_tab",
   "total_working_days",
   "payment_days",
   "present_days",
+  "total_half_days",
   "column_break_puyt",
   "absent_days",
   "weekly_offs_count",
+  "total_holidays",
+  "total_lwp",
   "earnings_and_deductions_tab",
   "earnings_and_deductions_section",
   "earnings",
   "column_break_zrdn",
   "deductions",
   "totals_section",
+  "net_salary",
   "total_earnings",
   "total_deductions",
+  "column_break_totals",
+  "total_basic_da",
   "total_employer_contribution",
   "retention",
-  "column_break_snfl",
-  "gross_salary",
-  "net_salary",
-  "monthly_ctc",
-  "column_break_orch",
-  "cash_in_hand",
-  "annual_ctc",
   "amended_from"
  ],
  "fields": [
@@ -47,6 +57,7 @@
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee Name"
   },
   {
@@ -59,7 +70,38 @@
    "fieldname": "salary_structure",
    "fieldtype": "Link",
    "label": "Salary Structure",
-   "options": "Salary Structure"
+   "options": "Salary Structure",
+   "read_only": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "hold_section",
+   "fieldtype": "Section Break",
+   "label": "Hold Details",
+   "collapsible": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "on_hold",
+   "fieldtype": "Check",
+   "label": "On Hold",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "hold_reason",
+   "fieldtype": "Small Text",
+   "label": "Hold Reason",
+   "read_only": 1,
+   "depends_on": "eval:doc.on_hold == 1"
+  },
+  {
+   "fieldname": "release_reason",
+   "fieldtype": "Small Text",
+   "label": "Release Reason",
+   "read_only": 1,
+   "depends_on": "eval:doc.on_hold == 0 && doc.hold_reason"
   },
   {
    "fieldname": "payment_days_tab",
@@ -128,43 +170,8 @@
    "reqd": 1
   },
   {
-   "fieldname": "total_earnings",
-   "fieldtype": "Float",
-   "label": "Total Earnings",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_deductions",
-   "fieldtype": "Float",
-   "label": "Total Deductions",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "gross_salary",
-   "fieldtype": "Float",
-   "label": "Gross Salary",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_zrdn",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total_employer_contribution",
-   "fieldtype": "Float",
-   "label": "Total Employer Contribution",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "net_salary",
-   "fieldtype": "Float",
-   "label": "Net Salary",
-   "precision": "2",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_jxct",
@@ -174,10 +181,6 @@
    "fieldname": "totals_section",
    "fieldtype": "Section Break",
    "label": "Totals"
-  },
-  {
-   "fieldname": "column_break_orch",
-   "fieldtype": "Column Break"
   },
   {
    "fetch_from": "employee.company",
@@ -199,7 +202,8 @@
   {
    "fieldname": "payment_days",
    "fieldtype": "Float",
-   "label": "Payment Days"
+   "label": "Payment Days",
+   "precision": "2"
   },
   {
    "fieldname": "present_days",
@@ -214,48 +218,132 @@
    "precision": "2"
   },
   {
-   "default": "1",
-   "fieldname": "deduct_weekly_off_from_working_days",
-   "fieldtype": "Check",
-   "label": "Deduct Weekly Off from Working Days"
+   "fieldname": "employee_company_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Company Details"
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_alvo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.branch",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.category",
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.division",
+   "fieldname": "division",
+   "fieldtype": "Data",
+   "label": "Division",
+   "read_only": 1
+  },
+  {
+   "fieldname": "working_days_calculation_method",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Salary Calculation Based on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_half_days",
+   "fieldtype": "Float",
+   "label": "Total Half Days",
+   "precision": "2"
+  },
+  {
+   "bold": 1,
+   "fieldname": "net_salary",
+   "fieldtype": "Currency",
+   "label": "Net Salary",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_earnings",
+   "fieldtype": "Currency",
+   "label": "Total Earnings",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Deductions",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_basic_da",
+   "fieldtype": "Currency",
+   "label": "Total (Basic + DA)",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_employer_contribution",
+   "fieldtype": "Currency",
+   "label": "Total Employer Contribution",
+   "options": "currency",
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "retention",
-   "fieldtype": "Float",
+   "fieldtype": "Currency",
    "label": "Retention",
+   "options": "currency",
    "precision": "2",
    "read_only": 1
   },
   {
-   "fieldname": "cash_in_hand",
+   "fieldname": "total_lwp",
    "fieldtype": "Float",
-   "label": "Cash in Hand",
-   "precision": "2",
-   "read_only": 1
+   "label": "Total LWP",
+   "precision": "2"
   },
   {
-   "fieldname": "monthly_ctc",
+   "fieldname": "total_holidays",
    "fieldtype": "Float",
-   "label": "Monthly CTC",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "annual_ctc",
-   "fieldtype": "Float",
-   "label": "Annual CTC",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_snfl",
-   "fieldtype": "Column Break"
+   "label": "Total Holidays",
+   "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-30 14:03:17.549266",
+ "modified": "2026-02-24 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Slip",
@@ -263,6 +351,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -270,9 +360,20 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Saral HR User",
+   "select": 1,
+   "share": 1
   }
  ],
  "sort_field": "modified",

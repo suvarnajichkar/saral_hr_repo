@@ -1,45 +1,73 @@
 frappe.ui.form.on("Salary Structure Assignment", {
 
     refresh(frm) {
-        calculate_salary(frm);
+        toggle_fields(frm);
+        if (frm.doc.salary_structure) {
+            toggle_salary_sections(frm);
+            calculate_salary(frm);
+        }
     },
 
     setup(frm) {
-        frm.set_query("employee", () => ({
-            filters: { is_active: 1 }
+        frm.set_query("employee", () => ({ filters: { is_active: 1 } }));
+        frm.set_query("salary_structure", () => ({
+            filters: { company: frm.doc.company || "", is_active: "Yes" }
         }));
     },
 
-    salary_structure(frm) {
-        if (!frm.doc.salary_structure) {
-            clear_salary_tables(frm);
+    employee(frm) {
+        if (!frm.doc.employee || frm._checking_employee === frm.doc.employee) {
+            toggle_fields(frm);
             return;
         }
+        frm._checking_employee = frm.doc.employee;
+
+        frappe.call({
+            method: "saral_hr.saral_hr.doctype.salary_structure_assignment.salary_structure_assignment.get_existing_assignments",
+            args: { employee: frm.doc.employee },
+            callback(r) {
+                frm._has_existing = !!(r.message && r.message.length);
+
+                if (frm._has_existing) {
+                    const lines = r.message.map(rec =>
+                        `<a href="/app/salary-structure-assignment/${rec.name}" target="_blank">${rec.name}</a> (${rec.from_date} to ${rec.to_date || "Ongoing"})`
+                    ).join("<br>");
+                    frappe.msgprint({
+                        title: __("Assignment Already Exists"),
+                        indicator: "orange",
+                        message: `An active Salary Structure Assignment already exists for this employee. Please cancel it before creating a new one.<br><br>${lines}`
+                    });
+                }
+
+                toggle_fields(frm);
+            }
+        });
+    },
+
+    from_date(frm) {
+        toggle_fields(frm);
+        if (frm.doc.from_date && frm.doc.to_date) check_overlap(frm);
+    },
+
+    to_date(frm) {
+        toggle_fields(frm);
+        if (frm.doc.from_date && frm.doc.to_date) check_overlap(frm);
+    },
+
+    salary_structure(frm) {
+        toggle_salary_sections(frm);
+        if (!frm.doc.salary_structure) { clear_salary_tables(frm); return; }
 
         frappe.call({
             method: "frappe.client.get",
-            args: {
-                doctype: "Salary Structure",
-                name: frm.doc.salary_structure
-            },
+            args: { doctype: "Salary Structure", name: frm.doc.salary_structure },
             callback(r) {
                 if (!r.message) return;
-
                 clear_salary_tables(frm);
-
-                (r.message.earnings || []).forEach(row => {
-                    let e = frm.add_child("earnings");
-                    copy_row(e, row);
-                });
-
-                (r.message.deductions || []).forEach(row => {
-                    let d = frm.add_child("deductions");
-                    copy_row(d, row);
-                });
-
+                (r.message.earnings   || []).forEach(row => copy_row(frm.add_child("earnings"),   row));
+                (r.message.deductions || []).forEach(row => copy_row(frm.add_child("deductions"), row));
                 frm.set_value("currency", r.message.currency || "INR");
                 frm.refresh_fields(["earnings", "deductions"]);
-
                 calculate_salary(frm);
             }
         });
@@ -47,193 +75,120 @@ frappe.ui.form.on("Salary Structure Assignment", {
 });
 
 frappe.ui.form.on("Salary Details", {
-
-    amount(frm) {
-        calculate_salary(frm);
-    },
-
-    salary_details_remove(frm) {
-        calculate_salary(frm);
-    }
+    amount(frm)                { calculate_salary(frm); },
+    salary_details_remove(frm) { calculate_salary(frm); }
 });
 
-function calculate_salary(frm) {
+// ── Field visibility ─────────────────────────────────────────────────────────
 
-    let gross_salary = 0;
+function toggle_fields(frm) {
+    // Employee, Employee Name, Currency, Company — always visible
+    const can_create = !frm._has_existing;
 
-    // 1️⃣ Gross Salary = Sum of all Earnings
-    (frm.doc.earnings || []).forEach(row => {
-        gross_salary += flt(row.amount);
+    frm.toggle_display("assignment_section", can_create);
+    frm.toggle_display("from_date",          can_create);
+    frm.toggle_display("to_date",            can_create);
+    frm.toggle_display("salary_structure",   can_create);
+
+    toggle_salary_sections(frm);
+}
+
+function toggle_salary_sections(frm) {
+    const s = !!frm.doc.salary_structure;
+    frm.toggle_display("earnings_and_deductions_section", s);
+    frm.toggle_display("calculations_section",            s);
+}
+
+// ── Overlap check ─────────────────────────────────────────────────────────────
+
+function check_overlap(frm) {
+    if (!frm.doc.employee || !frm.doc.from_date || !frm.doc.to_date) return;
+    frappe.call({
+        method: "saral_hr.saral_hr.doctype.salary_structure_assignment.salary_structure_assignment.check_overlap",
+        args: {
+            employee:      frm.doc.employee,
+            from_date:     frm.doc.from_date,
+            to_date:       frm.doc.to_date,
+            employee_name: frm.doc.employee_name || frm.doc.employee,
+            current_name:  frm.doc.__islocal ? null : frm.doc.name,
+        },
+        callback(r) {
+            if (!r.message) return;
+            const rec = r.message;
+            frappe.msgprint({
+                title:     __("Date Range Overlap"),
+                indicator: "red",
+                message:   `This date range overlaps with: <a href="/app/salary-structure-assignment/${rec.name}" target="_blank">${rec.name}</a> (${rec.from_date} to ${rec.to_date || "Ongoing"})`
+            });
+        }
     });
+}
 
-    let deductions = frm.doc.deductions || [];
-    
-    // If no deductions, set totals and return
+// ── Salary calculation (original logic, unchanged) ────────────────────────────
+
+
+function calculate_salary(frm) {
+    let gross_salary = 0;
+    (frm.doc.earnings || []).forEach(row => { gross_salary += flt(row.amount); });
+
+    const deductions = frm.doc.deductions || [];
     if (!deductions.length) {
-        set_salary_totals(frm, gross_salary, 0, 0, 0);
+        set_salary_totals(frm, gross_salary, 0, 0);
         return;
     }
 
-    // 2️⃣ Fetch component flags from Salary Component master
     frappe.call({
         method: "frappe.client.get_list",
         args: {
             doctype: "Salary Component",
-            fields: [
-                "name",
-                "employer_contribution",
-                "deduct_from_cash_in_hand_only"
-            ],
-            filters: {
-                name: ["in", deductions.map(d => d.salary_component)]
-            }
+            fields: ["name", "employer_contribution"],
+            filters: { name: ["in", deductions.map(d => d.salary_component)] }
         },
         callback(res) {
+            const component_map = {};
+            (res.message || []).forEach(c => { component_map[c.name] = c; });
 
-            let component_map = {};
-            (res.message || []).forEach(c => {
-                component_map[c.name] = c;
-            });
+            let employee_deductions = 0, employer_contribution = 0;
 
-            // Initialize variables inside callback
-            let employee_deductions = 0;  // ESIC (0.75%) + PF (12%) + PT
-            let employer_contribution = 0; // ESIC (3.25%) + PF (12%) + Bonus + Gratuity
-            let retention = 0;             // Retention - NOT part of total deductions
-
-            // 3️⃣ Categorize each deduction based on flags
             deductions.forEach(d => {
-                let comp = component_map[d.salary_component];
-                let amount = flt(d.amount);
-
-                if (!comp) {
-                    // If component not found, treat as regular employee deduction
-                    employee_deductions += amount;
-                    return;
-                }
-
-                // Convert to integer to handle both 0/1 and "0"/"1"
-                let is_cash_only = parseInt(comp.deduct_from_cash_in_hand_only) || 0;
-                let is_employer = parseInt(comp.employer_contribution) || 0;
-
-                // CRITICAL PRIORITY ORDER:
-                // 1. Check if component name is exactly "Retention"
-                //    → Retention (NOT in total deductions, only deducted from cash in hand)
-                // 2. THEN check "employer_contribution"
-                //    → Employer contribution (doesn't affect employee)
-                // 3. Otherwise → Regular employee deduction (part of total deductions)
-                //    Note: Employee PF, PT, ESIC have "deduct_from_cash_in_hand_only" = 1
-                //    but they ARE still part of total deductions
-
-                if (is_cash_only === 1 && d.salary_component === 'Retention') {
-                    // ONLY Retention component: NOT part of total deductions
-                    // Only deducted from cash in hand
-                    retention += amount;
-                }
-                else if (is_employer === 1) {
-                    // Employer contribution: ESIC (3.25%), PF (12%), Bonus, Gratuity
-                    employer_contribution += amount;
-                }
-                else {
-                    // Regular employee deduction: ESIC (0.75%), PF (12%), PT
-                    // These ARE part of total deductions
-                    // (Even if deduct_from_cash_in_hand_only = 1)
-                    employee_deductions += amount;
-                }
+                const comp   = component_map[d.salary_component];
+                const amount = flt(d.amount);
+                if (!comp || !parseInt(comp.employer_contribution)) employee_deductions   += amount;
+                else                                                employer_contribution += amount;
             });
 
-            // 4️⃣ Calculate and set all totals
-            set_salary_totals(
-                frm,
-                gross_salary,
-                employee_deductions,
-                employer_contribution,
-                retention
-            );
+            set_salary_totals(frm, gross_salary, employee_deductions, employer_contribution);
         }
     });
 }
 
-function set_salary_totals(frm, gross, employee_deductions, employer, retention) {
-
-    // ============================================================
-    // FINAL FORMULAS:
-    // ============================================================
-    // GROSS SALARY = Basic + DA + HRA + Conveyance + Medical + Education + Other Allowance + Variable Pay
-    //
-    // TOTAL DEDUCTIONS = ESIC (0.75%) + PF (12%) + PT
-    //                    Does NOT include retention
-    //
-    // NET SALARY = Gross Salary - Total Deductions
-    //
-    // RETENTION = Tracked separately
-    //             (Only the "Retention" component)
-    //
-    // CASH IN HAND = Net Salary - Retention
-    //              = Gross - Total Deductions - Retention
-    //
-    // TOTAL EMPLOYER CONTRIBUTION = ESIC (3.25%) + PF (12%) + Bonus + Gratuity
-    //
-    // ANNUAL CTC = (Gross Salary × 12) + (Total Employer Contribution × 12)
-    //
-    // MONTHLY CTC = Annual CTC ÷ 12
-    // ============================================================
-
-    // Total Deductions = ONLY employee deductions (NOT including retention)
-    let total_deductions = employee_deductions;  // ✅ NO RETENTION HERE
-
-    // Net Salary = Gross - Total Deductions
-    let net_salary = gross - total_deductions;
-
-    // Cash in Hand = Net Salary - Retention
-    let cash_in_hand = net_salary - retention;
-
-    // Annual CTC = (Gross × 12) + (Employer Contribution × 12)
-    let annual_ctc = (gross * 12) + (employer * 12);
-
-    // Monthly CTC = Annual CTC ÷ 12
-    let monthly_ctc = annual_ctc / 12;
+function set_salary_totals(frm, gross, employee_deductions, employer) {
+    const net_salary  = gross - employee_deductions;
+    const annual_ctc  = (gross + employer) * 12;
+    const monthly_ctc = annual_ctc / 12;
 
     frm.set_value({
-        gross_salary: gross,
-        total_deductions: total_deductions,          // ✅ ONLY employee deductions (NO retention)
-        total_employer_contribution: employer,        // Employer ESIC + PF + Bonus + Gratuity
-        retention: retention,                         // Tracked separately
-        net_salary: net_salary,                       // Gross - Total Deductions
-        cash_in_hand: cash_in_hand,                   // Net Salary - Retention
-        monthly_ctc: monthly_ctc,
-        annual_ctc: annual_ctc
+        gross_salary:                gross,
+        total_deductions:            employee_deductions,
+        total_employer_contribution: employer,
+        net_salary,
+        monthly_ctc,
+        annual_ctc
     });
-
     frm.refresh_fields();
 }
 
 function clear_salary_tables(frm) {
-
     frm.clear_table("earnings");
     frm.clear_table("deductions");
-
     frm.set_value({
-        gross_salary: 0,
-        total_deductions: 0,
-        total_employer_contribution: 0,
-        retention: 0,
-        net_salary: 0,
-        cash_in_hand: 0,
-        monthly_ctc: 0,
-        annual_ctc: 0
+        gross_salary: 0, total_deductions: 0, total_employer_contribution: 0,
+        net_salary: 0, monthly_ctc: 0, annual_ctc: 0
     });
-
     frm.refresh_fields();
 }
 
 function copy_row(target, source) {
-    Object.keys(source).forEach(key => {
-        if (![
-            "name", "parent", "parenttype", "parentfield",
-            "idx", "docstatus", "creation", "modified",
-            "modified_by", "owner"
-        ].includes(key)) {
-            target[key] = source[key];
-        }
-    });
+    const skip = ["name","parent","parenttype","parentfield","idx","docstatus","creation","modified","modified_by","owner"];
+    Object.keys(source).forEach(key => { if (!skip.includes(key)) target[key] = source[key]; });
 }

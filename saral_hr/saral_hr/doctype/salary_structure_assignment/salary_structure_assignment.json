@@ -9,17 +9,19 @@
  "field_order": [
   "employee",
   "employee_name",
-  "currency",
   "column_break_ngyh",
-  "salary_structure",
+  "currency",
+  "company",
+  "assignment_section",
   "from_date",
+  "salary_structure",
+  "column_break_dates",
   "to_date",
   "details_section",
-  "department",
-  "company",
-  "column_break_mhdz",
   "designation",
   "branch",
+  "column_break_mhdz",
+  "department",
   "earnings_and_deductions_section",
   "earnings",
   "column_break_oeow",
@@ -31,8 +33,8 @@
   "monthly_ctc",
   "column_break_nlti",
   "net_salary",
-  "cash_in_hand",
-  "annual_ctc"
+  "annual_ctc",
+  "amended_from"
  ],
  "fields": [
   {
@@ -49,7 +51,8 @@
    "fetch_from": "employee.full_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
-   "label": "Employee Name"
+   "label": "Employee Name",
+   "read_only": 1
   },
   {
    "fetch_from": "employee.branch",
@@ -76,10 +79,15 @@
   {
    "fieldname": "to_date",
    "fieldtype": "Date",
-   "label": "To Date"
+   "label": "To Date",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_ngyh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_dates",
    "fieldtype": "Column Break"
   },
   {
@@ -103,6 +111,11 @@
    "fieldtype": "Data",
    "label": "Department",
    "read_only": 1
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment"
   },
   {
    "fieldname": "details_section",
@@ -139,12 +152,20 @@
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency"
+   "options": "Currency",
+   "read_only": 1
   },
   {
    "fieldname": "calculations_section",
    "fieldtype": "Section Break",
    "label": "Calculations"
+  },
+  {
+   "fieldname": "gross_salary",
+   "fieldtype": "Float",
+   "label": "Gross Salary",
+   "precision": "2",
+   "read_only": 1
   },
   {
    "fieldname": "total_deductions",
@@ -161,30 +182,20 @@
    "read_only": 1
   },
   {
-   "fieldname": "gross_salary",
+   "fieldname": "monthly_ctc",
    "fieldtype": "Float",
-   "label": "Gross Salary",
+   "label": "Monthly CTC",
    "precision": "2",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_nlti",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "net_salary",
    "fieldtype": "Float",
    "label": "Net Salary",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "cash_in_hand",
-   "fieldtype": "Float",
-   "label": "Cash in Hand",
-   "precision": "2",
-   "read_only": 1
-  },
-  {
-   "fieldname": "monthly_ctc",
-   "fieldtype": "Float",
-   "label": "Monthly CTC",
    "precision": "2",
    "read_only": 1
   },
@@ -196,13 +207,20 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_nlti",
-   "fieldtype": "Column Break"
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Salary Structure Assignment",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-01-31 11:28:59.964973",
+ "modified": "2026-02-23 13:00:23.925181",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Salary Structure Assignment",
@@ -210,6 +228,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -217,9 +237,21 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
+   "submit": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Saral HR User",
+   "select": 1,
+   "share": 1
   }
  ],
  "sort_field": "modified",

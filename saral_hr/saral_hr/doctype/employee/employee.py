@@ -13,3 +13,18 @@ class Employee(Document):
         # Populate Full Name into the actual field "employee"
         name_parts = [self.first_name, self.middle_name, self.last_name]
         self.employee = " ".join(filter(None, name_parts))
+
+        # Aadhar Number uniqueness check
+        if self.aadhar_number:
+            duplicate = frappe.db.exists(
+                "Employee",
+                {
+                    "aadhar_number": self.aadhar_number,
+                    "name": ("!=", self.name)
+                }
+            )
+            if duplicate:
+                frappe.throw(
+                    f"Aadhar Number <b>{self.aadhar_number}</b> already exists for Employee <b>{duplicate}</b>. "
+
+                )

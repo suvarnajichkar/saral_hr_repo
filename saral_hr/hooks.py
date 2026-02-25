@@ -68,7 +68,64 @@ permission_query_conditions = {
     "Company Link": "saral_hr.permission.company_link_permission_query",
     "Employee": "saral_hr.permission.employee_permission_query",
     "Attendance": "saral_hr.permission.attendance_permission_query",
+    "Salary Structure Assignment": "saral_hr.permission.salary_structure_assignment_permission_query",
+    "Salary Slip": "saral_hr.permission.salary_slip_permission_query"
 }
+
+
+# Document fixtures to be exported/imported
+fixtures = [
+
+    # Workspace
+    {
+        "dt": "Workspace",
+        "filters": [
+            ["name", "in", ["Saral Hr"]]
+        ]
+    },
+
+    # Roles
+    {
+        "dt": "Role",
+        "filters": [
+            ["name", "in", ["Saral HR Manager", "Saral HR User"]]
+        ]
+    },
+
+    # DocType Permissions
+    {
+        "dt": "Custom DocPerm",
+        "filters": [
+            ["role", "in", ["Saral HR Manager", "Saral HR User"]]
+        ]
+    },
+
+    # Salary Component
+    {
+        "dt": "Salary Component"
+    },
+
+    # Print Formats
+    {
+        "dt": "Print Format",
+        "filters": [
+            ["name", "in", [
+                "Variable Pay",
+                "Salary Slip Custom"
+            ]]
+        ]
+    },
+
+    # Reports
+    {
+        "dt": "Report",
+        "filters": [
+            ["module", "=", "Saral Hr"]
+        ]
+    }
+
+]
+
 
 
 # Generators
@@ -90,13 +147,13 @@ permission_query_conditions = {
 # ------------
 
 # before_install = "saral_hr.install.before_install"
-# after_install = "saral_hr.install.after_install"
+after_install = "saral_hr.install.after_install"
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "saral_hr.uninstall.before_uninstall"
-# after_uninstall = "saral_hr.uninstall.after_uninstall"
+after_uninstall = "saral_hr.uninstall.after_uninstall"
 
 # Integration Setup
 # ------------------
@@ -248,4 +305,5 @@ permission_query_conditions = {
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
+
 

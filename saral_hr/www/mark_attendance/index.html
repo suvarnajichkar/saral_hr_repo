@@ -7,32 +7,26 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3 class="mb-0">Mark Attendance</h3>
             <div>
-                <button id="save_attendance" class="btn btn-frappe btn-frappe-primary btn-sm"
+                <button id="goto_attendance" class="btn btn-frappe btn-frappe-primary btn-sm"
                     style="margin-right: 6px;">
-                    Save
-                </button>
-                <button id="goto_attendance" class="btn btn-frappe btn-frappe-primary">
                     Go to Attendance
                 </button>
-
-
+                <button id="save_attendance" class="btn btn-frappe btn-frappe-primary">
+                    Save
+                </button>
             </div>
         </div>
 
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">Employee</label>
-                <!-- NEW: Search Input with Clear Button -->
                 <div class="search-input-wrapper">
-                    <input type="text" class="form-control employee-search-readonly" id="employee-search-input"
-                        placeholder="Select Employee" autocomplete="off" />
+                    <input type="text" class="form-control employee-search-input" id="employee-search-input"
+                        placeholder="Search Employee" autocomplete="off" />
                     <button type="button" id="clear-search" class="clear-search-btn" style="display: none;">
-                        ✕
                     </button>
-                    <!-- Search Results Dropdown -->
                     <div id="search-results" class="search-results-dropdown"></div>
                 </div>
-                <!-- Hidden select for backend -->
                 <select id="employee"
                     style="display:none !important; height: 0; width: 0; position: absolute; visibility: hidden;">
                     <option value="">Select Employee</option>
@@ -44,7 +38,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Weekly Off</label>
-                <input type="text" id="weekly_off" class="form-control weekly-off-input" readonly>
+                <input type="text" id="weekly_off" class="form-control" readonly>
             </div>
         </div>
 
@@ -78,17 +72,18 @@
             </div>
         </div>
 
-        <!-- Hidden date fields (logic stays SAME) -->
         <input type="hidden" id="start_date">
         <input type="hidden" id="end_date">
 
-        <div class="d-flex align-items-center mt-4 attendance-buttons">
-            <span class="me-3">Mark remaining days as:</span>
-            <button id="mark_present" class="btn btn-frappe btn-sm">Present</button>
-            <button id="mark_absent" class="btn btn-frappe btn-sm">Absent</button>
-            <button id="mark_halfday" class="btn btn-frappe btn-sm">Half Day</button>
-            <button id="get_attendance_info" class="btn btn-frappe btn-sm">Get Attendance Info</button>
-            <!-- Removed Save button from here -->
+        <div class="d-flex align-items-center justify-content-between mt-4 attendance-buttons">
+            <div class="d-flex align-items-center">
+                <span class="me-3">Mark remaining days as:</span>
+                <button id="mark_present" class="btn btn-frappe btn-sm">Present</button>
+                <button id="mark_absent" class="btn btn-frappe btn-sm">Absent</button>
+                <button id="mark_halfday" class="btn btn-frappe btn-sm">Half Day</button>
+                <button id="mark_lwp" class="btn btn-frappe btn-sm">LWP</button>
+            </div>
+            <button id="get_attendance_info" class="btn btn-frappe btn-frappe-dark btn-sm">Get Attendance Info</button>
         </div>
     </div>
 
@@ -98,6 +93,9 @@
                 <tr>
                     <th>Day</th>
                     <th>Date</th>
+                    <th class="text-center" style="width: 100px;">
+                        Override<br>Weekly Off
+                    </th>
                     <th class="text-center">
                         Present - <span class="count-text" id="present_count">0</span>
                     </th>
@@ -107,6 +105,9 @@
                     <th class="text-center">
                         Half Day - <span class="count-text" id="halfday_count">0</span>
                     </th>
+                    <th class="text-center">
+                        LWP - <span class="count-text" id="lwp_count">0</span>
+                    </th>
                 </tr>
             </thead>
             <tbody id="attendance_table_body"></tbody>
@@ -115,23 +116,21 @@
 
 </div>
 
-<!-- Calendar Modal -->
 <div id="calendar-modal" class="calendar-modal">
     <div class="calendar-modal-content">
         <div class="calendar-modal-header">
             <h4>Select Year</h4>
-            <button class="calendar-close-btn" onclick="closeCalendarModal()">✕</button>
+            <button class="calendar-close-btn" id="calendar-close-btn">✕</button>
         </div>
 
         <div class="calendar-modal-body">
 
             <div class="year-selector">
-                <button class="year-nav-btn" onclick="changeYear(-1)">‹</button>
+                <button class="year-nav-btn" id="year-prev-btn">‹</button>
                 <h3 id="selected-year">2025</h3>
-                <button class="year-nav-btn" onclick="changeYear(1)">›</button>
+                <button class="year-nav-btn" id="year-next-btn">›</button>
             </div>
 
-            <!-- 🔽 YAHI ADD KARO LEGEND -->
             <div class="calendar-legend">
                 <div class="legend-item">
                     <span class="legend-color present"></span>
@@ -146,14 +145,20 @@
                     <span>Half Day</span>
                 </div>
                 <div class="legend-item">
+                    <span class="legend-color lwp"></span>
+                    <span>LWP</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color holiday"></span>
+                    <span>Holiday</span>
+                </div>
+                <div class="legend-item">
                     <span class="legend-color weekend"></span>
                     <span>Weekly Off</span>
                 </div>
             </div>
-            <!-- 🔼 LEGEND END -->
 
             <div class="months-grid" id="months-grid">
-                <!-- Months will be generated by JS -->
             </div>
 
         </div>
@@ -178,7 +183,7 @@
         border-radius: 4px;
         padding: 6px 14px;
         font-weight: 500;
-        transition: none;
+        transition: all 0.2s ease;
     }
 
     .btn-frappe-primary {
@@ -186,36 +191,43 @@
         color: #ffffff;
     }
 
-    .btn-frappe:hover,
-    .btn-frappe:focus,
-    .btn-frappe:active {
-        background-color: #e6e6e6;
-        color: #222;
-    }
-
-    .btn-frappe-primary:hover,
-    .btn-frappe-primary:focus,
-    .btn-frappe-primary:active {
-        background-color: #2d2d2d;
+    .btn-frappe-dark {
+        background-color: #1a1a1a;
         color: #ffffff;
     }
 
+    .btn-frappe:hover {
+        background-color: #d4d4d4;
+        color: #222;
+    }
+
+    .btn-frappe-primary:hover {
+        background-color: #1a1a1a;
+        color: #ffffff;
+    }
+
+    .btn-frappe-dark:hover {
+        background-color: #0d0d0d;
+        color: #ffffff;
+    }
+
+    .btn-frappe:active {
+        transform: scale(0.98);
+    }
+
     .btn-frappe:focus,
-    .btn-frappe:active,
-    .btn-frappe-primary:focus,
-    .btn-frappe-primary:active {
-        box-shadow: none;
+    .btn-frappe-primary:focus {
+        box-shadow: 0 0 0 3px rgba(45, 45, 45, 0.1);
         outline: none;
+    }
+
+    .btn-frappe:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .attendance-buttons button {
         margin-right: 8px;
-    }
-
-    .weekly-off-input {
-        background-color: #ededed;
-        color: #555;
-        font-weight: 500;
     }
 
     .table-scroll {
@@ -229,18 +241,30 @@
         top: 0;
         background-color: #f7f7f7;
         z-index: 500;
-        border-bottom: 1px solid #d1d8dd;
+        border-bottom: 2px solid #d1d8dd !important;
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-bordered {
+        border-collapse: separate;
+        border-spacing: 0;
     }
 
     .table-bordered th,
     .table-bordered td {
-        border: 1px solid #d1d8dd;
+        border: 1px solid #d1d8dd !important;
         background-color: #fff;
     }
 
+    .holiday-row td {
+        background-color: #fff3e0 !important;
+        color: #e65100 !important;
+        font-weight: 500;
+    }
+
     .weekly-off-row td {
-        background-color: #e8e8e8 !important;
-        color: #666;
+        background-color: #f5f5f5 !important;
+        color: #666 !important;
     }
 
     .future-date-row {
@@ -257,61 +281,94 @@
         color: #111;
     }
 
+    .form-control {
+        background-color: #fff;
+        border: 1px solid #d1d8dd;
+        color: #333;
+    }
+
     .form-control:focus {
-        box-shadow: none;
-        border-color: #999;
+        box-shadow: 0 0 0 0.2rem rgba(45, 45, 45, 0.1);
+        border-color: #666;
+    }
+
+    .form-control:read-only {
+        background-color: #f8f9fa;
+        color: #555;
     }
 
     .web-footer {
         display: none !important;
     }
 
-    /* NEW: Search Functionality Styles (from Timeline) */
+    /* Search Input Improvements */
     .search-input-wrapper {
         position: relative;
     }
 
-    .employee-search-readonly {
-        background-color: #ededed;
-        color: #555;
-        font-weight: 500;
-        cursor: pointer;
+    .employee-search-input {
+        background-color: #fff;
+        color: #333;
+        font-weight: 400;
+        cursor: text;
+        padding-right: 35px;
+        border: 1px solid #d1d8dd;
     }
 
-    .employee-search-readonly::placeholder {
+    .employee-search-input::placeholder {
         color: #999;
         font-weight: 400;
     }
 
-    .employee-search-readonly:focus {
-        background-color: #ededed;
+    .employee-search-input:focus {
+        background-color: #fff;
         outline: none;
-        border-color: #999;
-        box-shadow: none;
+        border-color: #666;
+        box-shadow: 0 0 0 0.2rem rgba(45, 45, 45, 0.1);
     }
 
+    /* Improved Clear Button */
     .clear-search-btn {
         position: absolute;
-        right: 10px;
-        top: 7px;
-        width: 28px;
-        height: 28px;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
-        background: #b5bcc3;
+        background: #999;
         border: none;
         color: #fff;
-        font-size: 15px;
+        font-size: 12px;
+        font-weight: bold;
         cursor: pointer;
         z-index: 10;
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
+        transition: all 0.2s ease;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .clear-search-btn::before {
+        content: '✕';
+    }
+
+    .clear-search-btn.show {
+        display: flex !important;
     }
 
     .clear-search-btn:hover {
-        background: #8f98a1;
+        background: #666;
+        transform: translateY(-50%) scale(1.1);
     }
 
+    .clear-search-btn:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
+    /* Search Results Dropdown */
     .search-results-dropdown {
         display: none;
         position: absolute;
@@ -326,6 +383,7 @@
         overflow-y: auto;
         z-index: 1000;
         margin-top: -1px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .search-results-dropdown.show {
@@ -333,10 +391,11 @@
     }
 
     .search-result-item {
-        padding: 14px 16px;
-        font-size: 16px;
+        padding: 12px 16px;
+        font-size: 15px;
         cursor: pointer;
         border-bottom: 1px solid #f0f0f0;
+        transition: background 0.15s ease;
     }
 
     .search-result-item:last-child {
@@ -348,18 +407,93 @@
     }
 
     .search-result-item.selected {
-        background: #e6f0ff;
-        color: #1f272e;
+        background: #e8f0fe;
+        color: #1967d2;
+    }
+
+    /* Highlight matching text */
+    .search-result-item .highlight {
+        font-weight: 700;
+        color: #2d2d2d;
     }
 
     .no-results {
         padding: 14px 16px;
-        font-size: 16px;
+        font-size: 15px;
         color: #6c757d;
         text-align: center;
     }
 
-    /* Calendar Modal Styles */
+    .result-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #222;
+    }
+
+    .result-id {
+        font-size: 11px;
+        color: #888;
+        margin-top: 1px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+        margin: 0;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 26px;
+        border: 1px solid #bbb;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: #2d2d2d;
+        border-color: #2d2d2d;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .toggle-slider:hover {
+        background-color: #999;
+    }
+
+    input:checked + .toggle-slider:hover {
+        background-color: #3d3d3d;
+    }
+
+    /* Calendar Modal */
     .calendar-modal {
         display: none;
         position: fixed;
@@ -546,191 +680,100 @@
         font-weight: 600;
     }
 
-    .mini-calendar-day.weekend {
-        color: #9ca3af;
+    .mini-calendar-day.present {
+        background-color: #98eeb8 !important;
+        color: #ffffff !important;
+        font-weight: 600;
     }
 
-    /* Calendar Attendance Colors */
-.mini-calendar-day.present {
-    background-color: #98eeb8;   /* green */
-    color: #ffffff;
-    font-weight: 600;
-}
+    .mini-calendar-day.absent {
+        background-color: #e49797 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
 
-.mini-calendar-day.absent {
-    background-color: #e49797;   /* red */
-    color: #ffffff;
-    font-weight: 600;
-}
+    .mini-calendar-day.halfday {
+        background-color: rgb(238, 225, 105) !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
 
-.mini-calendar-day.halfday {
-    background-color: rgb(238, 225, 105);  /* orange */
-    color: #ffffff;
-    font-weight: 600;
-}
+    .mini-calendar-day.lwp {
+        background-color: #9c27b0 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
 
-/* Weekly Off */
-.mini-calendar-day.weekend {
-    background-color: #93c5fd;   /* blue */
-    color: #1e3a8a;              /* dark blue text */
-    font-weight: 600;
-}
+    .mini-calendar-day.holiday {
+        background-color: #ff9800 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
 
-.mini-calendar-day.empty {
-    visibility: hidden;
-}
+    .mini-calendar-day.weekend {
+        background-color: #93c5fd !important;
+        color: #1e3a8a !important;
+        font-weight: 600;
+    }
 
-.calendar-legend {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    margin: 12px 0 18px;
-    font-size: 13px;
-}
+    .calendar-legend {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin: 12px 0 18px;
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
 
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 500;
-}
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+    }
 
-.legend-color {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    display: inline-block;
-}
+    .legend-color {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        display: inline-block;
+    }
 
-/* Match calendar colors */
-.legend-color.present {
-    background-color: #98eeb8;
-}
+    .legend-color.present {
+        background-color: #98eeb8;
+    }
 
-.legend-color.absent {
-    background-color: #e49797;
-}
+    .legend-color.absent {
+        background-color: #e49797;
+    }
 
-.legend-color.halfday {
-    background-color: rgb(238, 225, 105);
-}
+    .legend-color.halfday {
+        background-color: rgb(238, 225, 105);
+    }
 
-.legend-color.weekend {
-    background-color: #93c5fd;
-}
+    .legend-color.lwp {
+        background-color: #9c27b0;
+    }
 
+    .legend-color.holiday {
+        background-color: #ff9800;
+    }
 
+    .legend-color.weekend {
+        background-color: #93c5fd;
+    }
 </style>
 
+<!-- Hidden audio elements exactly like Frappe desk uses -->
+<audio id="sound-click" src="/assets/frappe/sounds/click.mp3" volume="0.2" preload="auto"></audio>
+<audio id="sound-submit" src="/assets/frappe/sounds/submit.mp3" volume="0.2" preload="auto"></audio>
+<audio id="sound-cancel" src="/assets/frappe/sounds/cancel.mp3" volume="0.2" preload="auto"></audio>
+
 <script>
+    // ONLY navigation — no event listeners here to avoid duplicates with frappe.ready()
     document.getElementById('goto_attendance').onclick = function () {
         window.location.href = '/app/attendance';
     };
-
-    // Calendar Modal Functions
-    let currentCalendarYear = 2025;
-
-    function openCalendarModal() {
-        const modal = document.getElementById('calendar-modal');
-        modal.classList.add('show');
-        currentCalendarYear = parseInt(document.getElementById('year_select').value) || 2025;
-        document.getElementById('selected-year').textContent = currentCalendarYear;
-        renderMonthsGrid();
-    }
-
-    function closeCalendarModal() {
-        const modal = document.getElementById('calendar-modal');
-        modal.classList.remove('show');
-    }
-
-    function changeYear(direction) {
-        currentCalendarYear += direction;
-        document.getElementById('selected-year').textContent = currentCalendarYear;
-        renderMonthsGrid();
-    }
-
-    function renderMonthsGrid() {
-        const monthsGrid = document.getElementById('months-grid');
-        const monthNames = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-        monthsGrid.innerHTML = '';
-
-        monthNames.forEach((monthName, monthIndex) => {
-            const monthCard = document.createElement('div');
-            monthCard.className = 'month-card';
-            monthCard.onclick = () => selectMonth(monthIndex);
-
-            // Create mini calendar
-            const firstDay = new Date(currentCalendarYear, monthIndex, 1);
-            const lastDay = new Date(currentCalendarYear, monthIndex + 1, 0);
-            const startDay = firstDay.getDay();
-            const daysInMonth = lastDay.getDate();
-
-            let miniCalendarHTML = `<div class="month-name">${monthName}</div><div class="mini-calendar">`;
-            
-            // Day headers
-            dayNames.forEach(day => {
-                miniCalendarHTML += `<div class="mini-calendar-header">${day}</div>`;
-            });
-
-            // Empty cells for days before month starts
-            for (let i = 0; i < startDay; i++) {
-                miniCalendarHTML += `<div class="mini-calendar-day empty"></div>`;
-            }
-
-            // Days of the month
-            const today = new Date();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(currentCalendarYear, monthIndex, day);
-                const isToday = date.toDateString() === today.toDateString();
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                
-                let dayClass = 'mini-calendar-day';
-                if (isToday) dayClass += ' today';
-                if (isWeekend) dayClass += ' weekend';
-                
-                miniCalendarHTML += `<div class="${dayClass}">${day}</div>`;
-            }
-
-            miniCalendarHTML += '</div>';
-            monthCard.innerHTML = miniCalendarHTML;
-            monthsGrid.appendChild(monthCard);
-        });
-    }
-
-    function selectMonth(monthIndex) {
-        // Update the year and month selects
-        document.getElementById('year_select').value = currentCalendarYear;
-        document.getElementById('month_select').value = monthIndex;
-        
-        // Trigger change event to update the table
-        const event = new Event('change');
-        document.getElementById('month_select').dispatchEvent(event);
-        
-        closeCalendarModal();
-    }
-
-    // Get Attendance Info button opens calendar modal
-    document.getElementById('get_attendance_info').onclick = function () {
-        openCalendarModal();
-    };
-
-    // Close modal when clicking outside
-    document.getElementById('calendar-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeCalendarModal();
-        }
-    });
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeCalendarModal();
-        }
-    });
 </script>
+
 {% endblock %}

@@ -16,12 +16,19 @@
   "date_of_birth",
   "salutation",
   "pan_number",
-  "aadhar_number",
   "column_break_ngyj",
-  "employee_pf_account",
-  "bank_account_details",
-  "status",
+  "aadhar_number",
+  "pf_uan_number",
   "employee_image",
+  "statutory_account_details_tab",
+  "bank_details_section",
+  "bank_name",
+  "ifsc_code",
+  "account_number",
+  "column_break_pxbz",
+  "employee_pf_account",
+  "lin_number",
+  "esic_number",
   "contact_details",
   "cell_number",
   "column_break_kwfk",
@@ -29,14 +36,11 @@
   "company_email",
   "address_section",
   "current_address",
-  "current_accommodation_type",
   "column_break_jpvt",
   "permanent_address",
-  "permanent_address_is",
   "tab_3_tab",
   "attendance_and_leaves_section",
-  "attendance_device_id",
-  "holiday_list"
+  "attendance_device_id"
  ],
  "fields": [
   {
@@ -86,14 +90,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Active\nInactive\nSuspended\nLeft",
-   "reqd": 1,
-   "search_index": 1
-  },
-  {
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Series",
@@ -139,12 +135,6 @@
    "label": "Current Address"
   },
   {
-   "fieldname": "current_accommodation_type",
-   "fieldtype": "Select",
-   "label": "current_accommodation_type",
-   "options": "\nRented\nOwned"
-  },
-  {
    "fieldname": "column_break_jpvt",
    "fieldtype": "Column Break"
   },
@@ -152,12 +142,6 @@
    "fieldname": "permanent_address",
    "fieldtype": "Small Text",
    "label": "Permanent Address"
-  },
-  {
-   "fieldname": "permanent_address_is",
-   "fieldtype": "Select",
-   "label": "Permanent Address Is",
-   "options": "\nRented\nOwned"
   },
   {
    "fieldname": "tab_3_tab",
@@ -177,14 +161,6 @@
    "unique": 1
   },
   {
-   "description": "Applicable Holiday List",
-   "fieldname": "holiday_list",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "label": "Holiday List",
-   "options": "Holiday List"
-  },
-  {
    "fieldname": "pan_number",
    "fieldtype": "Data",
    "label": "PAN Number"
@@ -193,7 +169,9 @@
    "fieldname": "aadhar_number",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Aadhar Number "
+   "label": "Aadhar Number ",
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "column_break_ngyj",
@@ -206,23 +184,62 @@
    "label": "Employee PF Account"
   },
   {
-   "fieldname": "bank_account_details",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Bank Account Details"
-  },
-  {
    "description": "Get your globally recognized avatar from Gravatar.com",
    "fieldname": "employee_image",
    "fieldtype": "Attach Image",
    "label": "Employee Image",
    "no_copy": 1,
    "print_hide": 1
+  },
+  {
+   "fieldname": "lin_number",
+   "fieldtype": "Data",
+   "label": "LIN Number"
+  },
+  {
+   "fieldname": "bank_details_section",
+   "fieldtype": "Section Break",
+   "label": "Statutory"
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Link",
+   "label": "Bank Name",
+   "options": "Bank Name"
+  },
+  {
+   "fieldname": "ifsc_code",
+   "fieldtype": "Data",
+   "label": "IFSC Code"
+  },
+  {
+   "fieldname": "account_number",
+   "fieldtype": "Data",
+   "label": "Account Number"
+  },
+  {
+   "fieldname": "column_break_pxbz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "statutory_account_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Statutory Account Details"
+  },
+  {
+   "fieldname": "esic_number",
+   "fieldtype": "Data",
+   "label": "ESIC Number"
+  },
+  {
+   "fieldname": "pf_uan_number",
+   "fieldtype": "Data",
+   "label": "PF UAN Number"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-14 12:40:19.743082",
+ "modified": "2026-02-24 13:23:12.327828",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",
@@ -234,24 +251,24 @@
    "delete": 1,
    "email": 1,
    "export": 1,
+   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
   {
-   "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR User",
-   "share": 1,
-   "write": 1
+   "role": "Saral HR User",
+   "select": 1,
+   "share": 1
   }
  ],
  "sort_field": "modified",

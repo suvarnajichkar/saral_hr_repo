@@ -1,23 +1,23 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X39qdzNY_6\",\"type\":\"card\",\"data\":{\"card_name\":\"Master\",\"col\":4}},{\"id\":\"PPFPGWh4nt\",\"type\":\"card\",\"data\":{\"card_name\":\"Salary\",\"col\":4}},{\"id\":\"u-VN2Ky00U\",\"type\":\"card\",\"data\":{\"card_name\":\"Transaction\",\"col\":4}},{\"id\":\"0MqLGizEW-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Pages</b></span>\",\"col\":12}},{\"id\":\"arnKF3gblc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Timeline\",\"col\":3}},{\"id\":\"aDJvloajAw\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Mark Attendance\",\"col\":3}},{\"id\":\"XbxZgsy5F-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}}]",
- "creation": "2026-01-09 18:32:47.100898",
+ "content": "[{\"id\":\"quLY2RmqsK\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Saral HR</span>\",\"col\":12}},{\"id\":\"vX7k3MjFpF\",\"type\":\"card\",\"data\":{\"card_name\":\"Companies Master Data\",\"col\":4}},{\"id\":\"iNewOcp1TD\",\"type\":\"card\",\"data\":{\"card_name\":\"Employees Master Data\",\"col\":4}},{\"id\":\"tcNJEXnjQA\",\"type\":\"card\",\"data\":{\"card_name\":\"Salaries Master Data\",\"col\":4}},{\"id\":\"s7XR35vZsk\",\"type\":\"card\",\"data\":{\"card_name\":\"Monthly Transactions\",\"col\":4}},{\"id\":\"2AtGjch4al\",\"type\":\"card\",\"data\":{\"card_name\":\"Report\",\"col\":4}}]",
+ "creation": "2026-02-21 11:57:11.609521",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
- "icon": "both",
+ "icon": "folder-open",
  "idx": 0,
  "indicator_color": "green",
  "is_hidden": 0,
- "label": "Saral Hr",
+ "label": "Saral HR",
  "links": [
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Salary",
-   "link_count": 3,
+   "label": "Companies Master Data",
+   "link_count": 7,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -25,65 +25,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Salary Component",
-   "link_count": 0,
-   "link_to": "Salary Component",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Salary Structure",
-   "link_count": 0,
-   "link_to": "Salary Structure",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Salary Structure Assignment",
-   "link_count": 0,
-   "link_to": "Salary Structure Assignment",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Transaction",
-   "link_count": 1,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Salary Slip",
-   "link_count": 0,
-   "link_to": "Salary Slip",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Master",
-   "link_count": 9,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Company",
+   "label": "Company ",
    "link_count": 0,
    "link_to": "Company",
    "link_type": "DocType",
@@ -93,9 +35,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Employee",
+   "label": "Category",
    "link_count": 0,
-   "link_to": "Employee",
+   "link_to": "Category",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -103,9 +45,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Company Link",
+   "label": "Branch ",
    "link_count": 0,
-   "link_to": "Company Link",
+   "link_to": "Branch",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -113,9 +55,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Attendance",
+   "label": "Division ",
    "link_count": 0,
-   "link_to": "Attendance",
+   "link_to": "Division",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -123,17 +65,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Designation",
-   "link_count": 0,
-   "link_to": "Designation",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Department",
+   "label": "Department ",
    "link_count": 0,
    "link_to": "Department",
    "link_type": "DocType",
@@ -143,9 +75,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Grade",
+   "label": "Holiday List",
    "link_count": 0,
-   "link_to": "Grade",
+   "link_to": "Holiday List",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -163,18 +95,155 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Shift Assignment",
+   "label": "Employees Master Data",
+   "link_count": 5,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Employee List ",
    "link_count": 0,
-   "link_to": "Shift Assignment",
+   "link_to": "Employee",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Grade ",
+   "link_count": 0,
+   "link_to": "Grade",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Designation ",
+   "link_count": 0,
+   "link_to": "Designation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Company Link ",
+   "link_count": 0,
+   "link_to": "Company Link",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Structure Assignment ",
+   "link_count": 0,
+   "link_to": "Salary Structure Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Monthly Transactions",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Variable Pay Percentage",
+   "link_count": 0,
+   "link_to": "Variable Pay Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Mark Attendance",
+   "link_count": 0,
+   "link_to": "Attendance",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salaries Master Data",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Component ",
+   "link_count": 0,
+   "link_to": "Salary Component",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Structure ",
+   "link_count": 0,
+   "link_to": "Salary Structure",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Report",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Salary Slip",
+   "link_count": 0,
+   "link_to": "Salary Slip",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Employee Timeline Report",
+   "link_count": 0,
+   "link_to": "Employee Timeline Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Company Link",
+   "type": "Link"
   }
  ],
- "modified": "2026-01-29 16:09:00.655741",
+ "modified": "2026-02-21 16:32:52.938315",
  "modified_by": "Administrator",
  "module": "Saral Hr",
- "name": "Saral Hr",
+ "name": "Saral HR",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
@@ -182,21 +251,6 @@
  "quick_lists": [],
  "roles": [],
  "sequence_id": 28.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Employee Timeline",
-   "type": "URL",
-   "url": "/employee_timeline"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Mark Attendance",
-   "type": "URL",
-   "url": "/mark_attendance"
-  }
- ],
- "title": "Saral Hr"
+ "shortcuts": [],
+ "title": "Saral HR"
 }

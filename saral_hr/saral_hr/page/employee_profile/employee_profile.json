@@ -1,0 +1,9 @@
+{
+ "doctype": "Page",
+ "module": "Saral Hr",
+ "name": "employee-profile",
+ "page_name": "Employee Profile",
+ "roles": [{"role": "Saral HR Manager"}, {"role": "Saral HR User"}],
+ "standard": "No",
+ "title": "Employee Profile"
+}

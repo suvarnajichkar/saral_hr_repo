@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2026-01-10 11:27:57.450566",
@@ -11,10 +12,11 @@
   "employee_name",
   "working_hours",
   "aadhar_number",
-  "column_break_gchh",
+  "column_break_jxld",
   "status",
-  "attendance_date",
   "company",
+  "attendance_date",
+  "holiday",
   "details_section",
   "shift",
   "in_time",
@@ -61,8 +63,9 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Status",
-   "options": "\nPresent\nAbsent\nOn Leave\nHalf Day",
+   "options": "\nPresent\nAbsent\nHalf Day\nHoliday\nWeekly Off\nLWP",
    "reqd": 1,
    "search_index": 1
   },
@@ -109,10 +112,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_gchh",
-   "fieldtype": "Column Break"
-  },
-  {
    "bold": 1,
    "fetch_from": "employee.company",
    "fieldname": "company",
@@ -126,11 +125,22 @@
    "fieldname": "aadhar_number",
    "fieldtype": "Data",
    "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "column_break_jxld",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.holiday_list",
+   "fieldname": "holiday",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Holiday"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-29 16:35:21.950224",
+ "modified": "2026-02-21 17:11:25.959020",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Attendance",
@@ -145,7 +155,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
+   "role": "Saral HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -157,7 +168,8 @@
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "HR User",
+   "role": "Saral HR User",
+   "select": 1,
    "share": 1,
    "write": 1
   }
