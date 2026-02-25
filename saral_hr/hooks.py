@@ -127,6 +127,7 @@ fixtures = [
 ]
 
 
+
 # Generators
 # ----------
 
@@ -304,4 +305,5 @@ after_uninstall = "saral_hr.uninstall.after_uninstall"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
+
 

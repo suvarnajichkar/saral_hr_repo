@@ -2,9 +2,9 @@ frappe.ui.form.on("Employee", {
     refresh(frm) {
         set_employee_name(frm);
 
-frm.add_custom_button('See Dashboard', function() {
-    frappe.set_route('dashboard-view', 'Employee Attendance Dashboard');
-});
+        frm.add_custom_button(__("View Dashboard"), function() {
+            frappe.set_route("employee-profile", frm.doc.name);
+        });
     },
     first_name(frm) { set_employee_name(frm); },
     middle_name(frm) { set_employee_name(frm); },
