@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import today, getdate
+from frappe.utils import today, getdate, date_diff
 
 
 @frappe.whitelist()
@@ -11,12 +11,43 @@ def get_employee_profile_data(employee):
         "Company Link", {"employee": employee}, "name"
     )
 
-    company_link = frappe.get_value(
-        "Company Link", {"employee": employee},
-        ["company", "designation", "department", "branch",
-         "division", "category", "date_of_joining", "is_active", "left_date"],
+    # Always fetch the ACTIVE company link for sidebar display
+    # Fall back to most recent if none is active
+    CL_FIELDS = ["name", "company", "designation", "department", "branch",
+                 "division", "category", "date_of_joining", "is_active", "left_date",
+                 "immediate_reporting", "final_reporting"]
+
+    company_link = frappe.db.get_value(
+        "Company Link",
+        {"employee": employee, "is_active": 1},
+        CL_FIELDS,
         as_dict=True
-    ) if company_link_name else {}
+    )
+    if not company_link:
+        # fallback: most recent by date_of_joining
+        company_link = frappe.db.get_value(
+            "Company Link",
+            {"employee": employee},
+            CL_FIELDS,
+            order_by="date_of_joining desc",
+            as_dict=True
+        )
+    # Use the active record's name as company_link_name for the sidebar link
+    if company_link and company_link.get("name"):
+        company_link_name = company_link.get("name")
+    company_link = company_link or {}
+
+    # Resolve reporting employee names for display
+    # Employee doctype uses "employee" as its title field (full name)
+    def get_emp_name(emp_id):
+        if not emp_id:
+            return None
+        val = frappe.db.get_value("Employee", emp_id, "employee")
+        return val or emp_id
+
+    if company_link:
+        company_link["immediate_reporting_name"] = get_emp_name(company_link.get("immediate_reporting"))
+        company_link["final_reporting_name"]     = get_emp_name(company_link.get("final_reporting"))
 
     salary = frappe.db.get_value(
         "Salary Structure Assignment",
@@ -42,19 +73,122 @@ def get_employee_profile_data(employee):
             att_map[date_str] = r.status
             years_set.add(date_str[:4])
 
-    current_year = str(getdate(today()).year)
-    years_set.add(current_year)
+    current_year = getdate(today()).year
+
+    # Always include every year from joining year → current year
+    joining_year = current_year
+    doj = company_link.get("date_of_joining") if company_link else None
+    if doj:
+        try:
+            joining_year = getdate(doj).year
+        except Exception:
+            pass
+
+    for yr in range(joining_year, current_year + 1):
+        years_set.add(str(yr))
+
     years = sorted(list(years_set), reverse=True)
 
+    # ── Tenure: days from active company's joining date to today ──
+    tenure = None
+    active_doj = None
+    if company_link and company_link.get("is_active") and company_link.get("date_of_joining"):
+        active_doj = company_link.get("date_of_joining")
+    else:
+        # Try to find the active company link directly
+        active_cl = frappe.db.get_value(
+            "Company Link",
+            {"employee": employee, "is_active": 1},
+            "date_of_joining"
+        )
+        if active_cl:
+            active_doj = active_cl
+
+    if active_doj:
+        try:
+            days = date_diff(today(), getdate(active_doj))
+            if days >= 0:
+                total_months = days // 30
+                yrs = total_months // 12
+                mos = total_months % 12
+                parts = []
+                if yrs:
+                    parts.append("{} yr{}".format(yrs, "s" if yrs != 1 else ""))
+                if mos:
+                    parts.append("{} mo{}".format(mos, "s" if mos != 1 else ""))
+                if not parts:
+                    parts.append("{} day{}".format(days, "s" if days != 1 else ""))
+                tenure = " ".join(parts)
+        except Exception:
+            pass
+
+    # ── Build Employee Timeline from Company Link records ──
+    # Active record first, then inactive sorted by date descending (most recent first)
+    raw_timeline = frappe.db.sql("""
+        SELECT
+            name,
+            company,
+            full_name,
+            date_of_joining  AS start_date,
+            left_date        AS end_date,
+            is_active,
+            designation,
+            department,
+            branch,
+            category
+        FROM `tabCompany Link`
+        WHERE employee = %(employee)s
+           OR name LIKE %(pattern)s
+        ORDER BY
+            CASE WHEN is_active = 1 THEN 0 ELSE 1 END ASC,
+            COALESCE(date_of_joining, '1900-01-01') DESC
+    """, {"employee": employee, "pattern": "{0}-%".format(employee)}, as_dict=1)
+
+    timeline = []
+    for rec in raw_timeline:
+        timeline.append({
+            "company":     rec.get("company")     or "",
+            "start_date":  str(rec["start_date"]) if rec.get("start_date") else None,
+            "end_date":    str(rec["end_date"])   if rec.get("end_date")   else None,
+            "is_active":   rec.get("is_active", 0),
+            "designation": rec.get("designation") or "",
+            "department":  rec.get("department")  or "",
+            "branch":      rec.get("branch")      or "",
+            "category":    rec.get("category")    or "",
+        })
+
+    # ── Fetch reporting employee names from active Company Link ──
+    immediate_reporting_name = None
+    final_reporting_name = None
+    if company_link_name:
+        reporting = frappe.db.get_value(
+            "Company Link", company_link_name,
+            ["immediate_reporting", "final_reporting"],
+            as_dict=True
+        )
+        if reporting:
+            if reporting.get("immediate_reporting"):
+                immediate_reporting_name = frappe.db.get_value(
+                    "Employee", reporting["immediate_reporting"], "employee"
+                ) or reporting["immediate_reporting"]
+            if reporting.get("final_reporting"):
+                final_reporting_name = frappe.db.get_value(
+                    "Employee", reporting["final_reporting"], "employee"
+                ) or reporting["final_reporting"]
+
     return {
-        "employee":          emp.employee,
-        "first_name":        emp.first_name,
-        "employee_image":    emp.employee_image,
-        "date_of_birth":     str(emp.date_of_birth) if emp.date_of_birth else None,
-        "pan_number":        emp.pan_number,
-        "company_link":      company_link or {},
-        "company_link_name": company_link_name,
-        "salary":            salary,
-        "attendance_map":    att_map,
-        "years":             years,
+        "employee":                emp.employee,
+        "first_name":              emp.first_name,
+        "employee_image":          emp.employee_image,
+        "date_of_birth":           str(emp.date_of_birth) if emp.date_of_birth else None,
+        "pan_number":              emp.pan_number,
+        "company_link":            company_link or {},
+        "company_link_name":       company_link_name,
+        "salary":                  salary,
+        "attendance_map":          att_map,
+        "years":                   years,
+        "tenure":                  tenure,
+        "timeline":                timeline,
+        "immediate_reporting_name": immediate_reporting_name,
+        "final_reporting_name":     final_reporting_name,
     }

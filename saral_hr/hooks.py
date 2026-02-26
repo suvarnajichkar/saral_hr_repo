@@ -1,5 +1,5 @@
 app_name = "saral_hr"
-app_title = "Saral Hr"
+app_title = "Saral HR"
 app_publisher = "sj"
 app_description = "Custome Saral Hr"
 app_email = "sj@gmail.com"
@@ -15,7 +15,7 @@ app_license = "mit"
 # 	{
 # 		"name": "saral_hr",
 # 		"logo": "/assets/saral_hr/logo.png",
-# 		"title": "Saral Hr",
+# 		"title": "Saral HR",
 # 		"route": "/saral_hr",
 # 		"has_permission": "saral_hr.api.permission.has_app_permission"
 # 	}
@@ -80,7 +80,7 @@ fixtures = [
     {
         "dt": "Workspace",
         "filters": [
-            ["name", "in", ["Saral Hr"]]
+            ["name", "in", ["Saral HR"]]
         ]
     },
 
@@ -120,7 +120,7 @@ fixtures = [
     {
         "dt": "Report",
         "filters": [
-            ["module", "=", "Saral Hr"]
+            ["module", "=", "Saral HR"]
         ]
     }
 

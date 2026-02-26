@@ -22,10 +22,6 @@
   "branch",
   "category",
   "division",
-  "hold_section",
-  "on_hold",
-  "hold_reason",
-  "release_reason",
   "payment_days_tab",
   "total_working_days",
   "payment_days",
@@ -73,35 +69,6 @@
    "options": "Salary Structure",
    "read_only": 1,
    "bold": 1
-  },
-  {
-   "fieldname": "hold_section",
-   "fieldtype": "Section Break",
-   "label": "Hold Details",
-   "collapsible": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "on_hold",
-   "fieldtype": "Check",
-   "label": "On Hold",
-   "read_only": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
-  },
-  {
-   "fieldname": "hold_reason",
-   "fieldtype": "Small Text",
-   "label": "Hold Reason",
-   "read_only": 1,
-   "depends_on": "eval:doc.on_hold == 1"
-  },
-  {
-   "fieldname": "release_reason",
-   "fieldtype": "Small Text",
-   "label": "Release Reason",
-   "read_only": 1,
-   "depends_on": "eval:doc.on_hold == 0 && doc.hold_reason"
   },
   {
    "fieldname": "payment_days_tab",

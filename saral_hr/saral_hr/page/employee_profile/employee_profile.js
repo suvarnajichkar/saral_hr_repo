@@ -30,13 +30,13 @@ function inject_ep_styles() {
         /* ── Sidebar ── */
         .ep-sidebar-inner { padding: 0 4px; }
         .ep-avatar {
-            width: 72px; height: 72px; border-radius: 50%;
+            width: 96px; height: 96px; border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex; align-items: center; justify-content: center;
-            font-size: 28px; color: #fff; font-weight: 700;
-            margin: 0 auto 10px;
+            font-size: 36px; color: #fff; font-weight: 700;
+            margin: 0 auto 12px;
         }
-        .ep-avatar img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+        .ep-avatar img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; }
         .ep-name  { text-align: center; font-size: 16px; font-weight: 700; color: var(--text-color); margin-bottom: 2px; }
         .ep-sub   { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
         .ep-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
@@ -66,40 +66,56 @@ function inject_ep_styles() {
         }
         .ep-title-area {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+            flex-wrap: wrap; gap: 8px;
         }
         .ep-card-title { font-size: 15px; font-weight: 600; color: var(--text-color); margin: 0; }
 
-        /* ── Salary: plain bordered grid ── */
+        /* ── Salary: borderless grid ── */
         .ep-salary-grid {
             display: grid; grid-template-columns: 1fr 1fr 1fr;
-            border: 1px solid var(--border-color, #d1d8dd);
-            border-radius: 6px; overflow: hidden;
+            gap: 0;
         }
         .ep-salary-item {
             padding: 14px 16px;
-            border-bottom: 1px solid var(--border-color, #d1d8dd);
-            border-right: 1px solid var(--border-color, #d1d8dd);
         }
-        .ep-salary-item:nth-child(3n)         { border-right: none; }
-        .ep-salary-item:nth-last-child(-n+3)  { border-bottom: none; }
         .ep-salary-item-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
         .ep-salary-item-val   { font-size: 15px; font-weight: 600; color: var(--text-color); }
 
-        /* ── Year filter ── */
-        .ep-year-filter { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-        .ep-year-btn {
-            padding: 2px 10px; border-radius: 12px;
+        /* ── Year dropdown filter ── */
+        .ep-year-select {
+            padding: 3px 10px; border-radius: 6px;
             border: 1px solid var(--border-color, #e5e7eb);
             background: var(--card-bg, #fff); font-size: 12px;
+            cursor: pointer; color: var(--text-color);
+            outline: none;
+        }
+        .ep-year-select:focus { border-color: var(--blue-500, #1d4ed8); }
+
+        /* ── Month filter pills ── */
+        .ep-month-pill {
+            padding: 2px 9px; border-radius: 12px;
+            border: 1px solid var(--border-color, #e5e7eb);
+            background: var(--card-bg, #fff); font-size: 11px;
             cursor: pointer; color: var(--text-muted); transition: all 0.15s;
         }
-        .ep-year-btn.active { background: var(--blue-500, #1d4ed8); color: #fff; border-color: var(--blue-500, #1d4ed8); }
+        .ep-month-pill.active { background: var(--blue-500, #1d4ed8); color: #fff; border-color: var(--blue-500, #1d4ed8); }
 
-        /* ── Heatmap — Frappe token colours, flat ── */
+        /* ── Heatmap ── */
         .ep-heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
         .ep-heatmap-inner  { display: flex; align-items: flex-start; min-width: max-content; }
         .ep-month-col      { display: flex; flex-direction: column; margin-right: 8px; }
-        .ep-month-label    { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; text-align: center; }
+        .ep-month-label-btn {
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.04em; margin-bottom: 4px; text-align: center;
+            background: none; border: none; cursor: pointer;
+            color: var(--text-muted); padding: 2px 4px; border-radius: 4px;
+            width: 100%; transition: all 0.15s;
+        }
+        .ep-month-label-btn:hover { color: var(--blue-500, #1d4ed8); }
+        .ep-month-label-btn.active {
+            background: var(--blue-500, #1d4ed8); color: #fff;
+            border-radius: 4px;
+        }
         .ep-month-weeks    { display: flex; gap: 2px; }
         .ep-week-col       { display: flex; flex-direction: column; gap: 2px; }
         .ep-day            { width: 11px; height: 11px; border-radius: 2px; cursor: default; flex-shrink: 0; }
@@ -109,7 +125,7 @@ function inject_ep_styles() {
         .ep-day.halfday    { background: var(--yellow-400,  #facc15); }
         .ep-day.lwp        { background: var(--orange-500,  #f97316); }
         .ep-day.holiday    { background: var(--blue-400,    #60a5fa); }
-        .ep-day.weeklyoff  { background: var(--gray-300,    #d1d5db); }
+        .ep-day.weeklyoff  { background: #a855f7; }
         .ep-day.empty      { background: transparent; }
         .ep-day.future     { background: var(--gray-100,    #f3f4f6); }
 
@@ -121,6 +137,46 @@ function inject_ep_styles() {
         .ep-att-box     { background: var(--control-bg, #f9fafb); border-radius: 6px; padding: 10px 6px; text-align: center; }
         .ep-att-val     { font-size: 18px; font-weight: 700; }
         .ep-att-label   { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+        /* ── Timeline ── */
+        .ep-timeline {
+            position: relative;
+            padding-left: 40px;
+            border-left: 2px solid var(--border-color, #d1d8dd);
+            margin-left: 6px;
+            padding-top: 4px;
+        }
+        .ep-timeline-item { position: relative; padding-bottom: 20px; }
+        .ep-timeline-item:last-child { padding-bottom: 0; }
+        .ep-tl-dot {
+            position: absolute;
+            left: -47px; top: 16px;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: var(--gray-400, #adb5bd);
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--gray-400, #adb5bd);
+            z-index: 1;
+        }
+        .ep-timeline-item.tl-active .ep-tl-dot {
+            background: var(--green-500, #28a745);
+            box-shadow: 0 0 0 2px var(--green-500, #28a745);
+        }
+        .ep-tl-card {
+            background: var(--gray-50, #f8f9fa);
+            border: 1px solid var(--border-color, #e5e7eb);
+            border-radius: var(--border-radius, 6px);
+            padding: 14px 16px; max-width: 460px;
+        }
+        .ep-tl-company  { font-size: 14px; font-weight: 600; color: var(--text-color); margin-bottom: 6px; }
+        .ep-tl-date     { font-size: 13px; color: var(--text-muted); margin-bottom: 3px; }
+        .ep-tl-meta     { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+        .ep-tl-badge {
+            display: inline-block; margin-top: 10px;
+            padding: 3px 10px; font-size: 11px; font-weight: 500; border-radius: 20px;
+        }
+        .ep-tl-badge.active   { background: var(--green-highlight-color, #d4edda); color: var(--green-avatar-color, #155724); }
+        .ep-tl-badge.inactive { background: var(--gray-100, #f1f3f4); color: var(--gray-600, #666); }
+        .ep-timeline-empty { font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px; }
     `;
     document.head.appendChild(style);
 }
@@ -139,11 +195,14 @@ var STATUS_COLORS = {
     "Weekly Off": "weeklyoff"
 };
 
+var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function render_profile($sidebar, $main, d, emp) {
     var s = d.salary || {};
     var c = d.company_link || {};
     var att_map = d.attendance_map || {};
     var years = d.years || [];
+    var timeline = d.timeline || [];
 
     var avatar_html = d.employee_image
         ? "<img src='" + d.employee_image + "' />"
@@ -154,38 +213,32 @@ function render_profile($sidebar, $main, d, emp) {
     sidebar += "<div class='ep-avatar'>" + avatar_html + "</div>";
     sidebar += "<div class='ep-name'>" + (d.employee || "") + "</div>";
 
-    // Designation · Department on one line (no icon)
-    var sub_parts = [];
-    if (c.designation) sub_parts.push(c.designation);
-    if (c.department)  sub_parts.push(c.department);
-    if (sub_parts.length) {
-        sidebar += "<div class='ep-sub'>" + sub_parts.join(" &middot; ") + "</div>";
-    }
 
-    sidebar += "<div style='text-align:center;margin:8px 0 12px;'>";
-    sidebar += "<span class='ep-badge " + (c.is_active ? "active" : "inactive") + "'>" + (c.is_active ? "Active" : "Inactive") + "</span>";
-    sidebar += "</div>";
 
     sidebar += "<hr class='ep-divider'>";
 
-    if (c.company)         sidebar += info_row("Company",  c.company);
-    if (c.branch)          sidebar += info_row("Branch",   c.branch);
-    if (c.category)        sidebar += info_row("Category", c.category);
-    if (c.date_of_joining) sidebar += info_row("Joined",   c.date_of_joining);
+    if (c.company)         sidebar += info_row("Company",     c.company);
+    if (c.branch)          sidebar += info_row("Branch",      c.branch);
+    if (c.category)        sidebar += info_row("Category",    c.category);
+    if (c.date_of_joining) sidebar += info_row("Joined",      c.date_of_joining);
+    if (c.department)      sidebar += info_row("Department",  c.department);
+    if (c.designation)     sidebar += info_row("Designation", c.designation);
+
+    if (d.tenure) {
+        sidebar += info_row("Tenure", d.tenure);
+    }
+    if (c.immediate_reporting_name) sidebar += info_row("Reports To", c.immediate_reporting_name);
+    if (c.final_reporting_name)     sidebar += info_row("Final Authority", c.final_reporting_name);
 
     sidebar += "<hr class='ep-divider'>";
 
     sidebar += "<a href='/app/employee/" + emp + "' class='ep-link-btn'>Edit Employee</a>";
 
-    // Company Link (previous company record form view)
     if (d.company_link_name) {
         sidebar += "<a href='/app/company-link/" + encodeURIComponent(d.company_link_name) + "' class='ep-link-btn'>View Company Record</a>";
     }
 
-    // Employee Timeline Report
-    sidebar += "<a href='/app/query-report/Employee%20Timeline%20Report?employee=" + encodeURIComponent(emp) + "' class='ep-link-btn'>Employee Timeline</a>";
     sidebar += "<a href='/app/salary-structure-assignment?employee=" + encodeURIComponent(emp) + "' class='ep-link-btn'>Salary Assignment</a>";
-    sidebar += "<a href='/app/attendance?employee=" + encodeURIComponent(emp) + "' class='ep-link-btn'>Attendance Records</a>";
     sidebar += "</div>";
 
     $sidebar.html(sidebar);
@@ -193,39 +246,61 @@ function render_profile($sidebar, $main, d, emp) {
     // ── MAIN ──
     var main = "";
 
-    // Salary — plain bordered grid
+    // Salary
     main += "<div class='ep-card'>";
     main += "<div class='ep-title-area'><h4 class='ep-card-title'>Salary Overview</h4></div>";
     main += "<div class='ep-salary-grid'>";
-    main += sal_item(false, "Monthly CTC",           s.monthly_ctc);
-    main += sal_item(false, "Annual CTC",            s.annual_ctc);
-    main += sal_item(false, "Gross Salary",           s.gross_salary);
-    main += sal_item(false, "Net Salary",             s.net_salary);
-    main += sal_item(false, "Total Deductions",       s.total_deductions);
-    main += sal_item(false, "Employer Contribution",  s.total_employer_contribution);
+    main += sal_item("Monthly CTC",           s.monthly_ctc);
+    main += sal_item("Annual CTC",            s.annual_ctc);
+    main += sal_item("Gross Salary",          s.gross_salary);
+    main += sal_item("Net Salary",            s.net_salary);
+    main += sal_item("Total Deductions",      s.total_deductions);
+    main += sal_item("Employer Contribution", s.total_employer_contribution);
     main += "</div></div>";
-    // Note: 6 items in a 3-col grid = 2 rows
 
-    // Attendance
+    // Attendance — year dropdown + month filter
+    var current_year = years.length ? years[0] : new Date().getFullYear();
+
     main += "<div class='ep-card'>";
     main += "<div class='ep-title-area'>";
     main += "<h4 class='ep-card-title'>Attendance Overview</h4>";
-    main += "<div class='ep-year-filter' id='ep-year-filter'>";
-    years.forEach(function(yr, i) {
-        main += "<button class='ep-year-btn" + (i === 0 ? " active" : "") + "' data-year='" + yr + "'>" + yr + "</button>";
+
+    // Year dropdown
+    main += "<select class='ep-year-select' id='ep-year-select'>";
+    years.forEach(function(yr) {
+        main += "<option value='" + yr + "'>" + yr + "</option>";
     });
-    main += "</div></div>";
+    main += "</select>";
+    main += "</div>";
+
     main += "<div id='ep-heatmap-wrap'></div>";
+    main += "</div>";
+
+    // Timeline
+    main += "<div class='ep-card'>";
+    main += "<div class='ep-title-area'><h4 class='ep-card-title'>Employee Timeline</h4></div>";
+    main += render_timeline_html(timeline);
     main += "</div>";
 
     $main.html(main);
 
-    if (years.length) render_heatmap($main, att_map, years[0]);
+    // Initial render
+    render_heatmap($main, att_map, current_year, "all");
 
-    $main.find("#ep-year-filter").on("click", ".ep-year-btn", function() {
-        $main.find(".ep-year-btn").removeClass("active");
-        $(this).addClass("active");
-        render_heatmap($main, att_map, parseInt($(this).data("year")));
+    // Year dropdown change — preserve selected month
+    $main.find("#ep-year-select").on("change", function() {
+        var yr = parseInt($(this).val());
+        var active_btn = $main.find(".ep-month-label-btn.active");
+        var active_month = active_btn.length ? active_btn.data("month") : "all";
+        render_heatmap($main, att_map, yr, active_month);
+    });
+
+    // Month label button click — toggle filter; click active month to go back to all
+    $main.find("#ep-heatmap-wrap").on("click", ".ep-month-label-btn", function() {
+        var clicked_month = $(this).data("month");
+        var yr = parseInt($main.find("#ep-year-select").val());
+        var is_currently_active = $(this).hasClass("active");
+        render_heatmap($main, att_map, yr, is_currently_active ? "all" : clicked_month);
     });
 }
 
@@ -236,22 +311,70 @@ function info_row(label, val) {
         "</div>";
 }
 
-function sal_item(highlight, label, val) {
-    return "<div class='ep-salary-item" + (highlight ? " highlight" : "") + "'>" +
+function sal_item(label, val) {
+    return "<div class='ep-salary-item'>" +
         "<div class='ep-salary-item-label'>" + label + "</div>" +
         "<div class='ep-salary-item-val'>&#8377;" + fmt_currency(val) + "</div>" +
         "</div>";
 }
 
-function render_heatmap($w, att_map, year) {
+function render_timeline_html(timeline) {
+    if (!timeline || !timeline.length) {
+        return "<div class='ep-timeline-empty'>No timeline events found.</div>";
+    }
+
+    var html = "<div class='ep-timeline'>";
+    timeline.forEach(function(item) {
+        var is_active = item.is_active == 1;
+        var active_cls = is_active ? " tl-active" : "";
+
+        // Date line: Start
+        var date_html = "";
+        if (item.start_date) {
+            date_html += "<div class='ep-tl-date'><strong>Start:</strong> " + item.start_date + "</div>";
+        }
+        if (item.end_date) {
+            date_html += "<div class='ep-tl-date'><strong>End:</strong> " + item.end_date + "</div>";
+        }
+
+        // Extra meta: designation / department / branch
+        var meta_parts = [];
+        if (item.designation) meta_parts.push(item.designation);
+        if (item.department)  meta_parts.push(item.department);
+        if (item.branch)      meta_parts.push(item.branch);
+        var meta_html = meta_parts.length
+            ? "<div class='ep-tl-meta'>" + meta_parts.join(" &middot; ") + "</div>"
+            : "";
+
+        html += "<div class='ep-timeline-item" + active_cls + "'>";
+        html += "<div class='ep-tl-dot'></div>";
+        html += "<div class='ep-tl-card'>";
+        html += "<div class='ep-tl-company'>" + (item.company || "-") + "</div>";
+        html += date_html;
+        html += meta_html;
+        html += "</div></div>";
+    });
+    html += "</div>";
+    return html;
+}
+
+function render_heatmap($w, att_map, year, active_month) {
     year = parseInt(year);
-    var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    var today_str = new Date().toISOString().split("T")[0];
+    active_month = active_month || "all";
+    var today = new Date();
+    var today_str = today.toISOString().split("T")[0];
+    var current_year = today.getFullYear();
+    var current_month_idx = today.getMonth(); // 0-based
     var summary = {present:0, absent:0, half_day:0, lwp:0, holiday:0, weekly_off:0};
+
+    // Always show all 12 months — filter only affects summary counts + highlighting
+    var months_to_show = [];
+    for (var i = 0; i < 12; i++) months_to_show.push(i);
+    var selected_month = (active_month === "all") ? null : parseInt(active_month);
 
     var inner = "<div class='ep-heatmap-scroll'><div class='ep-heatmap-inner'>";
 
-    for (var m = 0; m < 12; m++) {
+    months_to_show.forEach(function(m) {
         var month_num = m + 1;
         var month_str = String(month_num).padStart(2, "0");
         var days_in_month = new Date(year, month_num, 0).getDate();
@@ -268,8 +391,9 @@ function render_heatmap($w, att_map, year) {
             weeks.push(week);
         }
 
+        var is_selected = (active_month !== "all") && String(active_month) === String(m + 1);
         inner += "<div class='ep-month-col'>";
-        inner += "<div class='ep-month-label'>" + MONTHS[m] + "</div>";
+        inner += "<button class='ep-month-label-btn" + (is_selected ? " active" : "") + "' data-month='" + (m + 1) + "'>" + MONTH_NAMES[m] + "</button>";
         inner += "<div class='ep-month-weeks'>";
         weeks.forEach(function(wk) {
             inner += "<div class='ep-week-col'>";
@@ -284,12 +408,14 @@ function render_heatmap($w, att_map, year) {
                 } else if (status) {
                     cls += (STATUS_COLORS[status] || "future");
                     title += ": " + status;
-                    if      (status === "Present")    summary.present++;
-                    else if (status === "Absent")     summary.absent++;
-                    else if (status === "Half Day")   summary.half_day++;
-                    else if (status === "LWP")        summary.lwp++;
-                    else if (status === "Holiday")    summary.holiday++;
-                    else if (status === "Weekly Off") summary.weekly_off++;
+                    if (selected_month === null || selected_month === month_num) {
+                        if      (status === "Present")    summary.present++;
+                        else if (status === "Absent")     summary.absent++;
+                        else if (status === "Half Day")   summary.half_day++;
+                        else if (status === "LWP")        summary.lwp++;
+                        else if (status === "Holiday")    summary.holiday++;
+                        else if (status === "Weekly Off") summary.weekly_off++;
+                    }
                 } else {
                     cls += "future"; title += " (no record)";
                 }
@@ -298,10 +424,13 @@ function render_heatmap($w, att_map, year) {
             inner += "</div>";
         });
         inner += "</div></div>";
-    }
+    });
+
+
+
     inner += "</div></div>";
 
-    // Legend uses same CSS class as heatmap dots — no inline colour needed
+    // Legend
     var legend_items = [
         ["present",   "Present"],
         ["absent",    "Absent"],
@@ -317,13 +446,14 @@ function render_heatmap($w, att_map, year) {
     });
     legend += "</div>";
 
+    // Summary boxes
     var boxes = [
         [summary.present,    "Present",    "var(--green-500,  #22c55e)"],
         [summary.absent,     "Absent",     "var(--red-500,    #ef4444)"],
         [summary.half_day,   "Half Day",   "var(--yellow-400, #facc15)"],
         [summary.lwp,        "LWP",        "var(--orange-500, #f97316)"],
         [summary.holiday,    "Holiday",    "var(--blue-400,   #60a5fa)"],
-        [summary.weekly_off, "Weekly Off", "var(--gray-400,   #9ca3af)"],
+        [summary.weekly_off, "Weekly Off", "#a855f7"],
     ];
     var summ = "<div class='ep-att-summary'>";
     boxes.forEach(function(b) {

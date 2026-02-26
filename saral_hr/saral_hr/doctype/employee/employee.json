@@ -36,6 +36,7 @@
   "company_email",
   "address_section",
   "current_address",
+  "same_as_permanent_address",
   "column_break_jpvt",
   "permanent_address",
   "tab_3_tab",
@@ -133,6 +134,12 @@
    "fieldname": "current_address",
    "fieldtype": "Small Text",
    "label": "Current Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "same_as_permanent_address",
+   "fieldtype": "Check",
+   "label": "Same as Permanent Address"
   },
   {
    "fieldname": "column_break_jpvt",
@@ -239,7 +246,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-24 13:23:12.327828",
+ "modified": "2026-02-26 13:51:08.481542",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Employee",

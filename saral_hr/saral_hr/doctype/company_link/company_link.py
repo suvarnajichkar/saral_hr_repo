@@ -16,6 +16,27 @@ class CompanyLink(Document):
     def validate(self):
         self.sync_holiday_list_from_company()
         self.validate_left_date()
+        self.validate_unique_active_employee()
+
+    def validate_unique_active_employee(self):
+        if not self.employee or not self.is_active:
+            return
+
+        duplicate = frappe.db.exists(
+            "Company Link",
+            {
+                "employee": self.employee,
+                "is_active": 1,
+                "name": ("!=", self.name or "")
+            }
+        )
+        if duplicate:
+            frappe.throw(
+                _("An active Company Link already exists for employee {0}. "
+                  "Please archive it before creating a new one.").format(
+                    frappe.bold(self.employee)
+                )
+            )
 
     def handle_employee_transfer(self):
         if not self.employee:
@@ -23,17 +44,17 @@ class CompanyLink(Document):
 
         if not self.date_of_joining:
             frappe.throw(
-                _("Please set the <b>Date of Joining</b> before saving. "
+                _("Please set the Date of Joining before saving. "
                   "It is needed to calculate the leaving date for the previous company record.")
             )
 
         existing = frappe.db.sql("""
             SELECT name, company, employee, date_of_joining
             FROM `tabCompany Link`
-            WHERE name LIKE %(pattern)s
+            WHERE employee = %(employee)s
               AND is_active = 1
             LIMIT 1
-        """, {"pattern": "{0}%".format(self.employee)}, as_dict=True)
+        """, {"employee": self.employee}, as_dict=True)
 
         if not existing:
             self.is_active = 1
@@ -58,7 +79,6 @@ class CompanyLink(Document):
                 force=True
             )
             frappe.db.commit()
-
             archive_name = new_archive_name
         else:
             archive_name = old_name
@@ -75,14 +95,16 @@ class CompanyLink(Document):
         frappe.db.commit()
 
         frappe.msgprint(
-            _("Previous record at company {0} has been archived as {1} "
-              "with leaving date {2}.").format(
-                frappe.bold(old_record["company"]),
-                frappe.bold(archive_name),
-                frappe.bold(str(left_date))
+            _("Employee {0} has been transferred from {1} to {2}. "
+              "Previous record has been archived as {3} with leaving date {4}.").format(
+                self.employee,
+                old_record["company"],
+                self.company,
+                archive_name,
+                str(left_date)
             ),
-            title=_("Employee Transferred"),
-            indicator="blue"
+            title=_("Transfer Complete"),
+            indicator="green"
         )
 
         self.is_active = 1

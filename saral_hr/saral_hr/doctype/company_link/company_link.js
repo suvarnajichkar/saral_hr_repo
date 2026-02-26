@@ -19,7 +19,6 @@ frappe.ui.form.on("Company Link", {
             refresh_company_fields(frm);
         }
 
-        // Only show transfer warning once
         if (frm.is_new() && frm.doc.employee && !frm._transfer_warned) {
             frm._transfer_warned = true;
             check_and_warn_transfer(frm, frm.doc.employee);
@@ -46,20 +45,29 @@ frappe.ui.form.on("Company Link", {
         find_active_record(frm.doc.employee).then(record => {
             if (record) {
                 const leaving = frappe.datetime.add_days(frm.doc.date_of_joining, -1);
-                frappe.show_alert({
+                frappe.msgprint({
+                    title: __("Transfer Preview"),
+                    indicator: "blue",
                     message: __(
-                        "On save: <b>{0}</b> record will be archived with leaving date <b>{1}</b>",
+                        "On save, the active record at {0} will be archived with leaving date {1}. "
+                        + "This record will become active.",
                         [record.company, leaving]
-                    ),
-                    indicator: "blue"
-                }, 6);
+                    )
+                });
             }
         });
     },
 
     left_date(frm) {
         if (frm.doc.left_date && frm.doc.is_active) {
-            frappe.msgprint(__("Employee has left. The record will be marked as inactive."));
+            frappe.msgprint({
+                title: __("Record will be Deactivated"),
+                indicator: "orange",
+                message: __(
+                    "Left date has been set to {0}. On save, this record will be marked as Inactive.",
+                    [frm.doc.left_date]
+                )
+            });
             frm.set_value("is_active", 0);
         }
     }
@@ -71,7 +79,7 @@ function find_active_record(employee) {
         args: {
             doctype: "Company Link",
             filters: [
-                ["name", "like", employee + "%"],
+                ["employee", "=", employee],
                 ["is_active", "=", 1]
             ],
             fields: ["name", "company", "employee", "is_active"],
@@ -90,12 +98,13 @@ function check_and_warn_transfer(frm, employee) {
         if (record) {
             frappe.msgprint({
                 title: __("Transfer Notice"),
-                indicator: "blue",
+                indicator: "orange",
                 message: __(
-                    "Employee is currently active in company {0}. " +
-                    "Saving this record will automatically archive " +
-                    "that record and transfer the employee here.",
-                    [record.company]
+                    "This employee is currently active at {0} under record {1}. "
+                    + "Saving this record will archive that record and set its leaving date "
+                    + "to one day before the new joining date. "
+                    + "Please make sure the Date of Joining is correct before saving.",
+                    [record.company, record.name]
                 )
             });
         }
@@ -122,10 +131,14 @@ function refresh_company_fields(frm) {
                 setTimeout(() => {
                     if (frm.is_dirty()) {
                         frm.save().then(() => {
-                            frappe.show_alert({
-                                message: __("Company Link updated with latest Company settings"),
-                                indicator: "green"
-                            }, 3);
+                            frappe.msgprint({
+                                title: __("Holiday List Updated"),
+                                indicator: "green",
+                                message: __(
+                                    "Holiday list has been updated to {0} based on company settings.",
+                                    [r.default_holiday_list]
+                                )
+                            });
                         });
                     }
                 }, 500);

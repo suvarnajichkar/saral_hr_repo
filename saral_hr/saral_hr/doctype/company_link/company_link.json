@@ -7,24 +7,30 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "tab_employment",
+  "section_break_basic",
   "is_active",
-  "section_break_employee",
-  "company",
   "employee",
   "full_name",
-  "weekly_off",
+  "company",
   "aadhar_number",
+  "column_break_dates",
+  "date_of_joining",
+  "left_date",
+  "weekly_off",
   "holiday_list",
-  "column_break_hopr",
+  "tab_classification",
+  "section_break_class",
   "department",
   "designation",
+  "column_break_class2",
   "branch",
   "division",
   "category",
-  "section_break_dates",
-  "date_of_joining",
-  "column_break_leftdate",
-  "left_date"
+  "section_break_reporting",
+  "immediate_reporting",
+  "column_break_reporting2",
+  "final_reporting"
  ],
  "fields": [
   {
@@ -35,9 +41,31 @@
    "label": "Is Active"
   },
   {
-   "fieldname": "section_break_employee",
+   "fieldname": "tab_employment",
+   "fieldtype": "Tab Break",
+   "label": "Employment"
+  },
+  {
+   "fieldname": "section_break_basic",
    "fieldtype": "Section Break",
-   "label": "Employee Details"
+   "label": "Employment Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee",
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "read_only": 1
   },
   {
    "fieldname": "company",
@@ -49,26 +77,47 @@
    "reqd": 1
   },
   {
-   "fieldname": "employee",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Employee",
-   "options": "Employee",
-   "reqd": 1,
-   "unique": 1
-  },
-  {
-   "fetch_from": "employee.employee",
-   "fieldname": "full_name",
+   "fetch_from": "employee.aadhar_number",
+   "fieldname": "aadhar_number",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Full Name",
-   "read_only": 1
+   "label": "Aadhar Number"
   },
   {
-   "fieldname": "column_break_hopr",
+   "fieldname": "column_break_dates",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining",
+   "reqd": 1
+  },
+  {
+   "fieldname": "left_date",
+   "fieldtype": "Date",
+   "label": "Left Date"
+  },
+  {
+   "fieldname": "weekly_off",
+   "fieldtype": "Select",
+   "label": "Weekly Off",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
+  },
+  {
+   "fetch_from": "company.default_holiday_list",
+   "fieldname": "holiday_list",
+   "fieldtype": "Data",
+   "label": "Holiday List"
+  },
+  {
+   "fieldname": "tab_classification",
+   "fieldtype": "Tab Break",
+   "label": "Classification"
+  },
+  {
+   "fieldname": "section_break_class",
+   "fieldtype": "Section Break",
+   "label": "Employee Classification"
   },
   {
    "fieldname": "department",
@@ -83,41 +132,14 @@
    "options": "Designation"
   },
   {
+   "fieldname": "column_break_class2",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "branch",
    "fieldtype": "Link",
    "label": "Branch",
    "options": "Branch"
-  },
-  {
-   "fieldname": "section_break_dates",
-   "fieldtype": "Section Break",
-   "label": "Dates"
-  },
-  {
-   "fieldname": "date_of_joining",
-   "fieldtype": "Date",
-   "label": "Date of Joining"
-  },
-  {
-   "fieldname": "column_break_leftdate",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "left_date",
-   "fieldtype": "Date",
-   "label": "Left Date"
-  },
-  {
-   "fieldname": "weekly_off",
-   "fieldtype": "Select",
-   "label": "Weekly Off",
-   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
-  },
-  {
-   "fetch_from": "employee.aadhar_number",
-   "fieldname": "aadhar_number",
-   "fieldtype": "Data",
-   "label": "Aadhar Number"
   },
   {
    "fieldname": "division",
@@ -132,15 +154,30 @@
    "options": "Category"
   },
   {
-   "fetch_from": "company.default_holiday_list",
-   "fieldname": "holiday_list",
-   "fieldtype": "Data",
-   "label": "Holiday List"
+   "fieldname": "section_break_reporting",
+   "fieldtype": "Section Break",
+   "label": "Reporting"
+  },
+  {
+   "fieldname": "immediate_reporting",
+   "fieldtype": "Link",
+   "label": "Immediate Reporting",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "column_break_reporting2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "final_reporting",
+   "fieldtype": "Link",
+   "label": "Final Reporting",
+   "options": "Employee"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-24 15:42:48.527882",
+ "modified": "2026-02-26 13:51:08.481542",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Company Link",
