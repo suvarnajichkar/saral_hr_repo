@@ -17,10 +17,27 @@ frappe.pages["employee-profile"].on_page_show = function(wrapper) {
         method: "saral_hr.saral_hr.page.employee_profile.employee_profile.get_employee_profile_data",
         args: { employee: emp },
         callback: function(r) {
-            if (r.message) { render_profile($sidebar, $main, r.message, emp); }
+            if (r.message) {
+                ep_fix_breadcrumbs(r.message.employee || emp);
+                render_profile($sidebar, $main, r.message, emp);
+            }
         }
     });
 };
+
+function ep_fix_breadcrumbs(emp_name) {
+    // #navbar-breadcrumbs is the native Frappe top-left <ul>
+    // Frappe's own CSS already adds the ">" separator via li::before
+    // We just set the <li> items — NO custom separator needed
+    var $nb = $("#navbar-breadcrumbs");
+    if (!$nb.length) { return; }
+
+    $nb.html(
+        "<li><a href='/app/saral-hr'>Saral HR</a></li>" +
+        "<li><a href='/app/employee'>Employee</a></li>" +
+        "<li>" + emp_name + "</li>"
+    );
+}
 
 function inject_ep_styles() {
     if (document.getElementById("ep-styles")) return;
@@ -71,13 +88,8 @@ function inject_ep_styles() {
         .ep-card-title { font-size: 15px; font-weight: 600; color: var(--text-color); margin: 0; }
 
         /* ── Salary: borderless grid ── */
-        .ep-salary-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr;
-            gap: 0;
-        }
-        .ep-salary-item {
-            padding: 14px 16px;
-        }
+        .ep-salary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+        .ep-salary-item { padding: 14px 16px; }
         .ep-salary-item-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
         .ep-salary-item-val   { font-size: 15px; font-weight: 600; color: var(--text-color); }
 
@@ -86,19 +98,9 @@ function inject_ep_styles() {
             padding: 3px 10px; border-radius: 6px;
             border: 1px solid var(--border-color, #e5e7eb);
             background: var(--card-bg, #fff); font-size: 12px;
-            cursor: pointer; color: var(--text-color);
-            outline: none;
+            cursor: pointer; color: var(--text-color); outline: none;
         }
         .ep-year-select:focus { border-color: var(--blue-500, #1d4ed8); }
-
-        /* ── Month filter pills ── */
-        .ep-month-pill {
-            padding: 2px 9px; border-radius: 12px;
-            border: 1px solid var(--border-color, #e5e7eb);
-            background: var(--card-bg, #fff); font-size: 11px;
-            cursor: pointer; color: var(--text-muted); transition: all 0.15s;
-        }
-        .ep-month-pill.active { background: var(--blue-500, #1d4ed8); color: #fff; border-color: var(--blue-500, #1d4ed8); }
 
         /* ── Heatmap ── */
         .ep-heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
@@ -112,25 +114,22 @@ function inject_ep_styles() {
             width: 100%; transition: all 0.15s;
         }
         .ep-month-label-btn:hover { color: var(--blue-500, #1d4ed8); }
-        .ep-month-label-btn.active {
-            background: var(--blue-500, #1d4ed8); color: #fff;
-            border-radius: 4px;
-        }
-        .ep-month-weeks    { display: flex; gap: 2px; }
-        .ep-week-col       { display: flex; flex-direction: column; gap: 2px; }
-        .ep-day            { width: 11px; height: 11px; border-radius: 2px; cursor: default; flex-shrink: 0; }
+        .ep-month-label-btn.active { background: var(--blue-500, #1d4ed8); color: #fff; border-radius: 4px; }
+        .ep-month-weeks { display: flex; gap: 2px; }
+        .ep-week-col    { display: flex; flex-direction: column; gap: 2px; }
+        .ep-day         { width: 11px; height: 11px; border-radius: 2px; cursor: default; flex-shrink: 0; }
 
-        .ep-day.present    { background: var(--green-500,   #22c55e); }
-        .ep-day.absent     { background: var(--red-500,     #ef4444); }
-        .ep-day.halfday    { background: var(--yellow-400,  #facc15); }
-        .ep-day.lwp        { background: var(--orange-500,  #f97316); }
-        .ep-day.holiday    { background: var(--blue-400,    #60a5fa); }
-        .ep-day.weeklyoff  { background: #a855f7; }
-        .ep-day.empty      { background: transparent; }
-        .ep-day.future     { background: var(--gray-100,    #f3f4f6); }
+        .ep-day.present   { background: var(--green-500,   #22c55e); }
+        .ep-day.absent    { background: var(--red-500,     #ef4444); }
+        .ep-day.halfday   { background: var(--yellow-400,  #facc15); }
+        .ep-day.lwp       { background: var(--orange-500,  #f97316); }
+        .ep-day.holiday   { background: var(--blue-400,    #60a5fa); }
+        .ep-day.weeklyoff { background: #a855f7; }
+        .ep-day.empty     { background: transparent; }
+        .ep-day.future    { background: var(--gray-100,    #f3f4f6); }
 
-        .ep-legend         { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-        .ep-legend-item    { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+        .ep-legend      { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .ep-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
 
         /* Att summary */
         .ep-att-summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 14px; }
@@ -140,17 +139,14 @@ function inject_ep_styles() {
 
         /* ── Timeline ── */
         .ep-timeline {
-            position: relative;
-            padding-left: 40px;
+            position: relative; padding-left: 40px;
             border-left: 2px solid var(--border-color, #d1d8dd);
-            margin-left: 6px;
-            padding-top: 4px;
+            margin-left: 6px; padding-top: 4px;
         }
         .ep-timeline-item { position: relative; padding-bottom: 20px; }
         .ep-timeline-item:last-child { padding-bottom: 0; }
         .ep-tl-dot {
-            position: absolute;
-            left: -47px; top: 16px;
+            position: absolute; left: -47px; top: 16px;
             width: 12px; height: 12px; border-radius: 50%;
             background: var(--gray-400, #adb5bd);
             border: 2px solid white;
@@ -167,9 +163,9 @@ function inject_ep_styles() {
             border-radius: var(--border-radius, 6px);
             padding: 14px 16px; max-width: 460px;
         }
-        .ep-tl-company  { font-size: 14px; font-weight: 600; color: var(--text-color); margin-bottom: 6px; }
-        .ep-tl-date     { font-size: 13px; color: var(--text-muted); margin-bottom: 3px; }
-        .ep-tl-meta     { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+        .ep-tl-company { font-size: 14px; font-weight: 600; color: var(--text-color); margin-bottom: 6px; }
+        .ep-tl-date    { font-size: 13px; color: var(--text-muted); margin-bottom: 3px; }
+        .ep-tl-meta    { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
         .ep-tl-badge {
             display: inline-block; margin-top: 10px;
             padding: 3px 10px; font-size: 11px; font-weight: 500; border-radius: 20px;
@@ -212,9 +208,6 @@ function render_profile($sidebar, $main, d, emp) {
     var sidebar = "<div class='ep-sidebar-inner'>";
     sidebar += "<div class='ep-avatar'>" + avatar_html + "</div>";
     sidebar += "<div class='ep-name'>" + (d.employee || "") + "</div>";
-
-
-
     sidebar += "<hr class='ep-divider'>";
 
     if (c.company)         sidebar += info_row("Company",     c.company);
@@ -223,21 +216,15 @@ function render_profile($sidebar, $main, d, emp) {
     if (c.date_of_joining) sidebar += info_row("Joined",      c.date_of_joining);
     if (c.department)      sidebar += info_row("Department",  c.department);
     if (c.designation)     sidebar += info_row("Designation", c.designation);
-
-    if (d.tenure) {
-        sidebar += info_row("Tenure", d.tenure);
-    }
+    if (d.tenure)          sidebar += info_row("Tenure",      d.tenure);
     if (c.immediate_reporting_name) sidebar += info_row("Immediate Reporting", c.immediate_reporting_name);
-    if (c.final_reporting_name)     sidebar += info_row("Final Reporting", c.final_reporting_name);
+    if (c.final_reporting_name)     sidebar += info_row("Final Reporting",     c.final_reporting_name);
 
     sidebar += "<hr class='ep-divider'>";
-
     sidebar += "<a href='/app/employee/" + emp + "' class='ep-link-btn'>Edit Employee</a>";
-
     if (d.company_link_name) {
         sidebar += "<a href='/app/company-link/" + encodeURIComponent(d.company_link_name) + "' class='ep-link-btn'>View Company Record</a>";
     }
-
     sidebar += "<a href='/app/salary-structure-assignment?employee=" + encodeURIComponent(emp) + "' class='ep-link-btn'>Salary Assignment</a>";
     sidebar += "</div>";
 
@@ -246,7 +233,6 @@ function render_profile($sidebar, $main, d, emp) {
     // ── MAIN ──
     var main = "";
 
-    // Salary
     main += "<div class='ep-card'>";
     main += "<div class='ep-title-area'><h4 class='ep-card-title'>Salary Overview</h4></div>";
     main += "<div class='ep-salary-grid'>";
@@ -258,25 +244,17 @@ function render_profile($sidebar, $main, d, emp) {
     main += sal_item("Employer Contribution", s.total_employer_contribution);
     main += "</div></div>";
 
-    // Attendance — year dropdown + month filter
     var current_year = years.length ? years[0] : new Date().getFullYear();
-
     main += "<div class='ep-card'>";
     main += "<div class='ep-title-area'>";
     main += "<h4 class='ep-card-title'>Attendance Overview</h4>";
-
-    // Year dropdown
     main += "<select class='ep-year-select' id='ep-year-select'>";
-    years.forEach(function(yr) {
-        main += "<option value='" + yr + "'>" + yr + "</option>";
-    });
+    years.forEach(function(yr) { main += "<option value='" + yr + "'>" + yr + "</option>"; });
     main += "</select>";
     main += "</div>";
-
     main += "<div id='ep-heatmap-wrap'></div>";
     main += "</div>";
 
-    // Timeline
     main += "<div class='ep-card'>";
     main += "<div class='ep-title-area'><h4 class='ep-card-title'>Employee Timeline</h4></div>";
     main += render_timeline_html(timeline);
@@ -284,10 +262,8 @@ function render_profile($sidebar, $main, d, emp) {
 
     $main.html(main);
 
-    // Initial render
     render_heatmap($main, att_map, current_year, "all");
 
-    // Year dropdown change — preserve selected month
     $main.find("#ep-year-select").on("change", function() {
         var yr = parseInt($(this).val());
         var active_btn = $main.find(".ep-month-label-btn.active");
@@ -295,7 +271,6 @@ function render_profile($sidebar, $main, d, emp) {
         render_heatmap($main, att_map, yr, active_month);
     });
 
-    // Month label button click — toggle filter; click active month to go back to all
     $main.find("#ep-heatmap-wrap").on("click", ".ep-month-label-btn", function() {
         var clicked_month = $(this).data("month");
         var yr = parseInt($main.find("#ep-year-select").val());
@@ -322,36 +297,22 @@ function render_timeline_html(timeline) {
     if (!timeline || !timeline.length) {
         return "<div class='ep-timeline-empty'>No timeline events found.</div>";
     }
-
     var html = "<div class='ep-timeline'>";
     timeline.forEach(function(item) {
-        var is_active = item.is_active == 1;
-        var active_cls = is_active ? " tl-active" : "";
-
-        // Date line: Start
+        var active_cls = item.is_active == 1 ? " tl-active" : "";
         var date_html = "";
-        if (item.start_date) {
-            date_html += "<div class='ep-tl-date'><strong>Start:</strong> " + item.start_date + "</div>";
-        }
-        if (item.end_date) {
-            date_html += "<div class='ep-tl-date'><strong>End:</strong> " + item.end_date + "</div>";
-        }
-
-        // Extra meta: designation / department / branch
+        if (item.start_date) date_html += "<div class='ep-tl-date'><strong>Start:</strong> " + item.start_date + "</div>";
+        if (item.end_date)   date_html += "<div class='ep-tl-date'><strong>End:</strong> "   + item.end_date   + "</div>";
         var meta_parts = [];
         if (item.designation) meta_parts.push(item.designation);
         if (item.department)  meta_parts.push(item.department);
         if (item.branch)      meta_parts.push(item.branch);
-        var meta_html = meta_parts.length
-            ? "<div class='ep-tl-meta'>" + meta_parts.join(" &middot; ") + "</div>"
-            : "";
-
+        var meta_html = meta_parts.length ? "<div class='ep-tl-meta'>" + meta_parts.join(" &middot; ") + "</div>" : "";
         html += "<div class='ep-timeline-item" + active_cls + "'>";
         html += "<div class='ep-tl-dot'></div>";
         html += "<div class='ep-tl-card'>";
         html += "<div class='ep-tl-company'>" + (item.company || "-") + "</div>";
-        html += date_html;
-        html += meta_html;
+        html += date_html + meta_html;
         html += "</div></div>";
     });
     html += "</div>";
@@ -361,20 +322,14 @@ function render_timeline_html(timeline) {
 function render_heatmap($w, att_map, year, active_month) {
     year = parseInt(year);
     active_month = active_month || "all";
-    var today = new Date();
+    var today     = new Date();
     var today_str = today.toISOString().split("T")[0];
-    var current_year = today.getFullYear();
-    var current_month_idx = today.getMonth(); // 0-based
-    var summary = {present:0, absent:0, half_day:0, lwp:0, holiday:0, weekly_off:0};
-
-    // Always show all 12 months — filter only affects summary counts + highlighting
-    var months_to_show = [];
-    for (var i = 0; i < 12; i++) months_to_show.push(i);
+    var summary   = { present:0, absent:0, half_day:0, lwp:0, holiday:0, weekly_off:0 };
     var selected_month = (active_month === "all") ? null : parseInt(active_month);
 
     var inner = "<div class='ep-heatmap-scroll'><div class='ep-heatmap-inner'>";
 
-    months_to_show.forEach(function(m) {
+    for (var m = 0; m < 12; m++) {
         var month_num = m + 1;
         var month_str = String(month_num).padStart(2, "0");
         var days_in_month = new Date(year, month_num, 0).getDate();
@@ -391,18 +346,17 @@ function render_heatmap($w, att_map, year, active_month) {
             weeks.push(week);
         }
 
-        var is_selected = (active_month !== "all") && String(active_month) === String(m + 1);
+        var is_selected = (active_month !== "all") && String(active_month) === String(month_num);
         inner += "<div class='ep-month-col'>";
-        inner += "<button class='ep-month-label-btn" + (is_selected ? " active" : "") + "' data-month='" + (m + 1) + "'>" + MONTH_NAMES[m] + "</button>";
+        inner += "<button class='ep-month-label-btn" + (is_selected ? " active" : "") + "' data-month='" + month_num + "'>" + MONTH_NAMES[m] + "</button>";
         inner += "<div class='ep-month-weeks'>";
         weeks.forEach(function(wk) {
             inner += "<div class='ep-week-col'>";
             wk.forEach(function(d) {
                 if (!d) { inner += "<div class='ep-day empty'></div>"; return; }
-                var day_str = year + "-" + month_str + "-" + String(d).padStart(2,"0");
+                var day_str = year + "-" + month_str + "-" + String(d).padStart(2, "0");
                 var status  = att_map[day_str] || null;
-                var cls = "ep-day ";
-                var title = day_str;
+                var cls = "ep-day ", title = day_str;
                 if (day_str > today_str) {
                     cls += "future"; title += " (future)";
                 } else if (status) {
@@ -424,41 +378,32 @@ function render_heatmap($w, att_map, year, active_month) {
             inner += "</div>";
         });
         inner += "</div></div>";
-    });
-
-
+    }
 
     inner += "</div></div>";
 
-    // Legend
     var legend_items = [
-        ["present",   "Present"],
-        ["absent",    "Absent"],
-        ["halfday",   "Half Day"],
-        ["lwp",       "LWP"],
-        ["holiday",   "Holiday"],
-        ["weeklyoff", "Weekly Off"],
-        ["future",    "No Record"],
+        ["present","Present"], ["absent","Absent"], ["halfday","Half Day"],
+        ["lwp","LWP"], ["holiday","Holiday"], ["weeklyoff","Weekly Off"], ["future","No Record"]
     ];
     var legend = "<div class='ep-legend'>";
     legend_items.forEach(function(li) {
-        legend += "<div class='ep-legend-item'><div class='ep-day " + li[0] + "' style='flex-shrink:0;'></div>" + li[1] + "</div>";
+        legend += "<div class='ep-legend-item'><div class='ep-day " + li[0] + "' style='flex-shrink:0'></div>" + li[1] + "</div>";
     });
     legend += "</div>";
 
-    // Summary boxes
     var boxes = [
         [summary.present,    "Present",    "var(--green-500,  #22c55e)"],
         [summary.absent,     "Absent",     "var(--red-500,    #ef4444)"],
         [summary.half_day,   "Half Day",   "var(--yellow-400, #facc15)"],
         [summary.lwp,        "LWP",        "var(--orange-500, #f97316)"],
         [summary.holiday,    "Holiday",    "var(--blue-400,   #60a5fa)"],
-        [summary.weekly_off, "Weekly Off", "#a855f7"],
+        [summary.weekly_off, "Weekly Off", "#a855f7"]
     ];
     var summ = "<div class='ep-att-summary'>";
     boxes.forEach(function(b) {
         summ += "<div class='ep-att-box'>" +
-            "<div class='ep-att-val' style='color:" + b[2] + ";'>" + b[0] + "</div>" +
+            "<div class='ep-att-val' style='color:" + b[2] + "'>" + b[0] + "</div>" +
             "<div class='ep-att-label'>" + b[1] + "</div>" +
             "</div>";
     });

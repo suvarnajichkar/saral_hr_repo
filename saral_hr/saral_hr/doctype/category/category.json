@@ -15,16 +15,14 @@
  ],
  "fields": [
   {
+   "allow_in_quick_entry": 1,
+   "bold": 1,
    "fieldname": "category",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Category",
-   "unique": 1,
-   "bold": 1,
    "reqd": 1,
-   "hidden": 0,
-   "read_only": 0,
-   "allow_in_quick_entry": 1
+   "unique": 1
   },
   {
    "fieldname": "column_break_ifpd",
@@ -32,7 +30,7 @@
   },
   {
    "default": "0",
-   "description": "Tick for Staff/Officer. Leave unticked for Workers.",
+   "description": "Tick for category who requires Variable Pay.",
    "fieldname": "requires_variable_pay",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -43,7 +41,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "description": "<b>Working days:</b> Salary ÷ Working Days × Days Worked. <b>Calendar days:</b> Salary ÷ Total Days × Days Worked.",
+   "description": "<b>Working days:</b> Base \u00f7 (31 \u2212 4 Sundays = 27) \u00d7 26 paid<br><b>Calendar days:</b> Base \u00f7 31 \u00d7 30 paid<br><br><i>Example \u2014 Jan 2026: 31 days, 4 Sundays, 1 absent</i><br>Working days \u2192 paid days = 27 \u2212 1 = 26<br>Calendar days \u2192 paid days = 31 \u2212 1 = 30",
    "fieldname": "salary_calculation_based_on",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -54,7 +52,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-27 15:30:00.000000",
+ "modified": "2026-02-27 16:59:07.980055",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Category",
