@@ -1,7 +1,7 @@
 {
  "add_total_row": 0,
  "columns": [],
- "creation": "2026-02-19 12:13:15.831632",
+ "creation": "2026-02-24 16:21:20.089537",
  "disabled": 0,
  "docstatus": 0,
  "doctype": "Report",
@@ -9,7 +9,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2026-02-19 12:13:15.831632",
+ "modified": "2026-02-24 16:35:47.698768",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Provident Fund Register",
@@ -20,10 +20,10 @@
  "report_type": "Script Report",
  "roles": [
   {
-   "role": "System Manager"
+   "role": "Saral HR Manager"
   },
   {
-   "role": "HR User"
+   "role": "Saral HR User"
   }
  ],
  "timeout": 0

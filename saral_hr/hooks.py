@@ -126,6 +126,12 @@ fixtures = [
 
 ]
 
+# your_app/hooks.py
+
+before_install = "saral_hr.setup.before_install"
+
+
+
 
 
 # Generators
