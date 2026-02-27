@@ -8,17 +8,42 @@
  "engine": "InnoDB",
  "field_order": [
   "category",
+  "column_break_ifpd",
+  "requires_variable_pay",
+  "section_break_diun",
   "salary_calculation_based_on"
  ],
  "fields": [
   {
    "fieldname": "category",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Category",
-   "unique": 1
+   "unique": 1,
+   "bold": 1,
+   "reqd": 1,
+   "hidden": 0,
+   "read_only": 0,
+   "allow_in_quick_entry": 1
   },
   {
-   "description": "<b>Working days in a month:</b> Salary calculated based on actual working days (typically 22-26 days). Formula: (Monthly Salary \u00f7 Working Days) \u00d7 Days Worked. <br><b>No. of days in a month:</b> Salary calculated based on calendar days (28-31 days). Formula: (Monthly Salary \u00f7 Total Days) \u00d7 Days Worked.",
+   "fieldname": "column_break_ifpd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Tick for Staff/Officer. Leave unticked for Workers.",
+   "fieldname": "requires_variable_pay",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Requires Variable Pay"
+  },
+  {
+   "fieldname": "section_break_diun",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "<b>Working days:</b> Salary ÷ Working Days × Days Worked. <b>Calendar days:</b> Salary ÷ Total Days × Days Worked.",
    "fieldname": "salary_calculation_based_on",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -29,7 +54,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-21 17:13:28.587656",
+ "modified": "2026-02-27 15:30:00.000000",
  "modified_by": "Administrator",
  "module": "Saral Hr",
  "name": "Category",
@@ -66,5 +91,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "category"
 }
