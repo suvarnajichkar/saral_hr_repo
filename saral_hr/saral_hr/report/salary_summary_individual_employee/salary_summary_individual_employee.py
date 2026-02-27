@@ -71,6 +71,20 @@ def get_columns():
             "precision": 2,
             "width":     110
         },
+        {
+            "label":     _("Absent Days"),
+            "fieldname": "absent_days",
+            "fieldtype": "Float",
+            "precision": 2,
+            "width":     110
+        },
+        {
+            "label":     _("LWP"),
+            "fieldname": "total_lwp",
+            "fieldtype": "Float",
+            "precision": 2,
+            "width":     100
+        },
     ]
 
     for label, abbr in EARNING_COMPONENTS:
@@ -165,6 +179,8 @@ def get_data(filters):
             ss.employee      AS employee,
             ss.employee_name AS employee_name,
             ss.payment_days  AS payment_days,
+            ss.absent_days   AS absent_days,
+            ss.total_lwp     AS total_lwp,
             ss.net_salary    AS net_salary
         FROM
             `tabSalary Slip` ss
@@ -218,6 +234,8 @@ def get_data(filters):
         "total_earnings":   0,
         "total_deductions": 0,
         "net_salary":       0,
+        "absent_days":      0,
+        "total_lwp":        0,
     }
     for _, abbr in EARNING_COMPONENTS:
         grand[f"earn_{sanitize(abbr)}"] = 0
@@ -233,8 +251,13 @@ def get_data(filters):
             "employee":      slip["employee"],
             "employee_name": slip["employee_name"],
             "payment_days":  flt(slip["payment_days"], 2),
+            "absent_days":   flt(slip["absent_days"], 2),
+            "total_lwp":     flt(slip["total_lwp"], 2),
             "net_salary":    flt(slip["net_salary"], 2),
         }
+
+        grand["absent_days"] += flt(slip["absent_days"], 2)
+        grand["total_lwp"]   += flt(slip["total_lwp"], 2)
 
         total_earn = 0
         for label, abbr in EARNING_COMPONENTS:
