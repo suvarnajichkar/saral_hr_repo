@@ -227,8 +227,8 @@ function render_profile($sidebar, $main, d, emp) {
     if (d.tenure) {
         sidebar += info_row("Tenure", d.tenure);
     }
-    if (c.immediate_reporting_name) sidebar += info_row("Reports To", c.immediate_reporting_name);
-    if (c.final_reporting_name)     sidebar += info_row("Final Authority", c.final_reporting_name);
+    if (c.immediate_reporting_name) sidebar += info_row("Immediate Reporting", c.immediate_reporting_name);
+    if (c.final_reporting_name)     sidebar += info_row("Final Reporting", c.final_reporting_name);
 
     sidebar += "<hr class='ep-divider'>";
 
